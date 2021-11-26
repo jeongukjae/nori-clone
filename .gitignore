@@ -1,5 +1,6 @@
 ## Project specific
 bazel-*
+.vscode/settings.json
 
 # Prerequisites
 *.d
