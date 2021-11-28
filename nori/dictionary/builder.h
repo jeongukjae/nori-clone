@@ -2,6 +2,7 @@
 #define __NORI_DICTIONARY_BUILDER_H__
 
 #include <functional>
+#include <memory>
 #include <vector>
 
 #include "absl/status/status.h"
@@ -22,6 +23,9 @@ namespace internal {
 void listDirectory(absl::string_view directory, std::vector<std::string>& paths,
                    std::function<bool(std::string)> functor);
 
+// Parse csv from raw string `line` and put outputs into `entries`.
+void parsCSVLine(std::string line, std::vector<std::string>& entries);
+
 }  // namespace internal
 
 // Abstract class for interfaces that builds each type (unknown, csvs, or costs)
@@ -37,7 +41,7 @@ class IDictionaryBuilder {
 class MeCabDictionaryBuilder {
  public:
   // An argument `normalize` means whether to normalize terms in dictionary.
-  MeCabDictionaryBuilder(const bool normalize);
+  MeCabDictionaryBuilder(bool normalize, const std::string normalizationForm);
   ~MeCabDictionaryBuilder();
 
   // This method builds dictionary from `inputDirectory` and write built
@@ -46,14 +50,16 @@ class MeCabDictionaryBuilder {
              absl::string_view outputDirectory);
 
  private:
-  std::vector<IDictionaryBuilder*> builders;
+  std::vector<std::unique_ptr<IDictionaryBuilder>> builders;
 };
 
 // Read all csv files in MeCab dictionary directory, and convert it to nori's
 // FST dictionary format.
 class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
  public:
-  TokenInfoDictionaryBuilder(const bool normalize) : normalize(normalize) {}
+  TokenInfoDictionaryBuilder(const bool normalize,
+                             const std::string normalizationForm)
+      : normalize(normalize), normalizationForm(normalizationForm) {}
   ~TokenInfoDictionaryBuilder() {}
 
   absl::Status parse(absl::string_view inputDirectory);
@@ -61,6 +67,7 @@ class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
 
  private:
   bool normalize;
+  const std::string normalizationForm;
 };
 
 // Read unk.def and char.def and convert them to nori's dictionary format.

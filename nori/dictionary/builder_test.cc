@@ -30,4 +30,20 @@ TEST(TestInteral, listDictionary) {
                                           "./testdata/listDirectory/3"));
 }
 
+TEST(TestInteral, parseCSVLine) {
+  std::string inputString = "ALPHA,1793,3533,795,SL,*,*,*,*,*,*,*";
+  std::vector<std::string> rows;
+  internal::parsCSVLine(inputString, rows);
+
+  ASSERT_THAT(rows, testing::ElementsAre("ALPHA", "1793", "3533", "795", "SL",
+                                         "*", "*", "*", "*", "*", "*", "*"));
+
+  inputString = "\"ALPHA\",1793,3533,795,SL,*,*,*,*,*,*,*";
+  rows.clear();
+  internal::parsCSVLine(inputString, rows);
+
+  ASSERT_THAT(rows, testing::ElementsAre("ALPHA", "1793", "3533", "795", "SL",
+                                         "*", "*", "*", "*", "*", "*", "*"));
+}
+
 TEST(TestUnknownDictionary, TestPutCharacterCategory) {}
