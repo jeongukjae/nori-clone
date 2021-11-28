@@ -1,4 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
 package(
     default_visibility = [
@@ -14,5 +14,50 @@ cc_library(
     hdrs = ["constant.h"],
     deps = [
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "token_filters",
+    srcs = ["token_filters.cc"],
+    hdrs = ["token_filters.h"],
+)
+
+cc_test(
+    name = "token_filters_test",
+    srcs = ["token_filters_test.cc"],
+    deps = [
+        ":token_filters",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "tokenizer",
+    srcs = ["tokenizer.cc"],
+    hdrs = ["tokenizer.h"],
+)
+
+cc_test(
+    name = "tokenizer_test",
+    srcs = ["tokenizer_test.cc"],
+    deps = [
+        ":tokenizer",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "analyzer",
+    srcs = ["analyzer.cc"],
+    hdrs = ["analyzer.h"],
+)
+
+cc_test(
+    name = "analyzer_test",
+    srcs = ["analyzer_test.cc"],
+    deps = [
+        ":analyzer",
+        "@com_google_googletest//:gtest_main",
     ],
 )
