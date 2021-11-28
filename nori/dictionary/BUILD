@@ -29,9 +29,10 @@ cc_library(
     hdrs = ["builder.h"],
     deps = [
         "//nori:constant",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/status",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@icu//:common",
     ],
 )
 
