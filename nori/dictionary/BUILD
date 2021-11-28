@@ -30,12 +30,15 @@ cc_library(
     deps = [
         "//nori:constant",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/status",
+        "@com_github_google_glog//:glog",
     ],
 )
 
 cc_test(
     name = "builder_test",
     srcs = ["builder_test.cc"],
+    data = ["//testdata:listDirectory"],
     deps = [
         ":builder",
         "@com_google_googletest//:gtest_main",
