@@ -29,3 +29,11 @@ http_archive(
     sha256 = "bb9f771e942387c4e000c5bb067ef225a6ef3a9b5a2ce9084ede8dcdaf230bfd",
     strip_prefix = "benchmark-fe2e8aa1b4b01a8d2a7675c1edb3fb0ed48ce11c",
 )
+
+http_archive(
+    name = "com_github_google_glog",
+    sha256 = "21bc744fb7f2fa701ee8db339ded7dce4f975d0d55837a97be7d46e8382dea5a",
+    strip_prefix = "glog-0.5.0",
+    build_file = "@//third_party:glog_no_gflags.BUILD",
+    urls = ["https://github.com/google/glog/archive/v0.5.0.zip"],
+)
