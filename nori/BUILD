@@ -59,6 +59,7 @@ cc_library(
     hdrs = ["utils.h"],
     deps = [
         "//nori/protos:dictionary_cc_proto",
+        "//third_party/icu/data:icu_normalization_data",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
