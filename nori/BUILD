@@ -9,15 +9,6 @@ package(
 )
 
 cc_library(
-    name = "constant",
-    srcs = [],
-    hdrs = ["constant.h"],
-    deps = [
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_library(
     name = "token_filters",
     srcs = ["token_filters.cc"],
     hdrs = ["token_filters.h"],

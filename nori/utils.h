@@ -37,7 +37,10 @@ int simpleAtoi(absl::string_view input);
 }  // namespace internal
 
 // resolve string pos type to proto's enum value
-nori::POSType resolveType(absl::string_view name);
+nori::POSType resolvePOSType(absl::string_view name);
+
+// resolve string pos tag to proto's enum value
+nori::POSTag resolvePOSTag(absl::string_view name);
 
 }  // namespace utils
 }  // namespace nori

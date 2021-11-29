@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <glog/logging.h>
 
+#include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -114,18 +115,31 @@ int simpleAtoi(absl::string_view input) {
 
 }  // namespace internal
 
-nori::POSType resolveType(absl::string_view name) {
+nori::POSType resolvePOSType(absl::string_view name) {
   if (name == "*") {
     return nori::POSType::MORPHEME;
-  } else if (name == "Compound") {
-    return nori::POSType::COMPOUND;
-  } else if (name == "Inflect") {
-    return nori::POSType::INFLECT;
-  } else if (name == "Preanalysis") {
-    return nori::POSType::PREANALYSIS;
   }
 
-  CHECK(false) << "Cannot resolve type. name: " << name;
+  nori::POSType output;
+  CHECK(nori::POSType_Parse(absl::AsciiStrToUpper(name), &output))
+      << "Cannot resolve POS type. name: " << name;
+  return output;
+}
+
+nori::POSTag resolvePOSTag(absl::string_view name) {
+  const auto tagUpper = absl::AsciiStrToUpper(name);
+
+  if (absl::StartsWith(tagUpper, "J")) {
+    return nori::POSTag::J;
+  }
+  if (absl::StartsWith(tagUpper, "E")) {
+    return nori::POSTag::E;
+  }
+
+  nori::POSTag output;
+  CHECK(nori::POSTag_Parse(tagUpper, &output))
+      << "Cannot resolve POS tag. name: " << name;
+  return output;
 }
 
 }  // namespace utils

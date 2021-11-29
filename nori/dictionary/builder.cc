@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "absl/strings/match.h"
+#include "nori/protos/dictionary.pb.h"
 #include "nori/utils.h"
 
 namespace nori {
@@ -20,6 +21,20 @@ void convertMeCabCSVEntry(const std::vector<std::string> entry,
   morpheme->set_leftid(utils::internal::simpleAtoi(entry.at(1)));
   morpheme->set_rightid(utils::internal::simpleAtoi(entry.at(2)));
   morpheme->set_wordcost(utils::internal::simpleAtoi(entry.at(3)));
+
+  const POSType posType = utils::resolvePOSType(entry.at(8));
+  POSTag rightPOS, leftPOS;
+
+  if (posType == POSType::MORPHEME || posType == POSType::COMPOUND ||
+      entry.at(9) == "*") {
+    rightPOS = leftPOS = utils::resolvePOSTag(entry[4]);
+    CHECK(entry.at(9) == "*" && entry.at(10) == "*")
+        << "Cannot parse MeCab CSV entry. term: " << entry.at(0)
+        << ", left pos: " << entry.at(9) << ", right pos: " << entry.at(10);
+  } else {
+    leftPOS = utils::resolvePOSTag(entry[9]);
+    rightPOS = utils::resolvePOSTag(entry[10]);
+  }
 }
 
 }  // namespace internal

@@ -13,13 +13,91 @@ enum POSType {
   PREANALYSIS = 3;
 }
 
+enum POSTag {
+  option allow_alias = true;
+
+  // Unknown
+  UNKNOWN = 0;
+  // Unknown
+  UNA = 0;
+  // Unknown
+  NA = 0;
+  // Unknown
+  VSV = 0;
+
+  // Verbal endings
+  E = 1;
+  // Interjection
+  IC = 2;
+  // Ending Particle
+  J = 3;
+  // General Adverb
+  MAG = 4;
+  // Conjunctive adverb
+  MAJ = 5;
+  // Modifier
+  MM = 6;
+  // General Noun
+  NNG = 7;
+  // Proper Noun
+  NNP = 8;
+  // Dependent noun
+  NNB = 9;
+  // Dependent noun
+  NNBC = 10;
+  // Pronoun
+  NP = 11;
+  // Numeral
+  NR = 12;
+  // Terminal punctuation
+  SF = 13;
+  // Chinese Characeter
+  SH = 14;
+  // Foreign language
+  SL = 15;
+  // Number
+  SN = 16;
+  // Space
+  SP = 17;
+  // Closing brackets
+  SSC = 18;
+  // Opening brackets
+  SSO = 19;
+  // Separator
+  SC = 20;
+  // Other symbol
+  SY = 21;
+  // Ellipsis
+  SE = 22;
+  // Adjective
+  VA = 23;
+  // Negative designator
+  VCN = 24;
+  // Positive designator
+  VCP = 25;
+  // Verb
+  VV = 26;
+  // Auxiliary Verb or Adjective
+  VX = 27;
+  // Prefix
+  XPN = 28;
+  // Root
+  XR = 29;
+  // Adjective Suffix
+  XSA = 30;
+  // Noun Suffix
+  XSN = 31;
+  // Verb Suffix
+  XSV = 32;
+}
+
 message Dictionary {
   message Morpheme {
     string surface = 1;
     int32 leftId = 2;
     int32 rightId = 3;
     int32 wordCost = 4;
-    repeated int32 posTag = 5;
+    repeated POSTag posTag = 5;
   }
 
   repeated Morpheme morphemes = 1;

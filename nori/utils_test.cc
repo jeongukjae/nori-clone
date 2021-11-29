@@ -66,9 +66,16 @@ TEST(TestUtils, simpleAtoi) {
   ASSERT_EQ(internal::simpleAtoi("3456"), 3456);
 }
 
-TEST(TestUtils, resolveType) {
-  ASSERT_EQ(resolveType("*"), nori::POSType::MORPHEME);
-  ASSERT_EQ(resolveType("Inflect"), nori::POSType::INFLECT);
-  ASSERT_EQ(resolveType("Preanalysis"), nori::POSType::PREANALYSIS);
-  ASSERT_EQ(resolveType("Compound"), nori::POSType::COMPOUND);
+TEST(TestUtils, resolvePOSType) {
+  ASSERT_EQ(resolvePOSType("*"), nori::POSType::MORPHEME);
+  ASSERT_EQ(resolvePOSType("Inflect"), nori::POSType::INFLECT);
+  ASSERT_EQ(resolvePOSType("inflect"), nori::POSType::INFLECT);
+  ASSERT_EQ(resolvePOSType("Preanalysis"), nori::POSType::PREANALYSIS);
+  ASSERT_EQ(resolvePOSType("Compound"), nori::POSType::COMPOUND);
+}
+
+TEST(TestUtils, resolvePOSTag) {
+  ASSERT_EQ(resolvePOSTag("SSC"), nori::POSTag::SSC);
+  ASSERT_EQ(resolvePOSTag("SP"), nori::POSTag::SP);
+  ASSERT_EQ(resolvePOSTag("JX"), nori::POSTag::J);
 }
