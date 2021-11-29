@@ -25,6 +25,7 @@ absl::Status normalizeUTF8(const std::string input, std::string& output,
 void listDirectory(absl::string_view directory, std::vector<std::string>& paths,
                    std::function<bool(std::string)> functor);
 
+// join path
 std::string joinPath(absl::string_view directory, absl::string_view filename);
 
 // Parse csv from raw string `line` and put outputs into `entries`.
@@ -43,6 +44,9 @@ nori::POSType resolvePOSType(absl::string_view name);
 
 // resolve string pos tag to proto's enum value
 nori::POSTag resolvePOSTag(absl::string_view name);
+
+// check is directory
+bool isDirectory(const std::string& path);
 
 }  // namespace utils
 }  // namespace nori

@@ -2,6 +2,8 @@
 
 #include <dirent.h>
 #include <glog/logging.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
@@ -140,6 +142,14 @@ nori::POSTag resolvePOSTag(absl::string_view name) {
   CHECK(nori::POSTag_Parse(tagUpper, &output))
       << "Cannot resolve POS tag. name: " << name;
   return output;
+}
+
+bool isDirectory(const std::string& path) {
+  struct stat s;
+  if ((stat(path.c_str(), &s) == 0) && (s.st_mode & S_IFDIR)) {
+    return true;
+  }
+  return false;
 }
 
 }  // namespace utils

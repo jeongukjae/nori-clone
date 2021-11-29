@@ -84,3 +84,9 @@ TEST(TestUtils, resolvePOSTag) {
   ASSERT_EQ(resolvePOSTag("SP"), nori::POSTag::SP);
   ASSERT_EQ(resolvePOSTag("JX"), nori::POSTag::J);
 }
+
+TEST(TestUtils, isDirectory) {
+  ASSERT_TRUE(isDirectory("./testdata"));
+  ASSERT_FALSE(isDirectory("./testdata12"));
+  ASSERT_TRUE(isDirectory("./testdata/listDirectory"));
+}
