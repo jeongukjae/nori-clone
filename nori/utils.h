@@ -25,8 +25,10 @@ absl::Status normalizeUTF8(const std::string input, std::string& output,
 void listDirectory(absl::string_view directory, std::vector<std::string>& paths,
                    std::function<bool(std::string)> functor);
 
+std::string joinPath(absl::string_view directory, absl::string_view filename);
+
 // Parse csv from raw string `line` and put outputs into `entries`.
-void parsCSVLine(std::string line, std::vector<std::string>& entries);
+void parseCSVLine(std::string line, std::vector<std::string>& entries);
 
 // trim whitespaces of input text
 void trimWhitespaces(std::string& text);

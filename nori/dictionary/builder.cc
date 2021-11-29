@@ -109,7 +109,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(
         CHECK(status.ok()) << "Cannot normalize string " << line;
         line = normalized;
       }
-      utils::internal::parsCSVLine(line, entry);
+      utils::internal::parseCSVLine(line, entry);
 
       CHECK(entry.size() >= 12)
           << "Entry in CSV is not valid (12 field values expected): " << line;

@@ -46,18 +46,13 @@ absl::Status normalizeUTF8(const std::string input, std::string& output,
 void listDirectory(absl::string_view directory, std::vector<std::string>& paths,
                    std::function<bool(std::string)> functor) {
   std::string direcotryString = absl::StrCat(directory);
-  bool isDirectoryEndsWithSlash = absl::EndsWith(directory, "/");
   dirent* entry;
   DIR* dir = opendir(direcotryString.c_str());
   std::string path;
 
   if (dir != NULL) {
     while ((entry = readdir(dir)) != NULL) {
-      if (isDirectoryEndsWithSlash) {
-        path = absl::StrCat(directory, entry->d_name);
-      } else {
-        path = absl::StrCat(directory, "/", entry->d_name);
-      }
+      path = joinPath(directory, entry->d_name);
 
       if (functor(path)) {
         paths.push_back(path);
@@ -69,7 +64,12 @@ void listDirectory(absl::string_view directory, std::vector<std::string>& paths,
   std::sort(paths.begin(), paths.end());
 }
 
-void parsCSVLine(std::string line, std::vector<std::string>& entries) {
+std::string joinPath(absl::string_view directory, absl::string_view filename) {
+  if (absl::EndsWith(directory, "/")) return absl::StrCat(directory, filename);
+  return absl::StrCat(directory, "/", filename);
+}
+
+void parseCSVLine(std::string line, std::vector<std::string>& entries) {
   bool insideQuote = false;
   int start = 0;
 
