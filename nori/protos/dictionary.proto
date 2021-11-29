@@ -92,12 +92,19 @@ enum POSTag {
 }
 
 message Dictionary {
-  message Morpheme {
+  message ExprToken {
     string surface = 1;
-    int32 leftId = 2;
-    int32 rightId = 3;
-    int32 wordCost = 4;
+    POSTag posTag = 2;
+  }
+
+  message Morpheme {
+    int32 leftId = 1;
+    int32 rightId = 2;
+    int32 wordCost = 3;
+    POSType posType = 4;
     repeated POSTag posTag = 5;
+    repeated ExprToken expression = 6;
+    string reading = 7;
   }
 
   repeated Morpheme morphemes = 1;

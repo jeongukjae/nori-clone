@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "absl/strings/match.h"
+#include "absl/strings/str_split.h"
 #include "nori/protos/dictionary.pb.h"
 #include "nori/utils.h"
 
@@ -16,24 +17,44 @@ namespace builder {
 
 namespace internal {
 
-void convertMeCabCSVEntry(const std::vector<std::string> entry,
+void convertMeCabCSVEntry(const std::vector<std::string>& entry,
                           nori::Dictionary::Morpheme* morpheme) {
   morpheme->set_leftid(utils::internal::simpleAtoi(entry.at(1)));
   morpheme->set_rightid(utils::internal::simpleAtoi(entry.at(2)));
   morpheme->set_wordcost(utils::internal::simpleAtoi(entry.at(3)));
 
   const POSType posType = utils::resolvePOSType(entry.at(8));
+  morpheme->set_postype(posType);
+
   POSTag rightPOS, leftPOS;
 
   if (posType == POSType::MORPHEME || posType == POSType::COMPOUND ||
       entry.at(9) == "*") {
-    rightPOS = leftPOS = utils::resolvePOSTag(entry[4]);
+    rightPOS = leftPOS = utils::resolvePOSTag(entry.at(4));
     CHECK(entry.at(9) == "*" && entry.at(10) == "*")
         << "Cannot parse MeCab CSV entry. term: " << entry.at(0)
         << ", left pos: " << entry.at(9) << ", right pos: " << entry.at(10);
   } else {
-    leftPOS = utils::resolvePOSTag(entry[9]);
-    rightPOS = utils::resolvePOSTag(entry[10]);
+    leftPOS = utils::resolvePOSTag(entry.at(9));
+    rightPOS = utils::resolvePOSTag(entry.at(10));
+  }
+
+  if (entry.at(7) != "*" && (entry.at(0) != entry.at(7)))
+    morpheme->set_reading(entry.at(7));
+
+  if (entry.at(11) != "*") {
+    std::string expression = entry.at(11);
+    std::vector<std::string> expressionTokens = absl::StrSplit(expression, '+');
+    for (const auto& expressionToken : expressionTokens) {
+      std::vector<std::string> tokenSplit =
+          absl::StrSplit(expressionToken, '/');
+      CHECK(tokenSplit.size() == 3)
+          << "Cannot parse expression: " << expression;
+
+      const auto token = morpheme->add_expression();
+      token->set_surface(tokenSplit.at(0));
+      token->set_postag(utils::resolvePOSTag(tokenSplit.at(1)));
+    }
   }
 }
 
