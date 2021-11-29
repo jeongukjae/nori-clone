@@ -1,12 +1,15 @@
 #ifndef __NORI_DICTIONARY_BUILDER_H__
 #define __NORI_DICTIONARY_BUILDER_H__
 
+#include <darts.h>
+
 #include <functional>
 #include <memory>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "nori/protos/dictionary.pb.h"
 
 namespace nori {
 namespace dictionary {
@@ -14,17 +17,24 @@ namespace builder {
 
 namespace internal {
 
-// list all files in the directory. This function returns paths as sorted order.
-// If functor returns false for given paths, this function will filter them.
+// Convert MeCab's csv row into morpheme proto
 //
-// Example:
-//   internal::listDirectory("./testdata/listDirectory", paths,
-//     [](absl::string_view path) { return true; });
-void listDirectory(absl::string_view directory, std::vector<std::string>& paths,
-                   std::function<bool(std::string)> functor);
-
-// Parse csv from raw string `line` and put outputs into `entries`.
-void parsCSVLine(std::string line, std::vector<std::string>& entries);
+// mecab-ko-dic features
+//
+//  * 0   - surface
+//  * 1   - left cost
+//  * 2   - right cost
+//  * 3   - word cost
+//  * 4   - part of speech0+part of speech1+...
+//  * 5   - semantic class
+//  * 6   - T if the last character of the surface form has a coda, F otherwise
+//  * 7   - reading
+//  * 8   - POS type (*, Compound, Inflect, Preanalysis)
+//  * 9   - left POS
+//  * 10  - right POS
+//  * 11  - expression
+void convertMeCabCSVEntry(const std::vector<std::string> entry,
+                          nori::Dictionary::Morpheme* morpheme);
 
 }  // namespace internal
 
@@ -68,6 +78,7 @@ class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
  private:
   bool normalize;
   const std::string normalizationForm;
+  std::unique_ptr<Darts::DoubleArray> trie;
 };
 
 // Read unk.def and char.def and convert them to nori's dictionary format.

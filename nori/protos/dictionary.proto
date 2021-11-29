@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package nori;
+
+enum POSType {
+  // A simple morpheme.
+  MORPHEME = 0;
+  // Compound noun.
+  COMPOUND = 1;
+  // Inflected token.
+  INFLECT = 2;
+  // Pre-analysis token.
+  PREANALYSIS = 3;
+}
+
+message Dictionary {
+  message Morpheme {
+    string surface = 1;
+    int32 leftId = 2;
+    int32 rightId = 3;
+    int32 wordCost = 4;
+    repeated int32 posTag = 5;
+  }
+
+  repeated Morpheme morphemes = 1;
+}

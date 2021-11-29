@@ -2,23 +2,11 @@
 #define __NORI_CONSTANT_H__
 
 #include <absl/strings/string_view.h>
+#include <glog/logging.h>
 
 namespace nori {
 namespace POS {
 namespace Type {
-
-enum {
-  // A simple morpheme.
-  MORPHEME,
-  // Compound noun.
-  COMPOUND,
-  // Inflected token.
-  INFLECT,
-  // Pre-analysis token.
-  PREANALYSIS,
-};
-
-}
 
 //
 class Tag {

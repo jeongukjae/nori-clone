@@ -1,6 +1,5 @@
 #include "nori/dictionary/builder.h"
 
-#include <dirent.h>
 #include <glog/logging.h>
 
 #include <algorithm>
@@ -8,10 +7,7 @@
 #include <sstream>
 
 #include "absl/strings/match.h"
-#include "absl/strings/str_cat.h"
-#include "icu4c/source/common/unicode/errorcode.h"
-#include "icu4c/source/common/unicode/normalizer2.h"
-#include "icu4c/source/common/unicode/unistr.h"
+#include "nori/utils.h"
 
 namespace nori {
 namespace dictionary {
@@ -19,83 +15,11 @@ namespace builder {
 
 namespace internal {
 
-absl::Status normalizeUTF8(const std::string input, std::string& output,
-                           absl::string_view normalizationForm) {
-  icu::ErrorCode icuError;
-  const icu::Normalizer2* normalizer;
-  // TODO(builder): add normalization form
-  if (normalizationForm == "NFKC") {
-    normalizer = icu::Normalizer2::getNFKCInstance(icuError);
-  } else {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "Cannot find proper normalizer for form ", normalizationForm));
-  }
-
-  if (!icuError.isSuccess())
-    return absl::InternalError(
-        absl::StrCat("Cannot normalize unicode strings. Cannot get ",
-                     normalizationForm, " Instance."));
-
-  icu::StringByteSink<std::string> byte_sink(&output);
-  normalizer->normalizeUTF8(0, icu::StringPiece(input.c_str(), input.size()),
-                            byte_sink, nullptr, icuError);
-
-  if (!icuError.isSuccess())
-    return absl::InternalError(
-        "Cannot normalize unicode strings. Cannot normalize input string.");
-
-  return absl::OkStatus();
-}
-
-void listDirectory(absl::string_view directory, std::vector<std::string>& paths,
-                   std::function<bool(std::string)> functor) {
-  std::string direcotryString = absl::StrCat(directory);
-  bool isDirectoryEndsWithSlash = absl::EndsWith(directory, "/");
-  dirent* entry;
-  DIR* dir = opendir(direcotryString.c_str());
-  std::string path;
-
-  if (dir != NULL) {
-    while ((entry = readdir(dir)) != NULL) {
-      if (isDirectoryEndsWithSlash) {
-        path = absl::StrCat(directory, entry->d_name);
-      } else {
-        path = absl::StrCat(directory, "/", entry->d_name);
-      }
-
-      if (functor(path)) {
-        paths.push_back(path);
-      }
-    }
-
-    closedir(dir);
-  }
-  std::sort(paths.begin(), paths.end());
-}
-
-void parsCSVLine(std::string line, std::vector<std::string>& entries) {
-  bool insideQuote = false;
-  int start = 0;
-
-  for (int index = 0; index < line.length(); index++) {
-    char c = line.at(index);
-
-    if (c == '"') {
-      insideQuote = !insideQuote;
-    } else if (c == ',' && !insideQuote) {
-      int length = index - start, offset = 0;
-      while (offset < (index - start) / 2 &&
-             (line.at(start + offset) == '"' &&
-              line.at(index - offset - 1) == '"')) {
-        length -= 2;
-        start += 1;
-        offset++;
-      }
-      entries.push_back(line.substr(start, length));
-      start = index + 1;
-    }
-  }
-  entries.push_back(line.substr(start));
+void convertMeCabCSVEntry(const std::vector<std::string> entry,
+                          nori::Dictionary::Morpheme* morpheme) {
+  morpheme->set_leftid(utils::internal::simpleAtoi(entry.at(1)));
+  morpheme->set_rightid(utils::internal::simpleAtoi(entry.at(2)));
+  morpheme->set_wordcost(utils::internal::simpleAtoi(entry.at(3)));
 }
 
 }  // namespace internal
@@ -126,38 +50,49 @@ void MeCabDictionaryBuilder::build(absl::string_view inputDirectory,
 absl::Status TokenInfoDictionaryBuilder::parse(
     absl::string_view inputDirectory) {
   std::vector<std::string> paths;
-  internal::listDirectory(inputDirectory, paths, [](absl::string_view path) {
-    return absl::EndsWithIgnoreCase(path, ".csv");
-  });
+  utils::internal::listDirectory(
+      inputDirectory, paths, [](absl::string_view path) {
+        return absl::EndsWithIgnoreCase(path, ".csv");
+      });
 
-  std::vector<std::vector<std::string>> allLines(400000);
+  std::vector<std::vector<std::string>> entries(100000);
   for (const auto& path : paths) {
     std::ifstream ifs(path);
     CHECK(!ifs.fail()) << path << " is missing";
 
     std::string line;
-    std::vector<std::string> entries;
+    std::vector<std::string> entry(12);
     while (std::getline(ifs, line)) {
-      internal::parsCSVLine(line, entries);
+      utils::internal::parsCSVLine(line, entry);
 
-      CHECK(entries.size() >= 12)
+      CHECK(entry.size() >= 12)
           << "Entry in CSV is not valid (12 field values expected): " << line;
+      utils::internal::trimWhitespaces(entry[0]);
 
       if (normalize) {
-        for (int i = 0; i < entries.size(); i++) {
+        for (int i = 0; i < entry.size(); i++) {
           std::string normalized;
-          auto status = internal::normalizeUTF8(entries[i], normalized,
-                                                normalizationForm);
-          CHECK(status.ok()) << "Cannot normalize string " << entries[i];
-          entries[i] = normalized;
+          auto status = utils::internal::normalizeUTF8(entry[i], normalized,
+                                                       normalizationForm);
+          CHECK(status.ok()) << "Cannot normalize string " << entry[i];
+          entry[i] = normalized;
         }
       }
-      allLines.push_back(entries);
+      entries.push_back(entry);
     }
   }
 
+  std::stable_sort(entries.begin(), entries.end(),
+                   [](std::vector<std::string> a, std::vector<std::string> b) {
+                     return a[0].compare(b[0]) < 0;
+                   });
+
+  trie = std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
   // TODO(builder): continue here
-  // build fst
+  nori::Dictionary dictionary;
+  for (auto entry : entries) {
+    internal::convertMeCabCSVEntry(entry, dictionary.add_morphemes());
+  }
 
   return absl::OkStatus();
 }
