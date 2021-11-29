@@ -12,6 +12,7 @@ bool isDirectory(const std::string& path);
 DEFINE_string(mecab_dic, "",
               "Path to mecab dictionary. This cli program reads "
               "{matrix,char,unk}.def and all CSV files");
+DEFINE_string(output, "./output", "output directory for nori dictionary");
 DEFINE_string(normalization_form, "NFKC",
               "Unicode normalization form for dictionary of MeCab");
 DEFINE_bool(normalize, true, "whether to normalize dictionary of MeCab");
@@ -30,6 +31,7 @@ int main(int argc, char** argv) {
 
   nori::dictionary::builder::MeCabDictionaryBuilder builder(
       FLAGS_normalize, FLAGS_normalization_form);
+  builder.build(FLAGS_mecab_dic, FLAGS_output);
 
   google::protobuf::ShutdownProtobufLibrary();
 }

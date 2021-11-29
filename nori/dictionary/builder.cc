@@ -91,64 +91,77 @@ absl::Status TokenInfoDictionaryBuilder::parse(
         return absl::EndsWithIgnoreCase(path, ".csv");
       });
 
-  std::vector<std::vector<std::string>> entries(100000);
+  std::vector<std::vector<std::string>> entries;
+  entries.reserve(1000000);
   for (const auto& path : paths) {
     std::ifstream ifs(path);
-    CHECK(!ifs.fail()) << path << " is missing";
+    CHECK(!ifs.fail()) << path << " is missing!!";
 
     std::string line;
-    std::vector<std::string> entry(12);
     while (std::getline(ifs, line)) {
+      std::vector<std::string> entry;
+      entry.reserve(12);
+
+      if (normalize) {
+        std::string normalized;
+        auto status =
+            utils::internal::normalizeUTF8(line, normalized, normalizationForm);
+        CHECK(status.ok()) << "Cannot normalize string " << line;
+        line = normalized;
+      }
       utils::internal::parsCSVLine(line, entry);
 
       CHECK(entry.size() >= 12)
           << "Entry in CSV is not valid (12 field values expected): " << line;
-      utils::internal::trimWhitespaces(entry.at(0));
+      utils::internal::trimWhitespaces(entry[0]);
 
-      if (normalize) {
-        for (int i = 0; i < entry.size(); i++) {
-          std::string normalized;
-          auto status = utils::internal::normalizeUTF8(entry[i], normalized,
-                                                       normalizationForm);
-          CHECK(status.ok()) << "Cannot normalize string " << entry[i];
-          entry[i] = normalized;
-        }
-      }
       entries.push_back(entry);
     }
+
+    LOG(INFO) << "Read " << path << ". # terms: " << entries.size();
   }
 
-  std::stable_sort(entries.begin(), entries.end(),
-                   [](std::vector<std::string> a, std::vector<std::string> b) {
-                     return a[0].compare(b[0]) < 0;
-                   });
+  LOG(INFO) << "Sort all terms";
+  std::stable_sort(
+      entries.begin(), entries.end(),
+      [](const std::vector<std::string> a, const std::vector<std::string> b) {
+        return a[0] < b[0];
+      });
 
   std::vector<const char*> keys;
-  std::vector<size_t> keyLengths;
-  std::vector<int> values;
+  keys.reserve(entries.size());
+
   std::string lastValue = "";
-  int entryValue = 0;
+  int entryValue = -1;
   auto morphemeMap = dictionary.mutable_morphememap();
 
-  for (const auto& entry : entries) {
-    const auto surfaceForm = entry.at(0);
-    if (surfaceForm != lastValue) {
+  for (int i = 0; i < entries.size(); i++) {
+    if (entries[i][0] != lastValue) {
+      keys.push_back(entries[i][0].c_str());
+      lastValue = entries[i][0];
+
       nori::Dictionary::MorphemeList morphemeList;
-      (*morphemeMap)[entryValue] = morphemeList;
-      keys.push_back(surfaceForm.c_str());
-      keyLengths.push_back(surfaceForm.length());
-      values.push_back(entryValue++);
-      lastValue = surfaceForm;
+      (*morphemeMap)[++entryValue] = morphemeList;
     }
 
-    internal::convertMeCabCSVEntry(entry,
+    internal::convertMeCabCSVEntry(entries[i],
                                    (*morphemeMap)[entryValue].add_morphemes());
   }
 
+  LOG(INFO) << "Build trie. keys[0]: " << keys[0] << ", keys[10]: " << keys[10];
   trie = std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
-  CHECK(trie->build(keys.size(), keys.data(), keyLengths.data(),
-                    values.data()) == 0)
+  CHECK(trie->build(keys.size(), const_cast<char**>(&keys[0]), nullptr, nullptr,
+                    [](size_t current, size_t total) {
+                      if (current % 100000 == 0)
+                        LOG(INFO) << current << "/" << total;
+                      return 0;
+                    }) == 0)
       << "Cannot build trie.";
+
+  // search 10'th item to check Trie is built properly
+  int searchResult;
+  trie->exactMatchSearch(keys[10], searchResult);
+  CHECK(searchResult == 10) << "Trie isn't built properly.";
 
   return absl::OkStatus();
 }
