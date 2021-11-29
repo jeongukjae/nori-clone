@@ -103,7 +103,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(
 
       CHECK(entry.size() >= 12)
           << "Entry in CSV is not valid (12 field values expected): " << line;
-      utils::internal::trimWhitespaces(entry[0]);
+      utils::internal::trimWhitespaces(entry.at(0));
 
       if (normalize) {
         for (int i = 0; i < entry.size(); i++) {
@@ -123,12 +123,32 @@ absl::Status TokenInfoDictionaryBuilder::parse(
                      return a[0].compare(b[0]) < 0;
                    });
 
-  trie = std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
-  // TODO(builder): continue here
-  nori::Dictionary dictionary;
-  for (auto entry : entries) {
-    internal::convertMeCabCSVEntry(entry, dictionary.add_morphemes());
+  std::vector<const char*> keys;
+  std::vector<size_t> keyLengths;
+  std::vector<int> values;
+  std::string lastValue = "";
+  int entryValue = 0;
+  auto morphemeMap = dictionary.mutable_morphememap();
+
+  for (const auto& entry : entries) {
+    const auto surfaceForm = entry.at(0);
+    if (surfaceForm != lastValue) {
+      nori::Dictionary::MorphemeList morphemeList;
+      (*morphemeMap)[entryValue] = morphemeList;
+      keys.push_back(surfaceForm.c_str());
+      keyLengths.push_back(surfaceForm.length());
+      values.push_back(entryValue++);
+      lastValue = surfaceForm;
+    }
+
+    internal::convertMeCabCSVEntry(entry,
+                                   (*morphemeMap)[entryValue].add_morphemes());
   }
+
+  trie = std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
+  CHECK(trie->build(keys.size(), keys.data(), keyLengths.data(),
+                    values.data()) == 0)
+      << "Cannot build trie.";
 
   return absl::OkStatus();
 }

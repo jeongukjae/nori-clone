@@ -107,5 +107,9 @@ message Dictionary {
     string reading = 7;
   }
 
-  repeated Morpheme morphemes = 1;
+  message MorphemeList {
+    repeated Morpheme morphemes = 1;
+  }
+
+  map<int32, MorphemeList> morphemeMap = 1;
 }

@@ -52,7 +52,6 @@ class MeCabDictionaryBuilder {
  public:
   // An argument `normalize` means whether to normalize terms in dictionary.
   MeCabDictionaryBuilder(bool normalize, const std::string normalizationForm);
-  ~MeCabDictionaryBuilder();
 
   // This method builds dictionary from `inputDirectory` and write built
   // dictionary to `outputDirectory`.
@@ -79,6 +78,7 @@ class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
   bool normalize;
   const std::string normalizationForm;
   std::unique_ptr<Darts::DoubleArray> trie;
+  nori::Dictionary dictionary;
 };
 
 // Read unk.def and char.def and convert them to nori's dictionary format.
