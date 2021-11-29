@@ -31,6 +31,7 @@ cc_library(
         "//nori:utils",
         "//nori/protos:dictionary_cc_proto",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/strings",
         "@darts_clone",
     ],
 )
