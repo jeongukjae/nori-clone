@@ -145,3 +145,11 @@ message CharacterClassDictionary {
   }
   map<int32, CategoryDefinition> charCategoryDefinitionMap = 2;
 }
+
+message ConnectionCost {
+  message Costs {
+    repeated int32 cost = 1;
+  }
+
+  repeated Costs costLists = 1;
+}

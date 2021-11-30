@@ -5,6 +5,7 @@
 #define NORI_DICT_META_FILE "dictionary_meta.pb"
 #define NORI_UNK_FILE "unk.pb"
 #define NORI_CHAR_FILE "char.pb"
+#define NORI_CONNECTION_COST_FILE "costs.pb"
 
 namespace nori {
 namespace dictionary {}  // namespace dictionary

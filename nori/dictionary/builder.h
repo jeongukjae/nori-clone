@@ -101,6 +101,9 @@ class ConnectionCostsBuilder : public IDictionaryBuilder {
 
   absl::Status parse(absl::string_view inputDirectory);
   absl::Status save(absl::string_view outputDirectory);
+
+ private:
+  nori::ConnectionCost connectionCost;
 };
 
 }  // namespace builder

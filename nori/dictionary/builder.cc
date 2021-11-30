@@ -320,11 +320,60 @@ absl::Status UnknownDictionaryBuilder::save(absl::string_view output) {
 // ConnectionCostsBuilder class
 
 absl::Status ConnectionCostsBuilder::parse(absl::string_view input) {
+  const auto path = utils::internal::joinPath(input, "matrix.def");
+  LOG(INFO) << "Read connection costs (matrix.def) " << path;
+  std::ifstream ifs(path);
+  if (ifs.fail())
+    return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+
+  std::string line;
+  std::getline(ifs, line);
+  std::vector<std::string> dimensions = absl::StrSplit(line, " ");
+  if (dimensions.size() != 2) {
+    ifs.close();
+    return absl::InvalidArgumentError("Malformed matrix.def");
+  }
+  int forwardSize = utils::internal::simpleAtoi(dimensions[0]);
+  int backwardSize = utils::internal::simpleAtoi(dimensions[1]);
+  if (forwardSize <= 0 || backwardSize <= 0) {
+    ifs.close();
+    return absl::InvalidArgumentError("Malformed matrix.def");
+  }
+
+  LOG(INFO) << "Forward Size: " << forwardSize
+            << ", Backward Size: " << backwardSize;
+
+  std::vector<std::vector<int>> array(forwardSize);
+  for (int i = 0; i < forwardSize; i++) array[i].resize(backwardSize);
+
+  while (std::getline(ifs, line)) {
+    std::vector<std::string> splits = absl::StrSplit(line, " ");
+
+    if (splits.size() != 3) {
+      ifs.close();
+      return absl::InvalidArgumentError("Malformed matrix.def");
+    }
+
+    int forwardId = utils::internal::simpleAtoi(splits[0]);
+    int backwardId = utils::internal::simpleAtoi(splits[1]);
+    int cost = utils::internal::simpleAtoi(splits[2]);
+    array[forwardId][backwardId] = cost;
+  }
+
+  for (int i = 0; i < forwardSize; i++) {
+    auto costs = connectionCost.add_costlists();
+    for (int j = 0; j < backwardSize; j++) costs->add_cost(array[i][j]);
+  }
+
+  ifs.close();
   return absl::OkStatus();
 }
 
 absl::Status ConnectionCostsBuilder::save(absl::string_view output) {
-  return absl::OkStatus();
+  std::string path =
+      utils::internal::joinPath(output, NORI_CONNECTION_COST_FILE);
+  LOG(INFO) << "save connection costs dictionary file " << path;
+  return internal::serializeCompressedProtobuf(path, connectionCost);
 }
 
 }  // namespace builder
