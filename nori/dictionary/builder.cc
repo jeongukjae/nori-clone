@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <regex>
 #include <sstream>
 
 #include "absl/strings/match.h"
@@ -46,6 +47,21 @@ absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
   return absl::OkStatus();
 }
 
+// serialize protobuf message to path
+template <class T>
+absl::Status serializeProtobuf(const std::string& path, T message) {
+  std::ofstream ofs(path, std::ios::out | std::ios::binary);
+  if (ofs.fail())
+    return absl::PermissionDeniedError(absl::StrCat("Cannot open file ", path));
+
+  if (!message.SerializeToOstream(&ofs)) {
+    ofs.close();
+    return absl::InternalError("Cannot serialize dictionary");
+  }
+  ofs.close();
+  return absl::OkStatus();
+}
+
 }  // namespace internal
 
 // MeCabDictionary class
@@ -62,10 +78,10 @@ void MeCabDictionaryBuilder::build(absl::string_view input,
                                    absl::string_view output) {
   for (auto& builder : builders) {
     auto status = builder->parse(input);
-    CHECK(status.ok()) << "Unexpected error " << status;
+    CHECK(status.ok()) << status;
 
     status = builder->save(output);
-    CHECK(status.ok()) << "Unexpected error " << status;
+    CHECK(status.ok()) << status;
   }
 }
 
@@ -84,7 +100,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
   for (const auto& path : paths) {
     std::ifstream ifs(path);
     if (ifs.fail())
-      return absl::InvalidArgumentError(absl::StrCat(path, " is missing!!"));
+      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
 
     std::string line;
     while (std::getline(ifs, line)) {
@@ -165,15 +181,8 @@ absl::Status TokenInfoDictionaryBuilder::save(absl::string_view output) {
   {
     std::string path = utils::internal::joinPath(output, NORI_DICT_META_FILE);
     LOG(INFO) << "Write dictionary meta " << path;
-    std::ofstream ofs(path, std::ios::out | std::ios::binary);
-    if (ofs.fail())
-      return absl::PermissionDeniedError(
-          absl::StrCat("Cannot open file ", path));
-    if (!dictionary.SerializeToOstream(&ofs)) {
-      ofs.close();
-      return absl::InternalError("Cannot serialize dictionary");
-    }
-    ofs.close();
+    auto status = internal::serializeProtobuf(path, dictionary);
+    if (!status.ok()) return status;
   }
   return absl::OkStatus();
 }
@@ -223,6 +232,63 @@ absl::Status UnknownDictionaryBuilder::parse(absl::string_view input) {
   {
     const auto path = utils::internal::joinPath(input, "char.def");
     LOG(INFO) << "Read char.def " << path;
+    std::ifstream ifs(path);
+    if (ifs.fail())
+      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+
+    std::string line;
+    std::regex spaceRegex("\\s+");
+    std::regex commentRegex("\\s*#.*");
+    auto charCategoryDefinitionMap =
+        charDictionary.mutable_charcategorydefinitionmap();
+    auto codeToCategoryMap = charDictionary.mutable_codetocategorymap();
+
+    while (std::getline(ifs, line)) {
+      if (absl::StartsWith(line, "#")) continue;  // skip comments
+      utils::internal::trimWhitespaces(line);
+      if (line.length() == 0) continue;  // skip empty line
+
+      // remove comments
+      line = std::regex_replace(line, commentRegex, "");
+      line = std::regex_replace(line, spaceRegex, " ");
+
+      if (!absl::StartsWith(line, "0x")) {
+        // char category definition
+        std::vector<std::string> splits = absl::StrSplit(line, " ");
+        nori::CharacterClass chCls;
+        if (!nori::CharacterClass_Parse(splits[0], &chCls)) {
+          ifs.close();
+          return absl::InvalidArgumentError(
+              absl::StrCat("Cannot read character class ", splits[0]));
+        }
+        auto categoryDef = (*charCategoryDefinitionMap)[chCls];
+        categoryDef.set_invoke(utils::internal::simpleAtoi(splits[1]));
+        categoryDef.set_invoke(utils::internal::simpleAtoi(splits[2]));
+        categoryDef.set_invoke(utils::internal::simpleAtoi(splits[3]));
+      } else {
+        std::vector<std::string> tokens = absl::StrSplit(line, " ");
+
+        nori::CharacterClass chCls;
+        if (!nori::CharacterClass_Parse(tokens[1], &chCls)) {
+          ifs.close();
+          return absl::InvalidArgumentError(
+              absl::StrCat("Cannot read character class ", tokens[1]));
+        }
+
+        if (absl::StrContains(tokens[0], "..")) {
+          std::vector<std::string> codePoints = absl::StrSplit(tokens[0], "..");
+          int codePointFrom = utils::internal::simpleHexAtoi(codePoints[0]);
+          int codePointTo = utils::internal::simpleHexAtoi(codePoints[1]);
+
+          for (int i = codePointFrom; i <= codePointTo; i++)
+            (*codeToCategoryMap)[i] = chCls;
+        } else {
+          int codePoint = utils::internal::simpleHexAtoi(tokens[0]);
+          (*codeToCategoryMap)[codePoint] = chCls;
+        }
+      }
+    }
+    ifs.close();
   }
 
   return absl::OkStatus();
@@ -230,18 +296,19 @@ absl::Status UnknownDictionaryBuilder::parse(absl::string_view input) {
 
 absl::Status UnknownDictionaryBuilder::save(absl::string_view output) {
   {
-    std::string pbPath = utils::internal::joinPath(output, NORI_UNK_FILE);
-    LOG(INFO) << "save unk dictionary file" << pbPath;
-    std::ofstream ofs(pbPath, std::ios::out | std::ios::binary);
-    if (ofs.fail())
-      return absl::PermissionDeniedError(
-          absl::StrCat("Cannot open file ", pbPath));
-    if (!unkDictionary.SerializeToOstream(&ofs)) {
-      ofs.close();
-      return absl::InternalError("Cannot serialize dictionary");
-    }
-    ofs.close();
+    std::string path = utils::internal::joinPath(output, NORI_UNK_FILE);
+    LOG(INFO) << "save unk dictionary file " << path;
+    auto status = internal::serializeProtobuf(path, unkDictionary);
+    if (!status.ok()) return status;
   }
+
+  {
+    std::string path = utils::internal::joinPath(output, NORI_CHAR_FILE);
+    LOG(INFO) << "save char dictionary file " << path;
+    auto status = internal::serializeProtobuf(path, charDictionary);
+    if (!status.ok()) return status;
+  }
+
   return absl::OkStatus();
 }
 

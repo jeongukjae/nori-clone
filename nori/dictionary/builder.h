@@ -91,6 +91,7 @@ class UnknownDictionaryBuilder : public IDictionaryBuilder {
 
  private:
   nori::Dictionary unkDictionary;
+  nori::CharacterClassDictionary charDictionary;
 };
 
 // Read matrix.def and convert it to nori's dictionary format.

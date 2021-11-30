@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
   CHECK(nori::utils::isDirectory(FLAGS_mecab_dic))
       << "Cannot find directory " << FLAGS_mecab_dic;
   LOG(INFO) << "MeCab dictionary path: " << FLAGS_mecab_dic;
+  LOG(INFO) << "Output path: " << FLAGS_output;
   // TODO(jeongukjae) mkdir FLAGS_output
 
   nori::dictionary::builder::MeCabDictionaryBuilder builder(

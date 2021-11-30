@@ -78,6 +78,11 @@ TEST(TestUtils, simpleAtoi) {
   ASSERT_EQ(internal::simpleAtoi("3456"), 3456);
 }
 
+TEST(TestUtils, simpleHexAtoi) {
+  ASSERT_EQ(internal::simpleHexAtoi("0x12"), 18);
+  ASSERT_EQ(internal::simpleHexAtoi("0x3456"), 13398);
+}
+
 TEST(TestUtils, resolvePOSType) {
   ASSERT_EQ(resolvePOSType("*"), nori::POSType::MORPHEME);
   ASSERT_EQ(resolvePOSType("Inflect"), nori::POSType::INFLECT);

@@ -40,6 +40,9 @@ void trimWhitespaces(std::string& text);
 // wrapping absl::SimpleAtoi
 int simpleAtoi(absl::string_view input);
 
+// wrapping absl::SimpleHexAtoi
+int simpleHexAtoi(absl::string_view input);
+
 }  // namespace internal
 
 // resolve string pos type to proto's enum value

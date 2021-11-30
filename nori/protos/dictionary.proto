@@ -133,3 +133,15 @@ message ListDictionary {
 message Dictionary {
   map<int32, Morpheme> morphemeMap = 1;
 }
+
+message CharacterClassDictionary {
+  // character code to character class
+  map<int32, int32> codeToCategoryMap = 1;
+
+  message CategoryDefinition {
+    int32 invoke = 1;
+    int32 group = 2;
+    int32 length = 3;
+  }
+  map<int32, CategoryDefinition> charCategoryDefinitionMap = 2;
+}

@@ -121,6 +121,12 @@ int simpleAtoi(absl::string_view input) {
   return output;
 }
 
+int simpleHexAtoi(absl::string_view input) {
+  int output;
+  CHECK(absl::SimpleHexAtoi(input, &output)) << "Atoi error: " << input;
+  return output;
+}
+
 }  // namespace internal
 
 nori::POSType resolvePOSType(absl::string_view name) {
