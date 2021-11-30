@@ -22,7 +22,6 @@ TEST(TestInternal, convertMeCabCSVEntry) {
   ASSERT_EQ(morpheme.expression(1).postag(), nori::POSTag::NR);
   ASSERT_EQ(morpheme.expression(2).surface(), "닢");
   ASSERT_EQ(morpheme.expression(2).postag(), nori::POSTag::NNG);
-  ASSERT_EQ(morpheme.reading(), "");
 
   entry = {",", "1792", "3558", "788", "SC", "*", "*", "*", "*", "*", "*", "*"};
   nori::Dictionary::Morpheme morpheme2;
@@ -31,5 +30,4 @@ TEST(TestInternal, convertMeCabCSVEntry) {
 
   ASSERT_EQ(morpheme2.postype(), nori::POSType::MORPHEME);
   ASSERT_EQ(morpheme2.expression_size(), 0);
-  ASSERT_EQ(morpheme2.reading(), "");
 }

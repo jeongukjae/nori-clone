@@ -39,9 +39,6 @@ void convertMeCabCSVEntry(const std::vector<std::string>& entry,
     rightPOS = utils::resolvePOSTag(entry.at(10));
   }
 
-  if (entry.at(7) != "*" && (entry.at(0) != entry.at(7)))
-    morpheme->set_reading(entry.at(7));
-
   if (entry.at(11) != "*") {
     std::string expression = entry.at(11);
     std::vector<std::string> expressionTokens = absl::StrSplit(expression, '+');
@@ -52,8 +49,8 @@ void convertMeCabCSVEntry(const std::vector<std::string>& entry,
           << "Cannot parse expression: " << expression;
 
       const auto token = morpheme->add_expression();
-      token->set_surface(tokenSplit.at(0));
       token->set_postag(utils::resolvePOSTag(tokenSplit.at(1)));
+      token->set_surface(tokenSplit.at(0));
     }
   }
 }
@@ -121,7 +118,6 @@ absl::Status TokenInfoDictionaryBuilder::parse(
     LOG(INFO) << "Read " << path << ". # terms: " << entries.size();
   }
 
-  LOG(INFO) << "Sort all terms";
   std::stable_sort(
       entries.begin(), entries.end(),
       [](const std::vector<std::string> a, const std::vector<std::string> b) {
@@ -150,12 +146,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(
 
   LOG(INFO) << "Build trie. keys[0]: " << keys[0] << ", keys[10]: " << keys[10];
   trie = std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
-  CHECK(trie->build(keys.size(), const_cast<char**>(&keys[0]), nullptr, nullptr,
-                    [](size_t current, size_t total) {
-                      if (current % 100000 == 0)
-                        LOG(INFO) << current << "/" << total;
-                      return 0;
-                    }) == 0)
+  CHECK(trie->build(keys.size(), const_cast<char**>(&keys[0])) == 0)
       << "Cannot build trie.";
 
   // search 10'th item to check Trie is built properly
@@ -168,16 +159,22 @@ absl::Status TokenInfoDictionaryBuilder::parse(
 
 absl::Status TokenInfoDictionaryBuilder::save(
     absl::string_view outputDirectory) {
-  // TODO(jeongukjae): continue here
+  LOG(INFO) << "Save token info dictionary.";
   std::string arrayPath =
       utils::internal::joinPath(outputDirectory, NORI_DARTS_FILE_NAME);
   trie->save(arrayPath.c_str());
 
   std::string pbPath =
       utils::internal::joinPath(outputDirectory, NORI_DARTS_META_FILE_NAME);
+  std::string dictionaryMeta;
   std::ofstream ofs(pbPath, std::ios::out | std::ios::binary);
-  CHECK(!ofs.fail()) << "Cannot open file " << pbPath;
-  CHECK(dictionary.SerializeToOstream(&ofs)) << "Cannot serialize dictionary";
+  if (ofs.fail())
+    return absl::PermissionDeniedError(
+        absl::StrCat("Cannot open file ", pbPath));
+  if (!dictionary.SerializeToOstream(&ofs)) {
+    ofs.close();
+    return absl::InternalError("Cannot serialize dictionary");
+  }
   ofs.close();
   return absl::OkStatus();
 }
