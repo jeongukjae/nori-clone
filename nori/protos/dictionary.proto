@@ -91,24 +91,41 @@ enum POSTag {
   XSV = 32;
 }
 
-message Dictionary {
+enum CharacterClass {
+  NGRAM = 0;
+  DEFAULT = 1;
+  SPACE = 2;
+  SYMBOL = 3;
+  NUMERIC = 4;
+  ALPHA = 5;
+  CYRILLIC = 6;
+  GREEK = 7;
+  HIRAGANA = 8;
+  KATAKANA = 9;
+  KANJI = 10;
+  HANGUL = 11;
+  HANJA = 12;
+  HANJANUMERIC = 13;
+}
+
+message Morpheme {
   message ExprToken {
     POSTag posTag = 1;
     string surface = 2;
   }
 
-  message Morpheme {
-    int32 leftId = 1;
-    int32 rightId = 2;
-    int32 wordCost = 3;
-    POSType posType = 4;
-    repeated POSTag posTag = 5;
-    repeated ExprToken expression = 6;
-  }
+  int32 leftId = 1;
+  int32 rightId = 2;
+  int32 wordCost = 3;
+  POSType posType = 4;
+  repeated POSTag posTag = 5;
+  repeated ExprToken expression = 6;
+}
 
-  message MorphemeList {
-    repeated Morpheme morphemes = 1;
-  }
+message MorphemeList {
+  repeated Morpheme morphemes = 1;
+}
 
+message Dictionary {
   map<int32, MorphemeList> morphemeMap = 1;
 }

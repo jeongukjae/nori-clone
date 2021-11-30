@@ -34,7 +34,7 @@ namespace internal {
 //  * 10  - right POS
 //  * 11  - expression
 absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
-                                  nori::Dictionary::Morpheme* morpheme);
+                                  nori::Morpheme* morpheme);
 
 }  // namespace internal
 

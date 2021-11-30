@@ -19,7 +19,7 @@ namespace builder {
 namespace internal {
 
 absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
-                                  nori::Dictionary::Morpheme* morpheme) {
+                                  nori::Morpheme* morpheme) {
   morpheme->set_leftid(utils::internal::simpleAtoi(entry.at(1)));
   morpheme->set_rightid(utils::internal::simpleAtoi(entry.at(2)));
   morpheme->set_wordcost(utils::internal::simpleAtoi(entry.at(3)));
@@ -137,7 +137,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(
       keys.push_back(entries[i][0].c_str());
       lastValue = entries[i][0];
 
-      nori::Dictionary::MorphemeList morphemeList;
+      nori::MorphemeList morphemeList;
       (*morphemeMap)[++entryValue] = morphemeList;
     }
 
