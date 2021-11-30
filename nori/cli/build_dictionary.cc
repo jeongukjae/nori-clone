@@ -1,5 +1,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "absl/strings/str_cat.h"
 #include "nori/dictionary/builder.h"
@@ -26,11 +28,14 @@ int main(int argc, char** argv) {
       << "Cannot find directory " << FLAGS_mecab_dic;
   LOG(INFO) << "MeCab dictionary path: " << FLAGS_mecab_dic;
   LOG(INFO) << "Output path: " << FLAGS_output;
-  // TODO(jeongukjae) mkdir FLAGS_output
+  if (!nori::utils::isDirectory(FLAGS_output)) {
+    mkdir(FLAGS_output.c_str(), 0755);
+  }
 
   nori::dictionary::builder::MeCabDictionaryBuilder builder(
       FLAGS_normalize, FLAGS_normalization_form);
   builder.build(FLAGS_mecab_dic, FLAGS_output);
 
   google::protobuf::ShutdownProtobufLibrary();
+  LOG(INFO) << "Done.";
 }
