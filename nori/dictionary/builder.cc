@@ -168,6 +168,10 @@ absl::Status TokenInfoDictionaryBuilder::parse(
 
 absl::Status TokenInfoDictionaryBuilder::save(
     absl::string_view outputDirectory) {
+  // TODO(jeongukjae): continue here
+  std::string arrayPath =
+      utils::internal::joinPath(outputDirectory, DARTS_FILE_NAME);
+  trie->save(arrayPath.c_str());
   return absl::OkStatus();
 }
 
