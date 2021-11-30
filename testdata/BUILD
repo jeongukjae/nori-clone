@@ -10,3 +10,8 @@ filegroup(
     name = "listDirectory",
     srcs = glob(["listDirectory/*"]),
 )
+
+filegroup(
+    name = "tokenInfoDictionary",
+    srcs = glob(["tokenInfoDictionary/*"]),
+)

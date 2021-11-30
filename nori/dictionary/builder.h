@@ -69,7 +69,6 @@ class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
   TokenInfoDictionaryBuilder(const bool normalize,
                              const std::string normalizationForm)
       : normalize(normalize), normalizationForm(normalizationForm) {}
-  ~TokenInfoDictionaryBuilder() {}
 
   absl::Status parse(absl::string_view inputDirectory);
   absl::Status save(absl::string_view outputDirectory);
@@ -84,21 +83,25 @@ class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
 // Read unk.def and char.def and convert them to nori's dictionary format.
 class UnknownDictionaryBuilder : public IDictionaryBuilder {
  public:
-  ~UnknownDictionaryBuilder() {}
-
   absl::Status parse(absl::string_view inputDirectory);
   absl::Status save(absl::string_view outputDirectory);
 
  private:
   nori::Dictionary unkDictionary;
+};
+
+class CharacterClassDictionaryBuilder : public IDictionaryBuilder {
+ public:
+  absl::Status parse(absl::string_view inputDirectory);
+  absl::Status save(absl::string_view outputDirectory);
+
+ private:
   nori::CharacterClassDictionary charDictionary;
 };
 
 // Read matrix.def and convert it to nori's dictionary format.
 class ConnectionCostsBuilder : public IDictionaryBuilder {
  public:
-  ~ConnectionCostsBuilder() {}
-
   absl::Status parse(absl::string_view inputDirectory);
   absl::Status save(absl::string_view outputDirectory);
 

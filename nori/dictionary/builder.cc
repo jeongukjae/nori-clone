@@ -76,6 +76,7 @@ MeCabDictionaryBuilder::MeCabDictionaryBuilder(
   builders.emplace_back(
       new TokenInfoDictionaryBuilder(normalize, normalizationForm));
   builders.emplace_back(new UnknownDictionaryBuilder());
+  builders.emplace_back(new CharacterClassDictionaryBuilder());
   builders.emplace_back(new ConnectionCostsBuilder());
 }
 
@@ -97,6 +98,9 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
   utils::internal::listDirectory(input, paths, [](absl::string_view path) {
     return absl::EndsWithIgnoreCase(path, ".csv");
   });
+  if (paths.size() == 0)
+    return absl::InvalidArgumentError(
+        absl::StrCat("Cannot find any csv files, ", input));
 
   std::vector<std::vector<std::string>> entries;
   entries.reserve(1000000);
@@ -152,9 +156,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
     if (entries[i][0] != lastValue) {
       keys.push_back(entries[i][0].c_str());
       lastValue = entries[i][0];
-
-      nori::MorphemeList morphemeList;
-      (*morphemeListMap)[++entryValue] = morphemeList;
+      entryValue++;
     }
 
     auto status = internal::convertMeCabCSVEntry(
@@ -195,126 +197,121 @@ absl::Status TokenInfoDictionaryBuilder::save(absl::string_view output) {
 // UnknownDictionaryBuilder class
 
 absl::Status UnknownDictionaryBuilder::parse(absl::string_view input) {
-  {
-    const auto path = utils::internal::joinPath(input, "unk.def");
-    LOG(INFO) << "Read unk dicitonary " << path;
-    std::ifstream ifs(path);
-    if (ifs.fail())
-      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+  const auto path = utils::internal::joinPath(input, "unk.def");
+  LOG(INFO) << "Read unk dicitonary " << path;
+  std::ifstream ifs(path);
+  if (ifs.fail())
+    return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
 
-    auto* morphemeMap = unkDictionary.mutable_morphememap();
-    std::vector<std::vector<std::string>> allLines;
-    const auto append = [&morphemeMap](std::string line) -> absl::Status {
-      std::vector<std::string> entry = utils::internal::parseCSVLine(line);
-      nori::CharacterClass chClass;
-      if (!nori::CharacterClass_Parse(entry[0], &chClass)) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("Cannot get character class ", entry[0]));
-      }
-      (*morphemeMap)[chClass].set_leftid(
-          utils::internal::simpleAtoi(entry.at(1)));
-      (*morphemeMap)[chClass].set_rightid(
-          utils::internal::simpleAtoi(entry.at(2)));
-      (*morphemeMap)[chClass].set_wordcost(
-          utils::internal::simpleAtoi(entry.at(3)));
+  auto* morphemeMap = unkDictionary.mutable_morphememap();
+  std::vector<std::vector<std::string>> allLines;
+  const auto append = [&morphemeMap](std::string line) -> absl::Status {
+    std::vector<std::string> entry = utils::internal::parseCSVLine(line);
+    nori::CharacterClass chClass;
+    if (!nori::CharacterClass_Parse(entry[0], &chClass)) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Cannot get character class ", entry[0]));
+    }
+    (*morphemeMap)[chClass].set_leftid(
+        utils::internal::simpleAtoi(entry.at(1)));
+    (*morphemeMap)[chClass].set_rightid(
+        utils::internal::simpleAtoi(entry.at(2)));
+    (*morphemeMap)[chClass].set_wordcost(
+        utils::internal::simpleAtoi(entry.at(3)));
 
-      return absl::OkStatus();
+    return absl::OkStatus();
+  };
+
+  // put ngram definition
+  append("NGRAM,1798,3559,3677,SY,*,*,*,*,*,*,*").IgnoreError();
+  std::string line;
+  while (std::getline(ifs, line)) {
+    auto status = append(line);
+    if (!status.ok()) {
+      ifs.close();
+      return status;
     };
-
-    // put ngram definition
-    append("NGRAM,1798,3559,3677,SY,*,*,*,*,*,*,*").IgnoreError();
-    std::string line;
-    while (std::getline(ifs, line)) {
-      auto status = append(line);
-      if (!status.ok()) {
-        ifs.close();
-        return status;
-      };
-    }
-    ifs.close();
   }
-
-  {
-    const auto path = utils::internal::joinPath(input, "char.def");
-    LOG(INFO) << "Read char.def " << path;
-    std::ifstream ifs(path);
-    if (ifs.fail())
-      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
-
-    std::string line;
-    std::regex spaceRegex("\\s+");
-    std::regex commentRegex("\\s*#.*");
-    auto charCategoryDefinitionMap =
-        charDictionary.mutable_charcategorydefinitionmap();
-    auto codeToCategoryMap = charDictionary.mutable_codetocategorymap();
-
-    while (std::getline(ifs, line)) {
-      if (absl::StartsWith(line, "#")) continue;  // skip comments
-      utils::internal::trimWhitespaces(line);
-      if (line.length() == 0) continue;  // skip empty line
-
-      // remove comments
-      line = std::regex_replace(line, commentRegex, "");
-      line = std::regex_replace(line, spaceRegex, " ");
-
-      if (!absl::StartsWith(line, "0x")) {
-        // char category definition
-        std::vector<std::string> splits = absl::StrSplit(line, " ");
-        nori::CharacterClass chCls;
-        if (!nori::CharacterClass_Parse(splits[0], &chCls)) {
-          ifs.close();
-          return absl::InvalidArgumentError(
-              absl::StrCat("Cannot read character class ", splits[0]));
-        }
-        auto categoryDef = (*charCategoryDefinitionMap)[chCls];
-        categoryDef.set_invoke(utils::internal::simpleAtoi(splits[1]));
-        categoryDef.set_invoke(utils::internal::simpleAtoi(splits[2]));
-        categoryDef.set_invoke(utils::internal::simpleAtoi(splits[3]));
-      } else {
-        std::vector<std::string> tokens = absl::StrSplit(line, " ");
-
-        nori::CharacterClass chCls;
-        if (!nori::CharacterClass_Parse(tokens[1], &chCls)) {
-          ifs.close();
-          return absl::InvalidArgumentError(
-              absl::StrCat("Cannot read character class ", tokens[1]));
-        }
-
-        if (absl::StrContains(tokens[0], "..")) {
-          std::vector<std::string> codePoints = absl::StrSplit(tokens[0], "..");
-          int codePointFrom = utils::internal::simpleHexAtoi(codePoints[0]);
-          int codePointTo = utils::internal::simpleHexAtoi(codePoints[1]);
-
-          for (int i = codePointFrom; i <= codePointTo; i++)
-            (*codeToCategoryMap)[i] = chCls;
-        } else {
-          int codePoint = utils::internal::simpleHexAtoi(tokens[0]);
-          (*codeToCategoryMap)[codePoint] = chCls;
-        }
-      }
-    }
-    ifs.close();
-  }
+  ifs.close();
 
   return absl::OkStatus();
 }
 
 absl::Status UnknownDictionaryBuilder::save(absl::string_view output) {
-  {
-    std::string path = utils::internal::joinPath(output, NORI_UNK_FILE);
-    LOG(INFO) << "save unk dictionary file " << path;
-    auto status = internal::serializeCompressedProtobuf(path, unkDictionary);
-    if (!status.ok()) return status;
-  }
+  std::string path = utils::internal::joinPath(output, NORI_UNK_FILE);
+  LOG(INFO) << "save unk dictionary file " << path;
+  return internal::serializeCompressedProtobuf(path, unkDictionary);
+}
 
-  {
-    std::string path = utils::internal::joinPath(output, NORI_CHAR_FILE);
-    LOG(INFO) << "save char dictionary file " << path;
-    auto status = internal::serializeCompressedProtobuf(path, charDictionary);
-    if (!status.ok()) return status;
-  }
+// CharacterClassDictionaryBuilder class
 
+absl::Status CharacterClassDictionaryBuilder::parse(absl::string_view input) {
+  const auto path = utils::internal::joinPath(input, "char.def");
+  LOG(INFO) << "Read char.def " << path;
+  std::ifstream ifs(path);
+  if (ifs.fail())
+    return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+
+  std::string line;
+  std::regex spaceRegex("\\s+");
+  std::regex commentRegex("\\s*#.*");
+  auto charCategoryDefinitionMap =
+      charDictionary.mutable_charcategorydefinitionmap();
+  auto codeToCategoryMap = charDictionary.mutable_codetocategorymap();
+
+  while (std::getline(ifs, line)) {
+    if (absl::StartsWith(line, "#")) continue;  // skip comments
+    utils::internal::trimWhitespaces(line);
+    if (line.length() == 0) continue;  // skip empty line
+
+    // remove comments
+    line = std::regex_replace(line, commentRegex, "");
+    line = std::regex_replace(line, spaceRegex, " ");
+
+    if (!absl::StartsWith(line, "0x")) {
+      // char category definition
+      std::vector<std::string> splits = absl::StrSplit(line, " ");
+      nori::CharacterClass chCls;
+      if (!nori::CharacterClass_Parse(splits[0], &chCls)) {
+        ifs.close();
+        return absl::InvalidArgumentError(
+            absl::StrCat("Cannot read character class ", splits[0]));
+      }
+      auto categoryDef = (*charCategoryDefinitionMap)[chCls];
+      categoryDef.set_invoke(utils::internal::simpleAtoi(splits[1]));
+      categoryDef.set_invoke(utils::internal::simpleAtoi(splits[2]));
+      categoryDef.set_invoke(utils::internal::simpleAtoi(splits[3]));
+    } else {
+      std::vector<std::string> tokens = absl::StrSplit(line, " ");
+
+      nori::CharacterClass chCls;
+      if (!nori::CharacterClass_Parse(tokens[1], &chCls)) {
+        ifs.close();
+        return absl::InvalidArgumentError(
+            absl::StrCat("Cannot read character class ", tokens[1]));
+      }
+
+      if (absl::StrContains(tokens[0], "..")) {
+        std::vector<std::string> codePoints = absl::StrSplit(tokens[0], "..");
+        int codePointFrom = utils::internal::simpleHexAtoi(codePoints[0]);
+        int codePointTo = utils::internal::simpleHexAtoi(codePoints[1]);
+
+        for (int i = codePointFrom; i <= codePointTo; i++)
+          (*codeToCategoryMap)[i] = chCls;
+      } else {
+        int codePoint = utils::internal::simpleHexAtoi(tokens[0]);
+        (*codeToCategoryMap)[codePoint] = chCls;
+      }
+    }
+  }
+  ifs.close();
   return absl::OkStatus();
+}
+
+absl::Status CharacterClassDictionaryBuilder::save(absl::string_view output) {
+  std::string path = utils::internal::joinPath(output, NORI_CHAR_FILE);
+  LOG(INFO) << "save char dictionary file " << path;
+  return internal::serializeCompressedProtobuf(path, charDictionary);
 }
 
 // ConnectionCostsBuilder class

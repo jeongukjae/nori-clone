@@ -31,3 +31,11 @@ TEST(TestInternal, convertMeCabCSVEntry) {
   ASSERT_EQ(morpheme2.postype(), nori::POSType::MORPHEME);
   ASSERT_EQ(morpheme2.expression_size(), 0);
 }
+
+TEST(TestBuilder, TokenInfoDictionaryBuilder) {
+  TokenInfoDictionaryBuilder builder(true, "NFKC");
+  auto status = builder.parse("./testdata/tokenInfoDictionary/");
+  ASSERT_TRUE(status.ok()) << status.message();
+  status = builder.save(".");
+  ASSERT_TRUE(status.ok()) << status.message();
+}
