@@ -8,6 +8,7 @@
 
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "nori/dictionary/dictionary.h"
 #include "nori/protos/dictionary.pb.h"
 #include "nori/utils.h"
 
@@ -27,7 +28,6 @@ void convertMeCabCSVEntry(const std::vector<std::string>& entry,
   morpheme->set_postype(posType);
 
   POSTag rightPOS, leftPOS;
-
   if (posType == POSType::MORPHEME || posType == POSType::COMPOUND ||
       entry.at(9) == "*") {
     rightPOS = leftPOS = utils::resolvePOSTag(entry.at(4));
@@ -117,7 +117,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(
 
       entries.push_back(entry);
     }
-
+    ifs.close();
     LOG(INFO) << "Read " << path << ". # terms: " << entries.size();
   }
 
@@ -170,8 +170,15 @@ absl::Status TokenInfoDictionaryBuilder::save(
     absl::string_view outputDirectory) {
   // TODO(jeongukjae): continue here
   std::string arrayPath =
-      utils::internal::joinPath(outputDirectory, DARTS_FILE_NAME);
+      utils::internal::joinPath(outputDirectory, NORI_DARTS_FILE_NAME);
   trie->save(arrayPath.c_str());
+
+  std::string pbPath =
+      utils::internal::joinPath(outputDirectory, NORI_DARTS_META_FILE_NAME);
+  std::ofstream ofs(pbPath, std::ios::out | std::ios::binary);
+  CHECK(!ofs.fail()) << "Cannot open file " << pbPath;
+  CHECK(dictionary.SerializeToOstream(&ofs)) << "Cannot serialize dictionary";
+  ofs.close();
   return absl::OkStatus();
 }
 

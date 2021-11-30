@@ -28,6 +28,7 @@ cc_library(
     srcs = ["builder.cc"],
     hdrs = ["builder.h"],
     deps = [
+        ":dictionary",
         "//nori:utils",
         "//nori/protos:dictionary_cc_proto",
         "@com_github_google_glog//:glog",
