@@ -18,8 +18,8 @@ namespace builder {
 
 namespace internal {
 
-void convertMeCabCSVEntry(const std::vector<std::string>& entry,
-                          nori::Dictionary::Morpheme* morpheme) {
+absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
+                                  nori::Dictionary::Morpheme* morpheme) {
   morpheme->set_leftid(utils::internal::simpleAtoi(entry.at(1)));
   morpheme->set_rightid(utils::internal::simpleAtoi(entry.at(2)));
   morpheme->set_wordcost(utils::internal::simpleAtoi(entry.at(3)));
@@ -27,32 +27,23 @@ void convertMeCabCSVEntry(const std::vector<std::string>& entry,
   const POSType posType = utils::resolvePOSType(entry.at(8));
   morpheme->set_postype(posType);
 
-  POSTag rightPOS, leftPOS;
-  if (posType == POSType::MORPHEME || posType == POSType::COMPOUND ||
-      entry.at(9) == "*") {
-    rightPOS = leftPOS = utils::resolvePOSTag(entry.at(4));
-    CHECK(entry.at(9) == "*" && entry.at(10) == "*")
-        << "Cannot parse MeCab CSV entry. term: " << entry.at(0)
-        << ", left pos: " << entry.at(9) << ", right pos: " << entry.at(10);
-  } else {
-    leftPOS = utils::resolvePOSTag(entry.at(9));
-    rightPOS = utils::resolvePOSTag(entry.at(10));
-  }
-
   if (entry.at(11) != "*") {
     std::string expression = entry.at(11);
     std::vector<std::string> expressionTokens = absl::StrSplit(expression, '+');
     for (const auto& expressionToken : expressionTokens) {
       std::vector<std::string> tokenSplit =
           absl::StrSplit(expressionToken, '/');
-      CHECK(tokenSplit.size() == 3)
-          << "Cannot parse expression: " << expression;
+      if (tokenSplit.size() != 3) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Cannot parse expression: ", expression));
+      }
 
       const auto token = morpheme->add_expression();
       token->set_postag(utils::resolvePOSTag(tokenSplit.at(1)));
       token->set_surface(tokenSplit.at(0));
     }
   }
+  return absl::OkStatus();
 }
 
 }  // namespace internal
@@ -90,9 +81,12 @@ absl::Status TokenInfoDictionaryBuilder::parse(
 
   std::vector<std::vector<std::string>> entries;
   entries.reserve(1000000);
+
+  // read csv files and append all rows into entries.
   for (const auto& path : paths) {
     std::ifstream ifs(path);
-    CHECK(!ifs.fail()) << path << " is missing!!";
+    if (ifs.fail())
+      return absl::InvalidArgumentError(absl::StrCat(path, " is missing!!"));
 
     std::string line;
     while (std::getline(ifs, line)) {
@@ -103,13 +97,20 @@ absl::Status TokenInfoDictionaryBuilder::parse(
         std::string normalized;
         auto status =
             utils::internal::normalizeUTF8(line, normalized, normalizationForm);
-        CHECK(status.ok()) << "Cannot normalize string " << line;
+        if (!status.ok()) {
+          ifs.close();
+          return absl::InternalError(
+              absl::StrCat("Cannot normalize string", line));
+        }
         line = normalized;
       }
       utils::internal::parseCSVLine(line, entry);
 
-      CHECK(entry.size() >= 12)
-          << "Entry in CSV is not valid (12 field values expected): " << line;
+      if (entry.size() < 12) {
+        ifs.close();
+        return absl::InvalidArgumentError(absl::StrCat(
+            "Entry in CSV is not valid (12 field values expected): ", line));
+      }
       utils::internal::trimWhitespaces(entry[0]);
 
       entries.push_back(entry);
@@ -140,19 +141,21 @@ absl::Status TokenInfoDictionaryBuilder::parse(
       (*morphemeMap)[++entryValue] = morphemeList;
     }
 
-    internal::convertMeCabCSVEntry(entries[i],
-                                   (*morphemeMap)[entryValue].add_morphemes());
+    auto status = internal::convertMeCabCSVEntry(
+        entries[i], (*morphemeMap)[entryValue].add_morphemes());
+    if (!status.ok()) return status;
   }
 
   LOG(INFO) << "Build trie. keys[0]: " << keys[0] << ", keys[10]: " << keys[10];
   trie = std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
-  CHECK(trie->build(keys.size(), const_cast<char**>(&keys[0])) == 0)
-      << "Cannot build trie.";
+  if (trie->build(keys.size(), const_cast<char**>(&keys[0])) != 0)
+    return absl::InternalError("Cannot build trie.");
 
   // search 10'th item to check Trie is built properly
   int searchResult;
   trie->exactMatchSearch(keys[10], searchResult);
-  CHECK(searchResult == 10) << "Trie isn't built properly.";
+  if (searchResult != 10)
+    return absl::InternalError("Trie isn't built properly.");
 
   return absl::OkStatus();
 }
@@ -182,6 +185,9 @@ absl::Status TokenInfoDictionaryBuilder::save(
 // UnknownDictionaryBuilder class
 
 absl::Status UnknownDictionaryBuilder::parse(absl::string_view inputDirectory) {
+  const auto unkPath = utils::internal::joinPath(inputDirectory, "unk.def");
+  const auto charPath = utils::internal::joinPath(inputDirectory, "char.def");
+
   return absl::OkStatus();
 }
 

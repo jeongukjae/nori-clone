@@ -33,8 +33,8 @@ namespace internal {
 //  * 9   - left POS
 //  * 10  - right POS
 //  * 11  - expression
-void convertMeCabCSVEntry(const std::vector<std::string>& entry,
-                          nori::Dictionary::Morpheme* morpheme);
+absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
+                                  nori::Dictionary::Morpheme* morpheme);
 
 }  // namespace internal
 

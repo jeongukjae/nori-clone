@@ -12,7 +12,7 @@ TEST(TestInternal, convertMeCabCSVEntry) {
       "Preanalysis", "NNG", "NNG", "은전/NNG/*+한/NR/*+닢/NNG/*"};
   nori::Dictionary::Morpheme morpheme;
 
-  internal::convertMeCabCSVEntry(entry, &morpheme);
+  internal::convertMeCabCSVEntry(entry, &morpheme).IgnoreError();
 
   ASSERT_EQ(morpheme.postype(), nori::POSType::PREANALYSIS);
   ASSERT_EQ(morpheme.expression_size(), 3);
@@ -26,7 +26,7 @@ TEST(TestInternal, convertMeCabCSVEntry) {
   entry = {",", "1792", "3558", "788", "SC", "*", "*", "*", "*", "*", "*", "*"};
   nori::Dictionary::Morpheme morpheme2;
 
-  internal::convertMeCabCSVEntry(entry, &morpheme2);
+  internal::convertMeCabCSVEntry(entry, &morpheme2).IgnoreError();
 
   ASSERT_EQ(morpheme2.postype(), nori::POSType::MORPHEME);
   ASSERT_EQ(morpheme2.expression_size(), 0);
