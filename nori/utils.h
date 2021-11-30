@@ -31,6 +31,9 @@ std::string joinPath(absl::string_view directory, absl::string_view filename);
 // Parse csv from raw string `line` and put outputs into `entries`.
 void parseCSVLine(std::string line, std::vector<std::string>& entries);
 
+// Parse csv rows
+std::vector<std::string> parseCSVLine(std::string line);
+
 // trim whitespaces of input text
 void trimWhitespaces(std::string& text);
 

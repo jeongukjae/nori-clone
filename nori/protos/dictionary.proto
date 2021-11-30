@@ -126,6 +126,10 @@ message MorphemeList {
   repeated Morpheme morphemes = 1;
 }
 
+message ListDictionary {
+  map<int32, MorphemeList> morphemeListMap = 1;
+}
+
 message Dictionary {
-  map<int32, MorphemeList> morphemeMap = 1;
+  map<int32, Morpheme> morphemeMap = 1;
 }

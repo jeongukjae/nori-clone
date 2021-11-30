@@ -58,26 +58,24 @@ MeCabDictionaryBuilder::MeCabDictionaryBuilder(
   builders.emplace_back(new ConnectionCostsBuilder());
 }
 
-void MeCabDictionaryBuilder::build(absl::string_view inputDirectory,
-                                   absl::string_view outputDirectory) {
+void MeCabDictionaryBuilder::build(absl::string_view input,
+                                   absl::string_view output) {
   for (auto& builder : builders) {
-    auto status = builder->parse(inputDirectory);
+    auto status = builder->parse(input);
     CHECK(status.ok()) << "Unexpected error " << status;
 
-    status = builder->save(outputDirectory);
+    status = builder->save(output);
     CHECK(status.ok()) << "Unexpected error " << status;
   }
 }
 
 // TokenInfoDictionaryBuilder class
 
-absl::Status TokenInfoDictionaryBuilder::parse(
-    absl::string_view inputDirectory) {
+absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
   std::vector<std::string> paths;
-  utils::internal::listDirectory(
-      inputDirectory, paths, [](absl::string_view path) {
-        return absl::EndsWithIgnoreCase(path, ".csv");
-      });
+  utils::internal::listDirectory(input, paths, [](absl::string_view path) {
+    return absl::EndsWithIgnoreCase(path, ".csv");
+  });
 
   std::vector<std::vector<std::string>> entries;
   entries.reserve(1000000);
@@ -90,9 +88,6 @@ absl::Status TokenInfoDictionaryBuilder::parse(
 
     std::string line;
     while (std::getline(ifs, line)) {
-      std::vector<std::string> entry;
-      entry.reserve(12);
-
       if (normalize) {
         std::string normalized;
         auto status =
@@ -104,7 +99,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(
         }
         line = normalized;
       }
-      utils::internal::parseCSVLine(line, entry);
+      auto entry = utils::internal::parseCSVLine(line);
 
       if (entry.size() < 12) {
         ifs.close();
@@ -130,7 +125,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(
 
   std::string lastValue = "";
   int entryValue = -1;
-  auto morphemeMap = dictionary.mutable_morphememap();
+  auto morphemeListMap = dictionary.mutable_morphemelistmap();
 
   for (int i = 0; i < entries.size(); i++) {
     if (entries[i][0] != lastValue) {
@@ -138,11 +133,11 @@ absl::Status TokenInfoDictionaryBuilder::parse(
       lastValue = entries[i][0];
 
       nori::MorphemeList morphemeList;
-      (*morphemeMap)[++entryValue] = morphemeList;
+      (*morphemeListMap)[++entryValue] = morphemeList;
     }
 
     auto status = internal::convertMeCabCSVEntry(
-        entries[i], (*morphemeMap)[entryValue].add_morphemes());
+        entries[i], (*morphemeListMap)[entryValue].add_morphemes());
     if (!status.ok()) return status;
   }
 
@@ -160,48 +155,103 @@ absl::Status TokenInfoDictionaryBuilder::parse(
   return absl::OkStatus();
 }
 
-absl::Status TokenInfoDictionaryBuilder::save(
-    absl::string_view outputDirectory) {
-  LOG(INFO) << "Save token info dictionary.";
-  std::string arrayPath =
-      utils::internal::joinPath(outputDirectory, NORI_DARTS_FILE_NAME);
-  trie->save(arrayPath.c_str());
-
-  std::string pbPath =
-      utils::internal::joinPath(outputDirectory, NORI_DARTS_META_FILE_NAME);
-  std::string dictionaryMeta;
-  std::ofstream ofs(pbPath, std::ios::out | std::ios::binary);
-  if (ofs.fail())
-    return absl::PermissionDeniedError(
-        absl::StrCat("Cannot open file ", pbPath));
-  if (!dictionary.SerializeToOstream(&ofs)) {
-    ofs.close();
-    return absl::InternalError("Cannot serialize dictionary");
+absl::Status TokenInfoDictionaryBuilder::save(absl::string_view output) {
+  {
+    LOG(INFO) << "Save token info dictionary.";
+    std::string arrayPath = utils::internal::joinPath(output, NORI_DICT_FILE);
+    trie->save(arrayPath.c_str());
   }
-  ofs.close();
+
+  {
+    std::string path = utils::internal::joinPath(output, NORI_DICT_META_FILE);
+    LOG(INFO) << "Write dictionary meta " << path;
+    std::ofstream ofs(path, std::ios::out | std::ios::binary);
+    if (ofs.fail())
+      return absl::PermissionDeniedError(
+          absl::StrCat("Cannot open file ", path));
+    if (!dictionary.SerializeToOstream(&ofs)) {
+      ofs.close();
+      return absl::InternalError("Cannot serialize dictionary");
+    }
+    ofs.close();
+  }
   return absl::OkStatus();
 }
 
 // UnknownDictionaryBuilder class
 
-absl::Status UnknownDictionaryBuilder::parse(absl::string_view inputDirectory) {
-  const auto unkPath = utils::internal::joinPath(inputDirectory, "unk.def");
-  const auto charPath = utils::internal::joinPath(inputDirectory, "char.def");
+absl::Status UnknownDictionaryBuilder::parse(absl::string_view input) {
+  {
+    const auto path = utils::internal::joinPath(input, "unk.def");
+    LOG(INFO) << "Read unk dicitonary " << path;
+    std::ifstream ifs(path);
+    if (ifs.fail())
+      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+
+    auto* morphemeMap = unkDictionary.mutable_morphememap();
+    std::vector<std::vector<std::string>> allLines;
+    const auto append = [&morphemeMap](std::string line) -> absl::Status {
+      std::vector<std::string> entry = utils::internal::parseCSVLine(line);
+      nori::CharacterClass chClass;
+      if (!nori::CharacterClass_Parse(entry[0], &chClass)) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Cannot get character class ", entry[0]));
+      }
+      (*morphemeMap)[chClass].set_leftid(
+          utils::internal::simpleAtoi(entry.at(1)));
+      (*morphemeMap)[chClass].set_rightid(
+          utils::internal::simpleAtoi(entry.at(2)));
+      (*morphemeMap)[chClass].set_wordcost(
+          utils::internal::simpleAtoi(entry.at(3)));
+
+      return absl::OkStatus();
+    };
+
+    // put ngram definition
+    append("NGRAM,1798,3559,3677,SY,*,*,*,*,*,*,*").IgnoreError();
+    std::string line;
+    while (std::getline(ifs, line)) {
+      auto status = append(line);
+      if (!status.ok()) {
+        ifs.close();
+        return status;
+      };
+    }
+    ifs.close();
+  }
+
+  {
+    const auto path = utils::internal::joinPath(input, "char.def");
+    LOG(INFO) << "Read char.def " << path;
+  }
 
   return absl::OkStatus();
 }
 
-absl::Status UnknownDictionaryBuilder::save(absl::string_view outputDirectory) {
+absl::Status UnknownDictionaryBuilder::save(absl::string_view output) {
+  {
+    std::string pbPath = utils::internal::joinPath(output, NORI_UNK_FILE);
+    LOG(INFO) << "save unk dictionary file" << pbPath;
+    std::ofstream ofs(pbPath, std::ios::out | std::ios::binary);
+    if (ofs.fail())
+      return absl::PermissionDeniedError(
+          absl::StrCat("Cannot open file ", pbPath));
+    if (!unkDictionary.SerializeToOstream(&ofs)) {
+      ofs.close();
+      return absl::InternalError("Cannot serialize dictionary");
+    }
+    ofs.close();
+  }
   return absl::OkStatus();
 }
 
 // ConnectionCostsBuilder class
 
-absl::Status ConnectionCostsBuilder::parse(absl::string_view inputDirectory) {
+absl::Status ConnectionCostsBuilder::parse(absl::string_view input) {
   return absl::OkStatus();
 }
 
-absl::Status ConnectionCostsBuilder::save(absl::string_view outputDirectory) {
+absl::Status ConnectionCostsBuilder::save(absl::string_view output) {
   return absl::OkStatus();
 }
 

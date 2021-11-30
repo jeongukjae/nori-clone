@@ -78,7 +78,7 @@ class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
   bool normalize;
   const std::string normalizationForm;
   std::unique_ptr<Darts::DoubleArray> trie;
-  nori::Dictionary dictionary;
+  nori::ListDictionary dictionary;
 };
 
 // Read unk.def and char.def and convert them to nori's dictionary format.
@@ -88,6 +88,9 @@ class UnknownDictionaryBuilder : public IDictionaryBuilder {
 
   absl::Status parse(absl::string_view inputDirectory);
   absl::Status save(absl::string_view outputDirectory);
+
+ private:
+  nori::Dictionary unkDictionary;
 };
 
 // Read matrix.def and convert it to nori's dictionary format.

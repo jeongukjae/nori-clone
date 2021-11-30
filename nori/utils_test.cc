@@ -49,6 +49,13 @@ TEST(TestUtils, parseCSVLine) {
 
   ASSERT_THAT(rows, testing::ElementsAre("ALPHA", "1793", "3533", "795", "SL",
                                          "*", "*", "*", "*", "*", "*", "*"));
+
+  inputString = "\"ALPHA\",1793,3533,795,SL,*,*,*,*,*,*,*";
+  rows.clear();
+  rows = internal::parseCSVLine(inputString);
+
+  ASSERT_THAT(rows, testing::ElementsAre("ALPHA", "1793", "3533", "795", "SL",
+                                         "*", "*", "*", "*", "*", "*", "*"));
 }
 
 TEST(TestUtils, trimWhitespaces) {

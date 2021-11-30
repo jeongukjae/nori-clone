@@ -1,8 +1,9 @@
 #ifndef __NORI_DICTIONARY_H__
 #define __NORI_DICTIONARY_H__
 
-#define NORI_DARTS_FILE_NAME "dictionary.bin"
-#define NORI_DARTS_META_FILE_NAME "dictionary_meta.pb"
+#define NORI_DICT_FILE "dictionary.bin"
+#define NORI_DICT_META_FILE "dictionary_meta.pb"
+#define NORI_UNK_FILE "unk.pb"
 
 namespace nori {
 namespace dictionary {}  // namespace dictionary

@@ -96,6 +96,12 @@ void parseCSVLine(std::string line, std::vector<std::string>& entries) {
   entries.push_back(line.substr(start));
 }
 
+std::vector<std::string> parseCSVLine(std::string line) {
+  std::vector<std::string> entries;
+  parseCSVLine(line, entries);
+  return entries;
+}
+
 void trimWhitespaces(std::string& text) {
   // trim from start (in place)
   text.erase(text.begin(),
