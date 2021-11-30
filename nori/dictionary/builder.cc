@@ -12,6 +12,7 @@
 #include "nori/dictionary/dictionary.h"
 #include "nori/protos/dictionary.pb.h"
 #include "nori/utils.h"
+#include "snappy.h"
 
 namespace nori {
 namespace dictionary {
@@ -47,17 +48,21 @@ absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
   return absl::OkStatus();
 }
 
-// serialize protobuf message to path
+// serialize, compress, and save protobuf message
 template <class T>
-absl::Status serializeProtobuf(const std::string& path, T message) {
+absl::Status serializeCompressedProtobuf(const std::string& path, T message) {
+  std::string pbData;
+  if (!message.SerializeToString(&pbData)) {
+    return absl::InternalError("Cannot serialize dictionary");
+  }
+
+  std::string compressed;
+  snappy::Compress(pbData.data(), pbData.size(), &compressed);
+
   std::ofstream ofs(path, std::ios::out | std::ios::binary);
   if (ofs.fail())
     return absl::PermissionDeniedError(absl::StrCat("Cannot open file ", path));
-
-  if (!message.SerializeToOstream(&ofs)) {
-    ofs.close();
-    return absl::InternalError("Cannot serialize dictionary");
-  }
+  ofs.write(compressed.data(), compressed.size());
   ofs.close();
   return absl::OkStatus();
 }
@@ -181,7 +186,7 @@ absl::Status TokenInfoDictionaryBuilder::save(absl::string_view output) {
   {
     std::string path = utils::internal::joinPath(output, NORI_DICT_META_FILE);
     LOG(INFO) << "Write dictionary meta " << path;
-    auto status = internal::serializeProtobuf(path, dictionary);
+    auto status = internal::serializeCompressedProtobuf(path, dictionary);
     if (!status.ok()) return status;
   }
   return absl::OkStatus();
@@ -298,14 +303,14 @@ absl::Status UnknownDictionaryBuilder::save(absl::string_view output) {
   {
     std::string path = utils::internal::joinPath(output, NORI_UNK_FILE);
     LOG(INFO) << "save unk dictionary file " << path;
-    auto status = internal::serializeProtobuf(path, unkDictionary);
+    auto status = internal::serializeCompressedProtobuf(path, unkDictionary);
     if (!status.ok()) return status;
   }
 
   {
     std::string path = utils::internal::joinPath(output, NORI_CHAR_FILE);
     LOG(INFO) << "save char dictionary file " << path;
-    auto status = internal::serializeProtobuf(path, charDictionary);
+    auto status = internal::serializeCompressedProtobuf(path, charDictionary);
     if (!status.ok()) return status;
   }
 

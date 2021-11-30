@@ -82,3 +82,11 @@ http_archive(
         "https://github.com/s-yata/darts-clone/archive/e40ce4627526985a7767444b6ed6893ab6ff8983.zip",
     ],
 )
+
+http_archive(
+    name = "com_github_google_snappy",
+    build_file = "//third_party:snappy.BUILD",
+    sha256 = "e170ce0def2c71d0403f5cda61d6e2743373f9480124bcfcd0fa9b3299d428d9",
+    strip_prefix = "snappy-1.1.9",
+    urls = ["https://github.com/google/snappy/archive/1.1.9.zip"],
+)
