@@ -27,11 +27,19 @@ cc_library(
     name = "tokenizer",
     srcs = ["tokenizer.cc"],
     hdrs = ["tokenizer.h"],
+    deps = [
+        "//nori/dictionary",
+        "@com_google_absl//absl/status",
+        "@darts_clone",
+    ],
 )
 
 cc_test(
     name = "tokenizer_test",
     srcs = ["tokenizer_test.cc"],
+    data = [
+        "//dictionary",
+    ],
     deps = [
         ":tokenizer",
         "@com_google_googletest//:gtest_main",

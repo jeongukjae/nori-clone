@@ -38,7 +38,12 @@ class Dictionary {
   }
 
   // return conneciton costs
-  const nori::ConnectionCost* getConnectionCosts() const { return &connectionCost; }
+  const nori::ConnectionCost* getConnectionCosts() const {
+    return &connectionCost;
+  }
+
+  // return connection costs from right, left ids
+  const int getCost(int rightId, int leftId) const;
 
  private:
   Darts::DoubleArray trie;
@@ -46,6 +51,8 @@ class Dictionary {
   nori::Dictionary unkDictionary;
   nori::CharacterClassDictionary charDictionary;
   nori::ConnectionCost connectionCost;
+
+  int backwardSize;
 };
 
 }  // namespace dictionary
