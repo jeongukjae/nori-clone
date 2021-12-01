@@ -50,7 +50,8 @@ absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
 
 // serialize, compress, and save protobuf message
 template <class T>
-absl::Status serializeCompressedProtobuf(const std::string& path, T message) {
+absl::Status serializeCompressedProtobuf(const std::string& path,
+                                         const T& message) {
   std::string pbData;
   if (!message.SerializeToString(&pbData)) {
     return absl::InternalError("Cannot serialize dictionary");
@@ -61,7 +62,7 @@ absl::Status serializeCompressedProtobuf(const std::string& path, T message) {
 
   std::ofstream ofs(path, std::ios::out | std::ios::binary);
   if (ofs.fail())
-    return absl::PermissionDeniedError(absl::StrCat("Cannot open file ", path));
+    return absl::InvalidArgumentError(absl::StrCat("Cannot open file ", path));
   ofs.write(compressed.data(), compressed.size());
   ofs.close();
   return absl::OkStatus();

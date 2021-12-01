@@ -12,6 +12,15 @@ cc_library(
     name = "dictionary",
     srcs = ["dictionary.cc"],
     hdrs = ["dictionary.h"],
+    deps = [
+        "//nori:utils",
+        "//nori/protos:dictionary_cc_proto",
+        "@com_github_google_glog//:glog",
+        "@com_github_google_snappy//:snappy",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@darts_clone",
+    ],
 )
 
 cc_test(
@@ -33,6 +42,7 @@ cc_library(
         "//nori/protos:dictionary_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_github_google_snappy//:snappy",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@darts_clone",
     ],
