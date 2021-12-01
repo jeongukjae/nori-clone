@@ -11,7 +11,7 @@
 DEFINE_string(mecab_dic, "",
               "Path to mecab dictionary. This cli program reads "
               "{matrix,char,unk}.def and all CSV files");
-DEFINE_string(output, "./output", "output directory for nori dictionary");
+DEFINE_string(output, "./dictionary", "output directory for nori dictionary");
 DEFINE_string(normalization_form, "NFKC",
               "Unicode normalization form for dictionary of MeCab");
 DEFINE_bool(normalize, true, "whether to normalize dictionary of MeCab");

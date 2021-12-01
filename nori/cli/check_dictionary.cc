@@ -8,7 +8,7 @@
 #include "nori/protos/dictionary.pb.h"
 #include "nori/utils.h"
 
-DEFINE_string(dictionary, "", "Path to nori dictionary");
+DEFINE_string(dictionary, "./dictionary", "Path to nori dictionary");
 
 int main(int argc, char** argv) {
   FLAGS_alsologtostderr = 1;

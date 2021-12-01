@@ -84,5 +84,9 @@ absl::Status Dictionary::load(absl::string_view input) {
   return absl::OkStatus();
 }
 
+int Dictionary::getCharacterCategory(int codePoint) const {
+  return charDictionary.codetocategorymap().at(codePoint);
+}
+
 }  // namespace dictionary
 }  // namespace nori

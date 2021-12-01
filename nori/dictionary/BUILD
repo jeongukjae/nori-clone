@@ -26,6 +26,7 @@ cc_library(
 cc_test(
     name = "dictionary_test",
     srcs = ["dictionary_test.cc"],
+    data = ["//dictionary"],
     deps = [
         ":dictionary",
         "@com_google_googletest//:gtest_main",

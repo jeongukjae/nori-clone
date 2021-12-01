@@ -18,7 +18,11 @@ namespace dictionary {
 
 class Dictionary {
  public:
+  // load dictionary from given path
   absl::Status load(absl::string_view path);
+
+  // get character category for given codePoint using charDictionary
+  int getCharacterCategory(int codePoint) const;
 
  private:
   Darts::DoubleArray trie;
