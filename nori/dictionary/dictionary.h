@@ -21,8 +21,24 @@ class Dictionary {
   // load dictionary from given path
   absl::Status load(absl::string_view path);
 
-  // get character category for given codePoint using charDictionary
-  int getCharacterCategory(int codePoint) const;
+  // return trie dictionary
+  const Darts::DoubleArray* getTrie() const { return &trie; }
+
+  // return token dictionary
+  const nori::ListDictionary* getTokenDictionary() const {
+    return &tokenDictionary;
+  }
+
+  // return unk dictionary
+  const nori::Dictionary* getUnkDictionary() const { return &unkDictionary; }
+
+  // return char dictionary
+  const nori::CharacterClassDictionary* getCharDictionary() const {
+    return &charDictionary;
+  }
+
+  // return conneciton costs
+  const nori::ConnectionCost* getConnectionCosts() const { return &connectionCost; }
 
  private:
   Darts::DoubleArray trie;

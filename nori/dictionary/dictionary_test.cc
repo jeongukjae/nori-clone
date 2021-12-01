@@ -12,13 +12,3 @@ TEST(TestDictionary, load) {
   auto status = dic.load("./dictionary");
   ASSERT_TRUE(status.ok()) << status.message();
 }
-
-TEST(TestDictionary, getCharacterCategory) {
-  Dictionary dic;
-  auto status = dic.load("./dictionary");
-  ASSERT_TRUE(status.ok()) << status.message();
-
-  ASSERT_EQ(dic.getCharacterCategory(0x3B), nori::CharacterClass::SYMBOL);
-  ASSERT_EQ(dic.getCharacterCategory(0x4E00),
-            nori::CharacterClass::HANJANUMERIC);
-}
