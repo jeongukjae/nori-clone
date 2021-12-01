@@ -41,7 +41,7 @@ cc_library(
 cc_test(
     name = "builder_test",
     srcs = ["builder_test.cc"],
-    data = ["//testdata:tokenInfoDictionary"],
+    data = ["//testdata:dictionaryBuilder"],
     deps = [
         ":builder",
         "@com_google_googletest//:gtest_main",

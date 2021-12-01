@@ -12,6 +12,6 @@ filegroup(
 )
 
 filegroup(
-    name = "tokenInfoDictionary",
-    srcs = glob(["tokenInfoDictionary/*"]),
+    name = "dictionaryBuilder",
+    srcs = glob(["dictionaryBuilder/*"]),
 )

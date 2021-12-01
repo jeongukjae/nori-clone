@@ -80,15 +80,16 @@ MeCabDictionaryBuilder::MeCabDictionaryBuilder(
   builders.emplace_back(new ConnectionCostsBuilder());
 }
 
-void MeCabDictionaryBuilder::build(absl::string_view input,
-                                   absl::string_view output) {
+absl::Status MeCabDictionaryBuilder::build(absl::string_view input,
+                                           absl::string_view output) {
   for (auto& builder : builders) {
     auto status = builder->parse(input);
-    CHECK(status.ok()) << status;
+    if (!status.ok()) return status;
 
     status = builder->save(output);
-    CHECK(status.ok()) << status;
+    if (!status.ok()) return status;
   }
+  return absl::OkStatus();
 }
 
 // TokenInfoDictionaryBuilder class

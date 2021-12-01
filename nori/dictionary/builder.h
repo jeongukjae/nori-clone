@@ -55,8 +55,8 @@ class MeCabDictionaryBuilder {
 
   // This method builds dictionary from `inputDirectory` and write built
   // dictionary to `outputDirectory`.
-  void build(absl::string_view inputDirectory,
-             absl::string_view outputDirectory);
+  absl::Status build(absl::string_view inputDirectory,
+                     absl::string_view outputDirectory);
 
  private:
   std::vector<std::unique_ptr<IDictionaryBuilder>> builders;
@@ -80,7 +80,7 @@ class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
   nori::ListDictionary dictionary;
 };
 
-// Read unk.def and char.def and convert them to nori's dictionary format.
+// Read unk.def and convert them to nori's dictionary format.
 class UnknownDictionaryBuilder : public IDictionaryBuilder {
  public:
   absl::Status parse(absl::string_view inputDirectory);
@@ -90,6 +90,7 @@ class UnknownDictionaryBuilder : public IDictionaryBuilder {
   nori::Dictionary unkDictionary;
 };
 
+// Read char.def and convert them to nori's dictionary format.
 class CharacterClassDictionaryBuilder : public IDictionaryBuilder {
  public:
   absl::Status parse(absl::string_view inputDirectory);

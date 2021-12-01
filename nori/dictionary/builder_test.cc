@@ -32,9 +32,39 @@ TEST(TestInternal, convertMeCabCSVEntry) {
   ASSERT_EQ(morpheme2.expression_size(), 0);
 }
 
+TEST(TestBuilder, DictionaryBuilder) {
+  MeCabDictionaryBuilder builder(true, "NFKC");
+  auto status = builder.build("./testdata/dictionaryBuilder/", ".");
+  ASSERT_TRUE(status.ok()) << status.message();
+}
+
 TEST(TestBuilder, TokenInfoDictionaryBuilder) {
   TokenInfoDictionaryBuilder builder(true, "NFKC");
-  auto status = builder.parse("./testdata/tokenInfoDictionary/");
+  auto status = builder.parse("./testdata/dictionaryBuilder/");
+  ASSERT_TRUE(status.ok()) << status.message();
+  status = builder.save(".");
+  ASSERT_TRUE(status.ok()) << status.message();
+}
+
+TEST(TestBuilder, ConnectionCostsBuilder) {
+  ConnectionCostsBuilder builder;
+  auto status = builder.parse("./testdata/dictionaryBuilder/");
+  ASSERT_TRUE(status.ok()) << status.message();
+  status = builder.save(".");
+  ASSERT_TRUE(status.ok()) << status.message();
+}
+
+TEST(TestBuilder, CharacterClassDictionaryBuilder) {
+  CharacterClassDictionaryBuilder builder;
+  auto status = builder.parse("./testdata/dictionaryBuilder/");
+  ASSERT_TRUE(status.ok()) << status.message();
+  status = builder.save(".");
+  ASSERT_TRUE(status.ok()) << status.message();
+}
+
+TEST(TestBuilder, UnknownDictionaryBuilder) {
+  UnknownDictionaryBuilder builder;
+  auto status = builder.parse("./testdata/dictionaryBuilder/");
   ASSERT_TRUE(status.ok()) << status.message();
   status = builder.save(".");
   ASSERT_TRUE(status.ok()) << status.message();
