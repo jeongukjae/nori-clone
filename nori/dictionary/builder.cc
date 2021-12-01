@@ -340,8 +340,7 @@ absl::Status ConnectionCostsBuilder::parse(absl::string_view input) {
   LOG(INFO) << "Forward Size: " << forwardSize
             << ", Backward Size: " << backwardSize;
 
-  std::vector<std::vector<int>> array(forwardSize);
-  for (int i = 0; i < forwardSize; i++) array[i].resize(backwardSize);
+  std::vector<int> array(forwardSize * backwardSize);
 
   while (std::getline(ifs, line)) {
     std::vector<std::string> splits = absl::StrSplit(line, " ");
@@ -354,13 +353,9 @@ absl::Status ConnectionCostsBuilder::parse(absl::string_view input) {
     int forwardId = utils::internal::simpleAtoi(splits[0]);
     int backwardId = utils::internal::simpleAtoi(splits[1]);
     int cost = utils::internal::simpleAtoi(splits[2]);
-    array[forwardId][backwardId] = cost;
+    array[backwardSize * forwardId + backwardId] = cost;
   }
-
-  for (int i = 0; i < forwardSize; i++) {
-    auto costs = connectionCost.add_costlists();
-    for (int j = 0; j < backwardSize; j++) costs->add_cost(array[i][j]);
-  }
+  connectionCost.mutable_costlists()->Assign(array.begin(), array.end());
 
   ifs.close();
   return absl::OkStatus();

@@ -147,9 +147,8 @@ message CharacterClassDictionary {
 }
 
 message ConnectionCost {
-  message Costs {
-    repeated int32 cost = 1;
-  }
-
-  repeated Costs costLists = 1;
+  // index: backwardIndex * forwardIndex + backwardIndex
+  repeated int32 costLists = 1;
+  int32 forwardSize = 2;
+  int32 backwardSize = 3;
 }
