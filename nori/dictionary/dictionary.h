@@ -25,12 +25,12 @@ class Dictionary {
   const Darts::DoubleArray* getTrie() const { return &trie; }
 
   // return token dictionary
-  const nori::ListDictionary* getTokenDictionary() const {
+  const nori::TokenInfoDictionary* getTokenDictionary() const {
     return &tokenDictionary;
   }
 
   // return unk dictionary
-  const nori::Dictionary* getUnkDictionary() const { return &unkDictionary; }
+  const nori::UnknownDictionary* getUnkDictionary() const { return &unkDictionary; }
 
   // return char dictionary
   const nori::CharacterClassDictionary* getCharDictionary() const {
@@ -50,8 +50,8 @@ class Dictionary {
 
  private:
   Darts::DoubleArray trie;
-  nori::ListDictionary tokenDictionary;
-  nori::Dictionary unkDictionary;
+  nori::TokenInfoDictionary tokenDictionary;
+  nori::UnknownDictionary unkDictionary;
   nori::CharacterClassDictionary charDictionary;
   nori::ConnectionCost connectionCost;
 

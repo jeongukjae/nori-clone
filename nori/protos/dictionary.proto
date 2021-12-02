@@ -126,13 +126,11 @@ message MorphemeList {
   repeated Morpheme morphemes = 1;
 }
 
-// TODO(jeongukjae) change name
-message ListDictionary {
+message TokenInfoDictionary {
   map<int32, MorphemeList> morphemeListMap = 1;
 }
 
-// TODO(jeongukjae) change name
-message Dictionary {
+message UnknownDictionary {
   map<int32, Morpheme> morphemeMap = 1;
 }
 
