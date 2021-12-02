@@ -52,7 +52,8 @@ class Dictionary {
   nori::CharacterClassDictionary charDictionary;
   nori::ConnectionCost connectionCost;
 
-  int backwardSize;
+  // from connectionCost
+  int backwardSize, forwardSize;
 };
 
 }  // namespace dictionary

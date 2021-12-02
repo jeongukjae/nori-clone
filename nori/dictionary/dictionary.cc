@@ -83,11 +83,13 @@ absl::Status Dictionary::load(absl::string_view input) {
 
   // backwardSize
   backwardSize = connectionCost.backwardsize();
+  forwardSize = connectionCost.forwardsize();
 
   return absl::OkStatus();
 }
 
 const int Dictionary::getCost(int rightId, int leftId) const {
+  // TODO(jeongukjae) error handling
   return connectionCost.costlists().at(backwardSize * rightId + leftId);
 }
 
