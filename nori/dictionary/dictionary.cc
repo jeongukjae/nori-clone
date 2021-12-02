@@ -7,6 +7,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "icu4c/source/common/unicode/unistr.h"
 #include "nori/utils.h"
 #include "snappy.h"
 
@@ -86,6 +87,16 @@ absl::Status Dictionary::load(absl::string_view input) {
   forwardSize = connectionCost.forwardsize();
 
   return absl::OkStatus();
+}
+
+const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
+  // Get next utf-8 character using ICU
+  UChar32 c;
+  int length = 1;
+  int i = 0;
+  U8_NEXT(text, i, length, c);
+
+  return charDictionary.codetocategorymap().at(c);
 }
 
 const int Dictionary::getCost(int rightId, int leftId) const {

@@ -138,7 +138,7 @@ message Dictionary {
 
 message CharacterClassDictionary {
   // character code to character class
-  map<int32, int32> codeToCategoryMap = 1;
+  map<int32, CharacterClass> codeToCategoryMap = 1;
 
   message CategoryDefinition {
     int32 invoke = 1;

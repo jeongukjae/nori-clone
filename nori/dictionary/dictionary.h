@@ -37,6 +37,9 @@ class Dictionary {
     return &charDictionary;
   }
 
+  // return character calss
+  const nori::CharacterClass getCharClass(const char* text) const;
+
   // return conneciton costs
   const nori::ConnectionCost* getConnectionCosts() const {
     return &connectionCost;
