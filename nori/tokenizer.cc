@@ -30,8 +30,9 @@ inline int getSpacePenalty(nori::POSTag tag) {
     case nori::POSTag::XSN:
     case nori::POSTag::XSV:
       return 3000;
+    default:
+      return 0;
   }
-  return 0;
 }
 
 }  // namespace internal
