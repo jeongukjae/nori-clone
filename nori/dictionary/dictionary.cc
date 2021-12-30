@@ -90,6 +90,7 @@ absl::Status Dictionary::load(absl::string_view input) {
 }
 
 const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
+  // TODO(jeongukjae): error handling
   // Get next utf-8 character using ICU
   UChar32 c;
   int length = 1;
