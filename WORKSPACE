@@ -64,7 +64,7 @@ http_archive(
 
 http_archive(
     name = "icu",
-    build_file = "//third_party/icu:BUILD",
+    build_file = "//third_party/icu:BUILD.bzl",
     patch_args = ["-p1"],
     patches = ["//third_party/icu:udata.patch"],
     sha256 = "10cd92f1585c537d937ecbb587f6c3b36a5275c87feabe05d777a828677ec32f",
