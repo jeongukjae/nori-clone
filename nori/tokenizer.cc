@@ -3,8 +3,8 @@
 #include <darts.h>
 #include <glog/logging.h>
 
+#include <memory>
 #include <queue>
-#include <unordered_map>
 #include <vector>
 
 #include "nori/protos/dictionary.pb.h"
