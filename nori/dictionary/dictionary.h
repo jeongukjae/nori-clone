@@ -16,6 +16,8 @@
 namespace nori {
 namespace dictionary {
 
+// TODO(jeongukjae): change dictionary format.
+// it is not good way to save large message in protobuf format.
 class Dictionary {
  public:
   // load dictionary from given path
@@ -30,7 +32,9 @@ class Dictionary {
   }
 
   // return unk dictionary
-  const nori::UnknownDictionary* getUnkDictionary() const { return &unkDictionary; }
+  const nori::UnknownDictionary* getUnkDictionary() const {
+    return &unkDictionary;
+  }
 
   // return char dictionary
   const nori::CharacterClassDictionary* getCharDictionary() const {
