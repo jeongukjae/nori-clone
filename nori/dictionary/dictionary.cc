@@ -97,11 +97,19 @@ const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
   int i = 0;
   U8_NEXT(text, i, length, c);
 
-  return charDictionary.codetocategorymap().at(c);
+  auto it = charDictionary.codetocategorymap().find(c);
+  if (it != charDictionary.codetocategorymap().end()) {
+    return it->second;
+  }
+  return nori::CharacterClass::DEFAULT;
 }
 
-const int Dictionary::getCost(int rightId, int leftId) const {
+const int Dictionary::getConnectionCost(nori::Morpheme* rightMorpheme,
+                                        nori::Morpheme* leftMorpheme) const {
   // TODO(jeongukjae) error handling
+  int rightId = (rightMorpheme == nullptr) ? 0 : rightMorpheme->rightid();
+  int leftId = (leftMorpheme == nullptr) ? 0 : leftMorpheme->leftid();
+
   return connectionCost.costlists().at(backwardSize * rightId + leftId);
 }
 

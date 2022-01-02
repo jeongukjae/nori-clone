@@ -44,6 +44,16 @@ inline int getSpacePenalty(nori::POSTag tag) {
   }
 }
 
+inline int groupingUnknownCharacters(
+    const char* current, nori::CharacterClass category,
+    const nori::dictionary::Dictionary* dictionary) {
+  int maxLength = 1;
+  for (; dictionary->getCharClass(current + maxLength) == category; maxLength++)
+    ;
+
+  return maxLength;
+}
+
 }  // namespace internal
 
 // NoriTokenizer class
@@ -75,6 +85,12 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
     nodes.pop();
 
     current = begin + nodeToSearch->lastPositionIndex;
+    bool hasSpace = false;
+    while (std::isspace(*current)) {
+      current++;
+      hasSpace = true;
+    }
+
     if (current == end) {
       // EOS
       minimumCost = std::min(minimumCost, nodeToSearch->cost);
@@ -83,8 +99,12 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
 
     LOG(INFO) << "pos: " << nodeToSearch->lastPositionIndex
               << ", cost: " << nodeToSearch->cost
-              << ", str: " << std::string(current, end);
+              << ", str: " << std::string(current, end) << ", previous: "
+              << std::string(begin + (nodeToSearch->lastPositionIndex -
+                                      nodeToSearch->length),
+                             begin + nodeToSearch->lastPositionIndex);
 
+    // TODO user dictionary
     const int numNodes = dictionary->getTrie()->commonPrefixSearch(
         current, trieResults.data(), maxTrieResults,
         static_cast<int>(end - current));
@@ -98,10 +118,22 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
       auto morpheme =
           dictionary->getUnkDictionary()->morphememap().at(category);
 
+      auto wordCost = morpheme.wordcost();
+      auto connectionCost = this->dictionary->getConnectionCost(
+          nodeToSearch->morpheme, &morpheme);
+      auto spaceCost =
+          hasSpace
+              ? internal::getSpacePenalty(nori::POSTag(morpheme.postag().at(0)))
+              : 0;
+
+      int length =
+          internal::groupingUnknownCharacters(current, category, dictionary);
+
       // TODO(jeongukjae): connection cost
-      nodes.emplace(new internal::TrieNode(
-          nodeToSearch->cost + morpheme.wordcost(),
-          nodeToSearch->lastPositionIndex + 1, 1, &morpheme, nodeToSearch));
+      nodes.emplace(
+          new internal::TrieNode(nodeToSearch->cost + wordCost + connectionCost,
+                                 nodeToSearch->lastPositionIndex + length,
+                                 length, &morpheme, nodeToSearch));
     }
 
     for (int k = 0; k < numNodes; ++k) {
@@ -112,8 +144,15 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
       for (int j = 0; j < morphemelist.morphemes_size(); j++) {
         auto morpheme = morphemelist.morphemes(j);
 
+        auto wordCost = morpheme.wordcost();
+        auto connectionCost = this->dictionary->getConnectionCost(
+            nodeToSearch->morpheme, &morpheme);
+        auto spaceCost = hasSpace ? internal::getSpacePenalty(
+                                        nori::POSTag(morpheme.postag().at(0)))
+                                  : 0;
+
         nodes.emplace(new internal::TrieNode(
-            nodeToSearch->cost + morpheme.wordcost(),
+            nodeToSearch->cost + wordCost + connectionCost + spaceCost,
             nodeToSearch->lastPositionIndex + trieResults[k].length,
             trieResults[k].length, &morpheme, nodeToSearch));
       }
