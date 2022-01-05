@@ -25,7 +25,8 @@ int main(int argc, char** argv) {
 
   nori::NoriTokenizer tokenizer(&dictionary);
   nori::Lattice lattice;
-  std::string inputs = "21세기 세종";
+  std::string inputs = "21세기 세종계획";
+  LOG(INFO) << "Input message: " << inputs;
   tokenizer.tokenize(inputs, &lattice).IgnoreError();
 
   google::protobuf::ShutdownProtobufLibrary();

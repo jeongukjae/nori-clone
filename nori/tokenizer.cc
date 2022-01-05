@@ -2,12 +2,15 @@
 
 #include <darts.h>
 #include <glog/logging.h>
+#include <google/protobuf/repeated_field.h>
 
 #include <memory>
 #include <queue>
 #include <vector>
 
 #include "nori/protos/dictionary.pb.h"
+
+#define MINIMUM_COST_DEFAULT 1e+10
 
 namespace nori {
 
@@ -30,8 +33,13 @@ struct TrieNode {
         parent(parent) {}
 };
 
-inline int getSpacePenalty(nori::POSTag tag) {
-  switch (tag) {
+inline int getSpacePenalty(
+    google::protobuf::RepeatedField<google::protobuf::int32> tagList,
+    int numSpaces) {
+  if (numSpaces == 0) return 0;
+  if (tagList.size() == 0) return 0;
+
+  switch (nori::POSTag(tagList.at(0))) {
     case nori::POSTag::E:
     case nori::POSTag::J:
     case nori::POSTag::VCP:
@@ -71,38 +79,54 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
   std::shared_ptr<internal::TrieNode> nodesByPos;
 
   auto cmp = [](SharedTrieNode left, SharedTrieNode right) {
-    return (left->lastPositionIndex > right->lastPositionIndex) ||
-           (left->cost < right->cost);
+    return left->lastPositionIndex < right->lastPositionIndex;
   };
   std::priority_queue<SharedTrieNode, std::vector<SharedTrieNode>,
                       decltype(cmp)>
       nodes(cmp);
   nodes.emplace(new internal::TrieNode(0, 0, 0, nullptr));  // bos node;
 
-  size_t minimumCost = 1e+10;
+  size_t minimumCost = MINIMUM_COST_DEFAULT;
+  SharedTrieNode optimalPath;
+
   while (nodes.size() > 0) {
     SharedTrieNode nodeToSearch = nodes.top();
     nodes.pop();
 
-    current = begin + nodeToSearch->lastPositionIndex;
-    bool hasSpace = false;
-    while (std::isspace(*current)) {
-      current++;
-      hasSpace = true;
-    }
-
-    if (current == end) {
-      // EOS
-      minimumCost = std::min(minimumCost, nodeToSearch->cost);
+    if (nodeToSearch->cost > minimumCost) {
       continue;
     }
 
-    LOG(INFO) << "pos: " << nodeToSearch->lastPositionIndex
-              << ", cost: " << nodeToSearch->cost
-              << ", str: " << std::string(current, end) << ", previous: "
-              << std::string(begin + (nodeToSearch->lastPositionIndex -
-                                      nodeToSearch->length),
-                             begin + nodeToSearch->lastPositionIndex);
+    current = begin + nodeToSearch->lastPositionIndex;
+    int numSpaces = 0;
+    while (std::isspace(*current)) {
+      current++;
+      numSpaces++;
+    }
+
+    // TODO(jeongukjae): debug log
+    // LOG(INFO) << "pos: " << nodeToSearch->lastPositionIndex
+    //           << ", cost: " << nodeToSearch->cost
+    //           << ", str: " << std::string(current, end) << ", previous: "
+    //           << std::string(begin + (nodeToSearch->lastPositionIndex -
+    //                                   nodeToSearch->length),
+    //                          begin + nodeToSearch->lastPositionIndex);
+
+    if (current == end) {
+      // EOS Node
+      auto connectionCost =
+          this->dictionary->getConnectionCost(nodeToSearch->morpheme, nullptr);
+      auto eosNode = std::shared_ptr<internal::TrieNode>(new internal::TrieNode(
+          nodeToSearch->cost + connectionCost, nodeToSearch->lastPositionIndex,
+          0, nullptr, nodeToSearch));
+
+      if (eosNode->cost < minimumCost) {
+        minimumCost = eosNode->cost;
+        optimalPath = eosNode;
+      }
+
+      continue;
+    }
 
     // TODO user dictionary
     const int numNodes = dictionary->getTrie()->commonPrefixSearch(
@@ -113,7 +137,6 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
       return absl::InternalError("Cannot search trie");
 
     if (numNodes == 0) {
-      // TODO(jeongukjae): space penalty
       auto category = dictionary->getCharClass(current);
       auto morpheme =
           dictionary->getUnkDictionary()->morphememap().at(category);
@@ -121,23 +144,19 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
       auto wordCost = morpheme.wordcost();
       auto connectionCost = this->dictionary->getConnectionCost(
           nodeToSearch->morpheme, &morpheme);
-      auto spaceCost =
-          hasSpace
-              ? internal::getSpacePenalty(nori::POSTag(morpheme.postag().at(0)))
-              : 0;
+      auto spaceCost = internal::getSpacePenalty(morpheme.postag(), numSpaces);
 
       int length =
-          internal::groupingUnknownCharacters(current, category, dictionary);
+          internal::groupingUnknownCharacters(current, category, dictionary) +
+          numSpaces;
 
-      // TODO(jeongukjae): connection cost
-      nodes.emplace(
-          new internal::TrieNode(nodeToSearch->cost + wordCost + connectionCost,
-                                 nodeToSearch->lastPositionIndex + length,
-                                 length, &morpheme, nodeToSearch));
+      nodes.emplace(new internal::TrieNode(
+          nodeToSearch->cost + wordCost + connectionCost + spaceCost,
+          nodeToSearch->lastPositionIndex + length, length, &morpheme,
+          nodeToSearch));
     }
 
     for (int k = 0; k < numNodes; ++k) {
-      // TODO(jeongukjae): connection cost
       auto morphemelist =
           dictionary->getTokenDictionary()->morphemelistmap().at(
               trieResults[k].value);
@@ -147,19 +166,26 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
         auto wordCost = morpheme.wordcost();
         auto connectionCost = this->dictionary->getConnectionCost(
             nodeToSearch->morpheme, &morpheme);
-        auto spaceCost = hasSpace ? internal::getSpacePenalty(
-                                        nori::POSTag(morpheme.postag().at(0)))
-                                  : 0;
+        auto spaceCost =
+            internal::getSpacePenalty(morpheme.postag(), numSpaces);
 
         nodes.emplace(new internal::TrieNode(
             nodeToSearch->cost + wordCost + connectionCost + spaceCost,
-            nodeToSearch->lastPositionIndex + trieResults[k].length,
+            nodeToSearch->lastPositionIndex + trieResults[k].length + numSpaces,
             trieResults[k].length, &morpheme, nodeToSearch));
       }
     }
   }
 
+  // TODO lattice output
   LOG(INFO) << minimumCost;
+  SharedTrieNode currentNode = optimalPath;
+  while (currentNode != NULL) {
+    LOG(INFO) << std::string(
+        begin + (currentNode->lastPositionIndex - currentNode->length),
+        begin + currentNode->lastPositionIndex);
+    currentNode = currentNode->parent;
+  }
 
   return absl::OkStatus();
 }
