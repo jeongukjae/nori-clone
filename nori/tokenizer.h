@@ -11,6 +11,9 @@ namespace nori {
 class Token {};
 
 class Lattice {
+ public:
+  Lattice() {}
+
  private:
 };
 
@@ -20,7 +23,8 @@ class NoriTokenizer {
                 size_t maxTrieResults = 1024)
       : dictionary(dictionary), maxTrieResults(maxTrieResults) {}
 
-  absl::Status tokenize(const std::string& text, Lattice* lattice) const;
+  // Tokenize input text and save tokenized information to lattice
+  absl::Status tokenize(const std::string& text, Lattice& lattice) const;
 
  private:
   const nori::dictionary::Dictionary* dictionary;

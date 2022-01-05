@@ -69,7 +69,7 @@ typedef Darts::DoubleArray::result_pair_type DartsResults;
 typedef std::shared_ptr<internal::TrieNode> SharedTrieNode;
 
 absl::Status NoriTokenizer::tokenize(const std::string& text,
-                                     Lattice* lattice) const {
+                                     Lattice& lattice) const {
   size_t length = text.size();
   const char* begin = text.data();
   const char* current = begin;
