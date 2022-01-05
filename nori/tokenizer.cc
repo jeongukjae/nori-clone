@@ -93,10 +93,7 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
     SharedTrieNode nodeToSearch = nodes.top();
     nodes.pop();
 
-    if (nodeToSearch->cost > minimumCost) {
-      continue;
-    }
-
+    // skip whitespaces
     current = begin + nodeToSearch->lastPositionIndex;
     int numSpaces = 0;
     while (std::isspace(*current)) {
@@ -112,8 +109,9 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
     //                                   nodeToSearch->length),
     //                          begin + nodeToSearch->lastPositionIndex);
 
+    // Handling EOS node
+    // end of parsing of this path
     if (current == end) {
-      // EOS Node
       auto connectionCost =
           this->dictionary->getConnectionCost(nodeToSearch->morpheme, nullptr);
       auto eosNode = std::shared_ptr<internal::TrieNode>(new internal::TrieNode(
@@ -128,14 +126,16 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
       continue;
     }
 
-    // TODO user dictionary
+    // TODO(jeongukjae): search user dictionary first
+
+    // pre-built dictionary
     const int numNodes = dictionary->getTrie()->commonPrefixSearch(
         current, trieResults.data(), maxTrieResults,
         static_cast<int>(end - current));
-
     if (numNodes > maxTrieResults)
       return absl::InternalError("Cannot search trie");
 
+    // handling unknown characters
     if (numNodes == 0) {
       auto category = dictionary->getCharClass(current);
       auto morpheme =
@@ -154,14 +154,18 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
           nodeToSearch->cost + wordCost + connectionCost + spaceCost,
           nodeToSearch->lastPositionIndex + length, length, &morpheme,
           nodeToSearch));
+
+      continue;
     }
 
     for (int k = 0; k < numNodes; ++k) {
-      auto morphemelist =
+      auto trieResult = trieResults[k];
+      auto morphemeList =
           dictionary->getTokenDictionary()->morphemelistmap().at(
-              trieResults[k].value);
-      for (int j = 0; j < morphemelist.morphemes_size(); j++) {
-        auto morpheme = morphemelist.morphemes(j);
+              trieResult.value);
+
+      for (int j = 0; j < morphemeList.morphemes_size(); j++) {
+        auto morpheme = morphemeList.morphemes(j);
 
         auto wordCost = morpheme.wordcost();
         auto connectionCost = this->dictionary->getConnectionCost(
@@ -171,8 +175,8 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
 
         nodes.emplace(new internal::TrieNode(
             nodeToSearch->cost + wordCost + connectionCost + spaceCost,
-            nodeToSearch->lastPositionIndex + trieResults[k].length + numSpaces,
-            trieResults[k].length, &morpheme, nodeToSearch));
+            nodeToSearch->lastPositionIndex + trieResult.length + numSpaces,
+            trieResult.length, &morpheme, nodeToSearch));
       }
     }
   }
