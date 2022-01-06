@@ -240,32 +240,31 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     U8_FWD_1_UNSAFE(begin, offset);
   }
 
-  // TODO lattice output
-  std::shared_ptr<internal::TrieNode> currentNode = optimalPath;
-  std::vector<std::shared_ptr<internal::TrieNode>> optimalPathList;
-
+  int numNode = 0;
+  auto currentNode = optimalPath;
   while (currentNode != NULL) {
-    optimalPathList.push_back(currentNode);
     currentNode = currentNode->parent;
+    numNode++;
   }
 
-  std::reverse(std::begin(optimalPathList), std::end(optimalPathList));
-
   auto outputTokens = lattice.getMutableTokens();
-  outputTokens->reserve(optimalPathList.size());
-  for (const auto& node : optimalPathList) {
-    size_t start = node->lastPositionIndex - node->length;
+  outputTokens->resize(numNode);
+  currentNode = optimalPath;
+  for (int index = numNode - 1; index >= 0;
+       index--, currentNode = currentNode->parent) {
+    size_t start = currentNode->lastPositionIndex - currentNode->length;
 
     // BOS or EOS
-    if (node->length == 0 && (node->lastPositionIndex == 0 ||
-                              node->lastPositionIndex == inputText.size())) {
-      outputTokens->emplace_back(new Token(this->dictionary->getBosEosSurface(),
-                                           node->morpheme, start,
-                                           node->length));
+    if (currentNode->length == 0 &&
+        (currentNode->lastPositionIndex == 0 ||
+         currentNode->lastPositionIndex == inputText.size())) {
+      (*outputTokens)[index] = std::make_shared<Token>(
+          this->dictionary->getBosEosSurface(), currentNode->morpheme, start,
+          currentNode->length);
     } else {
-      outputTokens->emplace_back(
-          new Token(inputText.substr(start, node->length), node->morpheme,
-                    start, node->length));
+      (*outputTokens)[index] = std::make_shared<Token>(
+          inputText.substr(start, currentNode->length), currentNode->morpheme,
+          start, currentNode->length);
     }
   }
 
