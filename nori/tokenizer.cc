@@ -38,12 +38,12 @@ struct TrieNode {
 };
 
 inline int getSpacePenalty(
-    google::protobuf::RepeatedField<google::protobuf::int32> tagList,
+    const google::protobuf::RepeatedPtrField<nori::Morpheme_ExprToken> exprList,
     int numSpaces) {
   if (numSpaces == 0) return 0;
-  if (tagList.size() == 0) return 0;
+  if (exprList.size() == 0) return 0;
 
-  switch (nori::POSTag(tagList.at(0))) {
+  switch (nori::POSTag(exprList.at(0).postag())) {
     case nori::POSTag::E:
     case nori::POSTag::J:
     case nori::POSTag::VCP:
@@ -170,7 +170,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       auto morpheme =
           dictionary->getUnkDictionary()->morphememap().at(category);
       auto wordCost = morpheme.wordcost();
-      auto spaceCost = internal::getSpacePenalty(morpheme.postag(), numSpaces);
+      auto spaceCost =
+          internal::getSpacePenalty(morpheme.expression(), numSpaces);
 
       auto parent = internal::selectParent(nodesByPos[offset], &morpheme,
                                            this->dictionary);
@@ -210,7 +211,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
         auto morpheme = morphemeList.morphemes(j);
         auto wordCost = morpheme.wordcost();
         auto spaceCost =
-            internal::getSpacePenalty(morpheme.postag(), numSpaces);
+            internal::getSpacePenalty(morpheme.expression(), numSpaces);
 
         auto parent = internal::selectParent(nodesByPos[offset], &morpheme,
                                              this->dictionary);
