@@ -105,8 +105,9 @@ const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
   return nori::CharacterClass::DEFAULT;
 }
 
-const int Dictionary::getConnectionCost(nori::Morpheme* rightMorpheme,
-                                        nori::Morpheme* leftMorpheme) const {
+const int Dictionary::getConnectionCost(
+    const nori::Morpheme* rightMorpheme,
+    const nori::Morpheme* leftMorpheme) const {
   // TODO(jeongukjae) error handling
   int rightId = (rightMorpheme == nullptr) ? 0 : rightMorpheme->rightid();
   int leftId = (leftMorpheme == nullptr) ? 0 : leftMorpheme->leftid();

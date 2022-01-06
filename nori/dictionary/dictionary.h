@@ -50,8 +50,8 @@ class Dictionary {
   }
 
   // return connection costs from right, left ids
-  const int getConnectionCost(nori::Morpheme* rightMorpheme,
-                              nori::Morpheme* leftMorpheme) const;
+  const int getConnectionCost(const nori::Morpheme* rightMorpheme,
+                              const nori::Morpheme* leftMorpheme) const;
 
  private:
   Darts::DoubleArray trie;
