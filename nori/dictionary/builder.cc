@@ -29,6 +29,13 @@ absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
   const POSType posType = utils::resolvePOSType(entry.at(8));
   morpheme->set_postype(posType);
 
+  auto posTagList = morpheme->mutable_postag();
+  std::string posTags = entry.at(4);
+  std::vector<std::string> posTokens = absl::StrSplit(posTags, '+');
+  for (const auto& posToken : posTokens) {
+    posTagList->Add(utils::resolvePOSTag(posToken));
+  }
+
   if (entry.at(11) != "*") {
     std::string expression = entry.at(11);
     std::vector<std::string> expressionTokens = absl::StrSplit(expression, '+');
@@ -45,6 +52,7 @@ absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
       token->set_surface(tokenSplit.at(0));
     }
   }
+
   return absl::OkStatus();
 }
 
@@ -358,6 +366,8 @@ absl::Status ConnectionCostsBuilder::parse(absl::string_view input) {
     array[backwardSize * forwardId + backwardId] = cost;
   }
   connectionCost.mutable_costlists()->Assign(array.begin(), array.end());
+  connectionCost.set_forwardsize(forwardSize);
+  connectionCost.set_backwardsize(backwardSize);
 
   ifs.close();
   return absl::OkStatus();

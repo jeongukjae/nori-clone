@@ -38,11 +38,16 @@ int main(int argc, char** argv) {
   status = tokenizer.tokenize(lattice, &visualizer);
   CHECK(status.ok()) << status.message();
 
-  std::string allTokens = "";
+  LOG(INFO) << "Tokenization Result: ";
   for (const auto& token : *lattice.getTokens()) {
-    absl::StrAppend(&allTokens, token->surface, ", ");
+    std::string posTagStr = "";
+    for (const auto& postag : token->morpheme->postag()) {
+      absl::StrAppend(&posTagStr, nori::POSTag_Name(postag), "+");
+    }
+    posTagStr.pop_back();
+
+    LOG(INFO) << token->surface << ", " << posTagStr;
   }
-  LOG(INFO) << "Tokenization Result: " << allTokens;
 
   LOG(INFO) << "Write output to file " << FLAGS_output;
   std::ofstream ofs(FLAGS_output);

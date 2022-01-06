@@ -14,13 +14,14 @@ namespace nori {
 
 struct Token {
   const absl::string_view surface;
-  const nori::Morpheme* morpheme;
+  const std::unique_ptr<nori::Morpheme> morpheme;
   const size_t offset;
   const size_t length;
 
-  Token(const absl::string_view surface, const nori::Morpheme* morpheme,
-        const size_t offset, const size_t length)
-      : surface(surface), morpheme(morpheme), offset(offset), length(length) {}
+  Token(const absl::string_view surface,
+        std::unique_ptr<nori::Morpheme>& morpheme, const size_t offset,
+        const size_t length)
+      : surface(surface), morpheme(std::move(morpheme)), offset(offset), length(length) {}
 };
 
 struct Lattice {

@@ -23,7 +23,7 @@ struct TrieNode {
   size_t lastPositionIndex;
   size_t length;
 
-  const nori::Morpheme* morpheme;
+  std::unique_ptr<nori::Morpheme> morpheme;
   std::shared_ptr<TrieNode> parent;
 
   TrieNode(int uniqueNodeId, size_t cost, size_t lastPositionIndex,
@@ -33,17 +33,22 @@ struct TrieNode {
         cost(cost),
         lastPositionIndex(lastPositionIndex),
         length(length),
-        morpheme(morpheme),
-        parent(parent) {}
+        parent(parent) {
+    this->morpheme.reset(morpheme->New());
+    this->morpheme->CopyFrom(*morpheme);
+  }
 };
 
 inline int getSpacePenalty(
-    const google::protobuf::RepeatedPtrField<nori::Morpheme_ExprToken> exprList,
+    const google::protobuf::RepeatedField<google::protobuf::int32> posTags,
     int numSpaces) {
   if (numSpaces == 0) return 0;
-  if (exprList.size() == 0) return 0;
+  if (posTags.size() == 0) {
+    LOG(ERROR) << "Cannot get postag";
+    return 0;
+  }
 
-  switch (nori::POSTag(exprList.at(0).postag())) {
+  switch (nori::POSTag(posTags.at(0))) {
     case nori::POSTag::E:
     case nori::POSTag::J:
     case nori::POSTag::VCP:
@@ -76,14 +81,14 @@ inline std::shared_ptr<TrieNode> selectParent(
   if (candidates.size() == 0) return nullptr;
 
   std::shared_ptr<TrieNode> result = candidates[0];
-  auto minimumCost =
-      result->cost + dictionary->getConnectionCost(result->morpheme, morpheme);
+  auto minimumCost = result->cost + dictionary->getConnectionCost(
+                                        result->morpheme.get(), morpheme);
 
   for (int i = 1; i < candidates.size(); i++) {
     auto candidate = candidates[i];
 
-    auto cost = candidate->cost +
-                dictionary->getConnectionCost(candidate->morpheme, morpheme);
+    auto cost = candidate->cost + dictionary->getConnectionCost(
+                                      candidate->morpheme.get(), morpheme);
     if (cost < minimumCost) {
       minimumCost = cost;
       result = candidate;
@@ -124,6 +129,11 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
 
   size_t offset = 0;
   while ((current = begin + offset) <= end) {
+    if (nodesByPos[0].size() == 0) {
+      U8_FWD_1_UNSAFE(begin, offset);
+      continue;
+    }
+
     // skip whitespaces
     int numSpaces = 0;
     while (std::isspace(*current)) {
@@ -137,14 +147,14 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       auto parent = internal::selectParent(nodesByPos[offset], bosEosMorpheme,
                                            this->dictionary);
       auto connectionCost = this->dictionary->getConnectionCost(
-          parent->morpheme, this->dictionary->getBosEosMorpheme());
+          parent->morpheme.get(), this->dictionary->getBosEosMorpheme());
       auto eosNode = std::shared_ptr<internal::TrieNode>(new internal::TrieNode(
           nodeId++, parent->cost + connectionCost, parent->lastPositionIndex, 0,
           this->dictionary->getBosEosMorpheme(), parent));
 
       if (visualizer != nullptr) {
         visualizer->addEos(parent->lastPositionIndex - parent->length,
-                           parent->uniqueNodeId, parent->morpheme);
+                           parent->uniqueNodeId, parent->morpheme.get());
       }
 
       if (eosNode->cost < minimumCost) {
@@ -170,13 +180,12 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       auto morpheme =
           dictionary->getUnkDictionary()->morphememap().at(category);
       auto wordCost = morpheme.wordcost();
-      auto spaceCost =
-          internal::getSpacePenalty(morpheme.expression(), numSpaces);
+      auto spaceCost = internal::getSpacePenalty(morpheme.postag(), numSpaces);
 
       auto parent = internal::selectParent(nodesByPos[offset], &morpheme,
                                            this->dictionary);
-      auto connectionCost =
-          this->dictionary->getConnectionCost(parent->morpheme, &morpheme);
+      auto connectionCost = this->dictionary->getConnectionCost(
+          parent->morpheme.get(), &morpheme);
 
       int length =
           internal::groupingUnknownCharacters(current, category, dictionary);
@@ -190,14 +199,15 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       if (visualizer != nullptr) {
         visualizer->addNode(
             parent->lastPositionIndex - parent->length, parent->uniqueNodeId,
-            parent->morpheme, parent->lastPositionIndex + numSpaces,
-            newNode->uniqueNodeId, newNode->morpheme,
+            parent->morpheme.get(), parent->lastPositionIndex + numSpaces,
+            newNode->uniqueNodeId, newNode->morpheme.get(),
             std::string(begin + (newNode->lastPositionIndex - newNode->length),
                         begin + newNode->lastPositionIndex),
-            wordCost, connectionCost);
+            wordCost, connectionCost, newNode->cost);
       }
 
-      offset += numSpaces + length;
+      offset += numSpaces;
+      U8_FWD_1_UNSAFE(begin, offset);
       continue;
     }
 
@@ -211,12 +221,12 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
         auto morpheme = morphemeList.morphemes(j);
         auto wordCost = morpheme.wordcost();
         auto spaceCost =
-            internal::getSpacePenalty(morpheme.expression(), numSpaces);
+            internal::getSpacePenalty(morpheme.postag(), numSpaces);
 
         auto parent = internal::selectParent(nodesByPos[offset], &morpheme,
                                              this->dictionary);
-        auto connectionCost =
-            this->dictionary->getConnectionCost(parent->morpheme, &morpheme);
+        auto connectionCost = this->dictionary->getConnectionCost(
+            parent->morpheme.get(), &morpheme);
 
         auto newNode = new internal::TrieNode(
             nodeId++, parent->cost + wordCost + connectionCost + spaceCost,
@@ -227,12 +237,12 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
         if (visualizer != nullptr) {
           visualizer->addNode(
               parent->lastPositionIndex - parent->length, parent->uniqueNodeId,
-              parent->morpheme, parent->lastPositionIndex + numSpaces,
-              newNode->uniqueNodeId, newNode->morpheme,
+              parent->morpheme.get(), parent->lastPositionIndex + numSpaces,
+              newNode->uniqueNodeId, newNode->morpheme.get(),
               std::string(
                   begin + (newNode->lastPositionIndex - newNode->length),
                   begin + newNode->lastPositionIndex),
-              wordCost, connectionCost);
+              wordCost, connectionCost, newNode->cost);
         }
       }
     }

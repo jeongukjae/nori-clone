@@ -17,14 +17,12 @@ std::string getPosTagString(const nori::Morpheme* morpheme) {
   }
 
   std::string result = "";
-  auto size = morpheme->expression_size();
+  auto size = morpheme->postag_size();
   for (int i = 0; i < size; i++) {
     if (i != size - 1)
-      absl::StrAppend(&result,
-                      nori::POSTag_Name(morpheme->expression(i).postag()), "+");
+      absl::StrAppend(&result, nori::POSTag_Name(morpheme->postag(i)), "+");
     else
-      absl::StrAppend(&result,
-                      nori::POSTag_Name(morpheme->expression(i).postag()));
+      absl::StrAppend(&result, nori::POSTag_Name(morpheme->postag(i)));
   }
 
   return result;
@@ -54,14 +52,15 @@ void GraphvizVisualizer::addNode(size_t fromIndex, size_t fromNodeId,
                                  const nori::Morpheme* fromMorpheme,
                                  size_t toIndex, size_t toNodeId,
                                  const nori::Morpheme* toMorpheme,
-                                 const std::string stringForm, size_t wordCost,
-                                 int connectionCost) {
+                                 const std::string stringForm, int wordCost,
+                                 int connectionCost, size_t cost) {
   auto fromNodeLabel = internal::getNodeLabel(fromIndex, fromNodeId);
   auto toNodeLabel = internal::getNodeLabel(toIndex, toNodeId);
 
   // node ref
-  absl::StrAppend(&this->data, "  ", toNodeLabel, " [label=\"", toIndex, ": ",
-                  (toMorpheme == nullptr ? 0 : toMorpheme->rightid()), "\"]\n");
+  absl::StrAppend(&this->data, "  ", toNodeLabel, " [label=\"",
+                  toMorpheme->leftid(), ":", toMorpheme->rightid(),
+                  ", cost: ", cost, "\"]\n");
   // arc
   absl::StrAppend(&this->data, "  ", fromNodeLabel, " -> ", toNodeLabel,
                   " [label=\"", stringForm, " ", wordCost, ", ", connectionCost,

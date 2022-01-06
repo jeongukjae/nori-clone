@@ -22,8 +22,8 @@ class GraphvizVisualizer {
   void addNode(size_t fromIndex, size_t fromNodeId,
                const nori::Morpheme* fromMorpheme, size_t toIndex,
                size_t toNodeId, const nori::Morpheme* toMorpheme,
-               const std::string stringForm, size_t wordCost,
-               int connectionCost);
+               const std::string stringForm, int wordCost, int connectionCost,
+               size_t cost);
   void addEos(size_t fromIndex, size_t fromNodeId,
               const nori::Morpheme* fromMorpheme);
   void finish();
