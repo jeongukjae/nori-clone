@@ -2,9 +2,11 @@
 #define __NORI_TOKENIZER_H__
 
 #include <memory>
+#include <string>
 
 #include "absl/status/status.h"
 #include "nori/dictionary/dictionary.h"
+#include "nori/graphviz_visualize.h"
 
 namespace nori {
 
@@ -24,7 +26,8 @@ class NoriTokenizer {
       : dictionary(dictionary), maxTrieResults(maxTrieResults) {}
 
   // Tokenize input text and save tokenized information to lattice
-  absl::Status tokenize(const std::string& text, Lattice& lattice) const;
+  absl::Status tokenize(const std::string& text, Lattice& lattice,
+                        GraphvizVisualizer* visualizer = nullptr) const;
 
  private:
   const nori::dictionary::Dictionary* dictionary;

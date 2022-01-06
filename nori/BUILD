@@ -28,6 +28,7 @@ cc_library(
     srcs = ["tokenizer.cc"],
     hdrs = ["tokenizer.h"],
     deps = [
+        ":graphviz_visualize",
         "//nori/dictionary",
         "@com_google_absl//absl/status",
         "@darts_clone",
@@ -42,6 +43,21 @@ cc_test(
     ],
     deps = [
         ":tokenizer",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "graphviz_visualize",
+    srcs = ["graphviz_visualize.cc"],
+    hdrs = ["graphviz_visualize.h"],
+)
+
+cc_test(
+    name = "graphviz_visualize_test",
+    srcs = ["graphviz_visualize_test.cc"],
+    deps = [
+        ":graphviz_visualize",
         "@com_google_googletest//:gtest_main",
     ],
 )

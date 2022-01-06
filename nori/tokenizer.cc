@@ -68,8 +68,12 @@ inline int groupingUnknownCharacters(
 typedef Darts::DoubleArray::result_pair_type DartsResults;
 typedef std::shared_ptr<internal::TrieNode> SharedTrieNode;
 
-absl::Status NoriTokenizer::tokenize(const std::string& text,
-                                     Lattice& lattice) const {
+absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
+                                     GraphvizVisualizer* visualizer) const {
+  if (visualizer != nullptr) {
+    visualizer->reset();
+  }
+
   size_t length = text.size();
   const char* begin = text.data();
   const char* current = begin;
@@ -189,6 +193,10 @@ absl::Status NoriTokenizer::tokenize(const std::string& text,
         begin + (currentNode->lastPositionIndex - currentNode->length),
         begin + currentNode->lastPositionIndex);
     currentNode = currentNode->parent;
+  }
+
+  if (visualizer != nullptr) {
+    visualizer->finish();
   }
 
   return absl::OkStatus();

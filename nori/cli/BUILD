@@ -1,7 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 cc_binary(
-    name = "build-dictionary",
+    name = "build_dictionary",
     srcs = ["build_dictionary.cc"],
     deps = [
         "//nori/dictionary:builder",
@@ -12,7 +12,7 @@ cc_binary(
 )
 
 cc_binary(
-    name = "check-dictionary",
+    name = "check_dictionary",
     srcs = ["check_dictionary.cc"],
     deps = [
         "//nori/dictionary:dictionary",
@@ -23,8 +23,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "test",
-    srcs = ["test.cc"],
+    name = "visualize_graphviz",
+    srcs = ["visualize_graphviz.cc"],
     deps = [
         "//nori/dictionary:dictionary",
         "//nori:tokenizer",
