@@ -59,11 +59,14 @@ inline int getSpacePenalty(
 inline int groupingUnknownCharacters(
     const char* current, nori::CharacterClass category,
     const nori::dictionary::Dictionary* dictionary) {
-  int maxLength = 1;
-  for (; dictionary->getCharClass(current + maxLength) == category; maxLength++)
-    ;
+  int offset = 0;
+  U8_FWD_1_UNSAFE(current, offset);
 
-  return maxLength;
+  for (; dictionary->getCharClass(current + offset) == category;) {
+    U8_FWD_1_UNSAFE(current, offset);
+  }
+
+  return offset;
 }
 
 inline std::shared_ptr<TrieNode> selectParent(
@@ -199,8 +202,7 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
             wordCost, connectionCost);
       }
 
-      offset += numSpaces;
-      U8_FWD_N_UNSAFE(begin, offset, length);
+      offset += numSpaces + length;
       continue;
     }
 
