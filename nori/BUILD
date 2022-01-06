@@ -51,6 +51,9 @@ cc_library(
     name = "graphviz_visualize",
     srcs = ["graphviz_visualize.cc"],
     hdrs = ["graphviz_visualize.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
+    ]
 )
 
 cc_test(
