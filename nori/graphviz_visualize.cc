@@ -68,6 +68,16 @@ void GraphvizVisualizer::addNode(size_t fromIndex, size_t fromNodeId,
                   " & ", internal::getPosTagString(toMorpheme), "\"]\n");
 }
 
+void GraphvizVisualizer::addEos(size_t fromIndex, size_t fromNodeId,
+                                const nori::Morpheme* fromMorpheme) {
+  auto fromNodeLabel = internal::getNodeLabel(fromIndex, fromNodeId);
+  auto toNodeLabel = absl::StrCat("eos", fromNodeId);
+
+  absl::StrAppend(&this->data, "  ", toNodeLabel, " [style=invis]\n");
+  absl::StrAppend(&this->data, "  ", fromNodeLabel, " -> ", toNodeLabel,
+                  " [label=\"", eosLabel, "\"]\n");
+}
+
 void GraphvizVisualizer::finish() { absl::StrAppend(&this->data, "}"); }
 
 }  // namespace nori

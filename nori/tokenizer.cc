@@ -127,6 +127,12 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
           nodeId++, nodeToSearch->cost + connectionCost,
           nodeToSearch->lastPositionIndex, 0, nullptr, nodeToSearch));
 
+      if (visualizer != nullptr) {
+        visualizer->addEos(
+            nodeToSearch->lastPositionIndex - nodeToSearch->length,
+            nodeToSearch->uniqueNodeId, nodeToSearch->morpheme);
+      }
+
       if (eosNode->cost < minimumCost) {
         minimumCost = eosNode->cost;
         optimalPath = eosNode;
