@@ -52,6 +52,7 @@ cc_library(
     srcs = ["graphviz_visualize.cc"],
     hdrs = ["graphviz_visualize.h"],
     deps = [
+        "//nori/dictionary",
         "@com_google_absl//absl/strings",
     ]
 )

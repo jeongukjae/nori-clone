@@ -17,6 +17,7 @@ namespace nori {
 namespace internal {
 
 struct TrieNode {
+  int uniqueNodeId;
   size_t cost;
   size_t lastPositionIndex;
   size_t length;
@@ -24,9 +25,11 @@ struct TrieNode {
   nori::Morpheme* morpheme;
   std::shared_ptr<TrieNode> parent;
 
-  TrieNode(size_t cost, size_t lastPositionIndex, size_t length,
-           nori::Morpheme* morpheme, std::shared_ptr<TrieNode> parent = nullptr)
-      : cost(cost),
+  TrieNode(int uniqueNodeId, size_t cost, size_t lastPositionIndex,
+           size_t length, nori::Morpheme* morpheme,
+           std::shared_ptr<TrieNode> parent = nullptr)
+      : uniqueNodeId(uniqueNodeId),
+        cost(cost),
         lastPositionIndex(lastPositionIndex),
         length(length),
         morpheme(morpheme),
@@ -82,13 +85,15 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
 
   std::shared_ptr<internal::TrieNode> nodesByPos;
 
+  int nodeId = 0;
   auto cmp = [](SharedTrieNode left, SharedTrieNode right) {
     return left->lastPositionIndex < right->lastPositionIndex;
   };
   std::priority_queue<SharedTrieNode, std::vector<SharedTrieNode>,
                       decltype(cmp)>
       nodes(cmp);
-  nodes.emplace(new internal::TrieNode(0, 0, 0, nullptr));  // bos node;
+  nodes.emplace(
+      new internal::TrieNode(nodeId++, 0, 0, 0, nullptr));  // bos node;
 
   size_t minimumCost = MINIMUM_COST_DEFAULT;
   SharedTrieNode optimalPath;
@@ -119,8 +124,8 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
       auto connectionCost =
           this->dictionary->getConnectionCost(nodeToSearch->morpheme, nullptr);
       auto eosNode = std::shared_ptr<internal::TrieNode>(new internal::TrieNode(
-          nodeToSearch->cost + connectionCost, nodeToSearch->lastPositionIndex,
-          0, nullptr, nodeToSearch));
+          nodeId++, nodeToSearch->cost + connectionCost,
+          nodeToSearch->lastPositionIndex, 0, nullptr, nodeToSearch));
 
       if (eosNode->cost < minimumCost) {
         minimumCost = eosNode->cost;
@@ -154,10 +159,22 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
           internal::groupingUnknownCharacters(current, category, dictionary) +
           numSpaces;
 
-      nodes.emplace(new internal::TrieNode(
-          nodeToSearch->cost + wordCost + connectionCost + spaceCost,
+      auto newNode = new internal::TrieNode(
+          nodeId++, nodeToSearch->cost + wordCost + connectionCost + spaceCost,
           nodeToSearch->lastPositionIndex + length, length, &morpheme,
-          nodeToSearch));
+          nodeToSearch);
+      nodes.emplace(newNode);
+
+      if (visualizer != nullptr) {
+        visualizer->addNode(
+            nodeToSearch->lastPositionIndex - nodeToSearch->length,
+            nodeToSearch->uniqueNodeId, nodeToSearch->morpheme,
+            nodeToSearch->lastPositionIndex + numSpaces, newNode->uniqueNodeId,
+            newNode->morpheme,
+            std::string(begin + (nodeToSearch->lastPositionIndex + numSpaces),
+                        begin + newNode->lastPositionIndex),
+            wordCost, connectionCost);
+      }
 
       continue;
     }
@@ -177,10 +194,23 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
         auto spaceCost =
             internal::getSpacePenalty(morpheme.postag(), numSpaces);
 
-        nodes.emplace(new internal::TrieNode(
+        auto newNode = new internal::TrieNode(
+            nodeId++,
             nodeToSearch->cost + wordCost + connectionCost + spaceCost,
             nodeToSearch->lastPositionIndex + trieResult.length + numSpaces,
-            trieResult.length, &morpheme, nodeToSearch));
+            trieResult.length, &morpheme, nodeToSearch);
+        nodes.emplace(newNode);
+
+        if (visualizer != nullptr) {
+          visualizer->addNode(
+              nodeToSearch->lastPositionIndex - nodeToSearch->length,
+              nodeToSearch->uniqueNodeId, nodeToSearch->morpheme,
+              nodeToSearch->lastPositionIndex + numSpaces,
+              newNode->uniqueNodeId, newNode->morpheme,
+              std::string(begin + (nodeToSearch->lastPositionIndex + numSpaces),
+                          begin + newNode->lastPositionIndex),
+              wordCost, connectionCost);
+        }
       }
     }
   }

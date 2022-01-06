@@ -1,8 +1,36 @@
 #include "nori/graphviz_visualize.h"
 
 #include "absl/strings/str_cat.h"
+#include "nori/protos/dictionary.pb.h"
 
 namespace nori {
+
+namespace internal {
+
+inline std::string getNodeLabel(size_t position, size_t nodeId) {
+  return absl::StrCat(position, ".", nodeId);
+}
+
+std::string getPosTagString(const nori::Morpheme* morpheme) {
+  if (morpheme == nullptr) {
+    return "";
+  }
+
+  std::string result = "";
+  auto size = morpheme->expression_size();
+  for (int i = 0; i < size; i++) {
+    if (i != size - 1)
+      absl::StrAppend(&result,
+                      nori::POSTag_Name(morpheme->expression(i).postag()), "+");
+    else
+      absl::StrAppend(&result,
+                      nori::POSTag_Name(morpheme->expression(i).postag()));
+  }
+
+  return result;
+}
+
+}  // namespace internal
 
 void GraphvizVisualizer::reset() {
   this->data = absl::StrCat(
@@ -22,7 +50,23 @@ void GraphvizVisualizer::reset() {
       this->bosLabel, "\"]\n");
 }
 
-void GraphvizVisualizer::addNode() {}
+void GraphvizVisualizer::addNode(size_t fromIndex, size_t fromNodeId,
+                                 const nori::Morpheme* fromMorpheme,
+                                 size_t toIndex, size_t toNodeId,
+                                 const nori::Morpheme* toMorpheme,
+                                 const std::string stringForm, size_t wordCost,
+                                 int connectionCost) {
+  auto fromNodeLabel = internal::getNodeLabel(fromIndex, fromNodeId);
+  auto toNodeLabel = internal::getNodeLabel(toIndex, toNodeId);
+
+  // node ref
+  absl::StrAppend(&this->data, "  ", toNodeLabel, " [label=\"", toIndex, ": ",
+                  (toMorpheme == nullptr ? 0 : toMorpheme->rightid()), "\"]\n");
+  // arc
+  absl::StrAppend(&this->data, "  ", fromNodeLabel, " -> ", toNodeLabel,
+                  " [label=\"", stringForm, " ", wordCost, ", ", connectionCost,
+                  " & ", internal::getPosTagString(toMorpheme), "\"]\n");
+}
 
 void GraphvizVisualizer::finish() { absl::StrAppend(&this->data, "}"); }
 
