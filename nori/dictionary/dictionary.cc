@@ -44,6 +44,11 @@ absl::Status deserializeProtobuf(const std::string& path, T& message) {
 }  // namespace internal
 
 absl::Status Dictionary::load(absl::string_view input) {
+  this->bosEosSurface = "BOS/EOS";
+  this->bosEosMorpheme.set_leftid(0);
+  this->bosEosMorpheme.set_rightid(0);
+  this->bosEosMorpheme.set_wordcost(0);
+
   {
     std::string path = utils::internal::joinPath(input, NORI_DICT_FILE);
     LOG(INFO) << "Read trie dictionary " << path;
@@ -109,10 +114,8 @@ const int Dictionary::getConnectionCost(
     const nori::Morpheme* rightMorpheme,
     const nori::Morpheme* leftMorpheme) const {
   // TODO(jeongukjae) error handling
-  int rightId = (rightMorpheme == nullptr) ? 0 : rightMorpheme->rightid();
-  int leftId = (leftMorpheme == nullptr) ? 0 : leftMorpheme->leftid();
-
-  return connectionCost.costlists().at(backwardSize * rightId + leftId);
+  return connectionCost.costlists().at(backwardSize * rightMorpheme->rightid() +
+                                       leftMorpheme->leftid());
 }
 
 }  // namespace dictionary

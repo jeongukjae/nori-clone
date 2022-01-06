@@ -33,8 +33,16 @@ int main(int argc, char** argv) {
   nori::GraphvizVisualizer visualizer;
 
   std::string inputs = FLAGS_input;
-  LOG(INFO) << "Input message: " << inputs;
-  tokenizer.tokenize(inputs, lattice, &visualizer).IgnoreError();
+  LOG(INFO) << "Input message: " << FLAGS_input;
+  lattice.setSentence(FLAGS_input);
+  status = tokenizer.tokenize(lattice, &visualizer);
+  CHECK(status.ok()) << status.message();
+
+  std::string allTokens = "";
+  for (const auto& token : *lattice.getTokens()) {
+    absl::StrAppend(&allTokens, token->surface, ", ");
+  }
+  LOG(INFO) << "Tokenization Result: " << allTokens;
 
   LOG(INFO) << "Write output to file " << FLAGS_output;
   std::ofstream ofs(FLAGS_output);

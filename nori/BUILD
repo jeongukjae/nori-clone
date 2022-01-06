@@ -31,6 +31,7 @@ cc_library(
         ":graphviz_visualize",
         "//nori/dictionary",
         "@icu//:common",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/status",
         "@darts_clone",
     ],

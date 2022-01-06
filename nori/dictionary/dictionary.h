@@ -53,12 +53,20 @@ class Dictionary {
   const int getConnectionCost(const nori::Morpheme* rightMorpheme,
                               const nori::Morpheme* leftMorpheme) const;
 
+  const nori::Morpheme* getBosEosMorpheme() const {
+    return &this->bosEosMorpheme;
+  }
+  absl::string_view getBosEosSurface() const { return this->bosEosSurface; }
+
  private:
   Darts::DoubleArray trie;
   nori::TokenInfoDictionary tokenDictionary;
   nori::UnknownDictionary unkDictionary;
   nori::CharacterClassDictionary charDictionary;
   nori::ConnectionCost connectionCost;
+
+  nori::Morpheme bosEosMorpheme;
+  std::string bosEosSurface;
 
   // from connectionCost
   int backwardSize, forwardSize;

@@ -23,11 +23,11 @@ struct TrieNode {
   size_t lastPositionIndex;
   size_t length;
 
-  nori::Morpheme* morpheme;
+  const nori::Morpheme* morpheme;
   std::shared_ptr<TrieNode> parent;
 
   TrieNode(int uniqueNodeId, size_t cost, size_t lastPositionIndex,
-           size_t length, nori::Morpheme* morpheme,
+           size_t length, const nori::Morpheme* morpheme,
            std::shared_ptr<TrieNode> parent = nullptr)
       : uniqueNodeId(uniqueNodeId),
         cost(cost),
@@ -97,16 +97,18 @@ inline std::shared_ptr<TrieNode> selectParent(
 // NoriTokenizer class
 typedef Darts::DoubleArray::result_pair_type DartsResults;
 
-absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
+absl::Status NoriTokenizer::tokenize(Lattice& lattice,
                                      GraphvizVisualizer* visualizer) const {
   if (visualizer != nullptr) {
     visualizer->reset();
   }
 
-  size_t inputLength = text.size();
-  const char* begin = text.data();
+  const nori::Morpheme* bosEosMorpheme = this->dictionary->getBosEosMorpheme();
+  absl::string_view inputText = lattice.getSentence();
+
+  const char* begin = inputText.begin();
   const char* current = begin;
-  const char* end = text.data() + inputLength;
+  const char* end = inputText.end();
   std::vector<DartsResults> trieResults(maxTrieResults + 1);
 
   int nodeId = 0;
@@ -115,7 +117,7 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
 
   // bos node;
   nodesByPos[0].emplace_back(
-      new internal::TrieNode(nodeId++, 0, 0, 0, nullptr));
+      new internal::TrieNode(nodeId++, 0, 0, 0, bosEosMorpheme));
 
   size_t minimumCost = MINIMUM_COST_DEFAULT;
   std::shared_ptr<internal::TrieNode> optimalPath;
@@ -129,24 +131,16 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
       numSpaces++;
     }
 
-    // TODO(jeongukjae): debug log
-    // LOG(INFO) << "pos: " << nodeToSearch->lastPositionIndex
-    //           << ", cost: " << nodeToSearch->cost
-    //           << ", str: " << std::string(current, end) << ", previous: "
-    //           << std::string(begin + (nodeToSearch->lastPositionIndex -
-    //                                   nodeToSearch->length),
-    //                          begin + nodeToSearch->lastPositionIndex);
-
     // Handling EOS node
     // end of parsing of this path
     if (current == end) {
-      auto parent =
-          internal::selectParent(nodesByPos[offset], nullptr, this->dictionary);
-      auto connectionCost =
-          this->dictionary->getConnectionCost(parent->morpheme, nullptr);
+      auto parent = internal::selectParent(nodesByPos[offset], bosEosMorpheme,
+                                           this->dictionary);
+      auto connectionCost = this->dictionary->getConnectionCost(
+          parent->morpheme, this->dictionary->getBosEosMorpheme());
       auto eosNode = std::shared_ptr<internal::TrieNode>(new internal::TrieNode(
           nodeId++, parent->cost + connectionCost, parent->lastPositionIndex, 0,
-          nullptr, parent));
+          this->dictionary->getBosEosMorpheme(), parent));
 
       if (visualizer != nullptr) {
         visualizer->addEos(parent->lastPositionIndex - parent->length,
@@ -247,13 +241,32 @@ absl::Status NoriTokenizer::tokenize(const std::string& text, Lattice& lattice,
   }
 
   // TODO lattice output
-  LOG(INFO) << minimumCost;
   std::shared_ptr<internal::TrieNode> currentNode = optimalPath;
+  std::vector<std::shared_ptr<internal::TrieNode>> optimalPathList;
+
   while (currentNode != NULL) {
-    LOG(INFO) << std::string(
-        begin + (currentNode->lastPositionIndex - currentNode->length),
-        begin + currentNode->lastPositionIndex);
+    optimalPathList.push_back(currentNode);
     currentNode = currentNode->parent;
+  }
+
+  std::reverse(std::begin(optimalPathList), std::end(optimalPathList));
+
+  auto outputTokens = lattice.getMutableTokens();
+  outputTokens->reserve(optimalPathList.size());
+  for (const auto& node : optimalPathList) {
+    size_t start = node->lastPositionIndex - node->length;
+
+    // BOS or EOS
+    if (node->length == 0 && (node->lastPositionIndex == 0 ||
+                              node->lastPositionIndex == inputText.size())) {
+      outputTokens->emplace_back(new Token(this->dictionary->getBosEosSurface(),
+                                           node->morpheme, start,
+                                           node->length));
+    } else {
+      outputTokens->emplace_back(
+          new Token(inputText.substr(start, node->length), node->morpheme,
+                    start, node->length));
+    }
   }
 
   if (visualizer != nullptr) {
