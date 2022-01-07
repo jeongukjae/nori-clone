@@ -23,3 +23,5 @@ class TokenizerFixture : public ::testing::Test {
 TEST_F(TokenizerFixture, loadTokenizer) {
   NoriTokenizer tokenizer(&dictionary);
 }
+
+// TODO(jeongukjae): rewrite tokenizer tests in lucene

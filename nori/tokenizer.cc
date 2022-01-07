@@ -129,7 +129,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
 
   size_t offset = 0;
   while ((current = begin + offset) <= end) {
-    if (nodesByPos[0].size() == 0) {
+    if (nodesByPos[offset].size() == 0) {
       U8_FWD_1_UNSAFE(begin, offset);
       continue;
     }
@@ -180,7 +180,9 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       auto morpheme =
           dictionary->getUnkDictionary()->morphememap().at(category);
       auto wordCost = morpheme.wordcost();
-      auto spaceCost = internal::getSpacePenalty(morpheme.postag(), numSpaces);
+      // auto spaceCost = internal::getSpacePenalty(morpheme.postag(),
+      // numSpaces);
+      int spaceCost = 0;
 
       auto parent = internal::selectParent(nodesByPos[offset], &morpheme,
                                            this->dictionary);
@@ -206,8 +208,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
             wordCost, connectionCost, newNode->cost);
       }
 
-      offset += numSpaces;
-      U8_FWD_1_UNSAFE(begin, offset);
+      offset += numSpaces + length;
       continue;
     }
 

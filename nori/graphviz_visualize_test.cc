@@ -20,3 +20,5 @@ TEST(GraphvizVisualizer, emptyGraph) {
       "  init -> 0.0 [label=\"BOS\"]\n"
       "}");
 }
+
+// TODO(jeongukjae): addNode and addEosNode test cases
