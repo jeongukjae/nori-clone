@@ -15,6 +15,7 @@
 DEFINE_string(dictionary, "./dictionary", "Path to nori dictionary");
 DEFINE_string(input, "21세기 세종계획", "Text to analyze");
 DEFINE_string(output, "nori.dot", "Output path for dotfile");
+DEFINE_bool(visualize, true, "dump graphviz output");
 
 int main(int argc, char** argv) {
   FLAGS_alsologtostderr = 1;
@@ -35,7 +36,11 @@ int main(int argc, char** argv) {
   std::string inputs = FLAGS_input;
   LOG(INFO) << "Input message: " << FLAGS_input;
   lattice.setSentence(FLAGS_input);
-  status = tokenizer.tokenize(lattice, &visualizer);
+  if (FLAGS_visualize) {
+    status = tokenizer.tokenize(lattice, &visualizer);
+  } else {
+    status = tokenizer.tokenize(lattice);
+  }
   CHECK(status.ok()) << status.message();
 
   LOG(INFO) << "Tokenization Result: ";
@@ -49,11 +54,14 @@ int main(int argc, char** argv) {
     LOG(INFO) << token->surface << ", " << posTagStr;
   }
 
-  LOG(INFO) << "Write output to file " << FLAGS_output;
-  std::ofstream ofs(FLAGS_output);
-  CHECK(ofs.good()) << "Cannot open file to write";
-  ofs << visualizer.str();
-  ofs.close();
+  if (FLAGS_visualize) {
+    LOG(INFO) << "Write output to file " << FLAGS_output;
+    std::ofstream ofs(FLAGS_output);
+    CHECK(ofs.good()) << "Cannot open file to write";
+    ofs << visualizer.str();
+    ofs.close();
+  }
+
   LOG(INFO) << "Done.";
 
   google::protobuf::ShutdownProtobufLibrary();
