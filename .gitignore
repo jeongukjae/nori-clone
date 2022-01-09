@@ -2,6 +2,8 @@
 bazel-*
 .vscode/settings.json
 .vscode/c_cpp_properties.json
+nori.dot
+outfile.png
 
 # Prerequisites
 *.d
