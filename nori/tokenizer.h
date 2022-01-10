@@ -26,11 +26,13 @@ struct Token {
 struct Lattice {
  public:
   Lattice() {}
+  Lattice(std::string sentence) : sentence(sentence) {}
 
   void clear() {
+    clearState();
     sentence.clear();
-    tokens.clear();
   }
+  void clearState() { tokens.clear(); }
   void setSentence(std::string sentence) { this->sentence = sentence; }
   const absl::string_view getSentence() const { return this->sentence; }
   const std::vector<std::shared_ptr<Token>>* getTokens() const {

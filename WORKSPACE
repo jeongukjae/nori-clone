@@ -90,5 +90,3 @@ http_archive(
     strip_prefix = "snappy-1.1.9",
     urls = ["https://github.com/google/snappy/archive/1.1.9.zip"],
 )
-
-# TODO(jeongukjae) tcmalloc

@@ -50,7 +50,10 @@ class Dictionary {
   }
 
   // return connection costs from right, left ids
-  const int getConnectionCost(const int rightId, const int leftId) const;
+  const inline int getConnectionCost(const int rightId,
+                                     const int leftId) const {
+    return connectionCostData[backwardSize * rightId + leftId];
+  }
 
   const nori::Morpheme* getBosEosMorpheme() const {
     return &this->bosEosMorpheme;
@@ -69,6 +72,8 @@ class Dictionary {
 
   // from connectionCost
   int backwardSize, forwardSize;
+  int connectionCostMax;
+  const google::protobuf::int32* connectionCostData;
 };
 
 }  // namespace dictionary

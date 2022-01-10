@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <chrono>
 #include <fstream>
 
 #include "absl/strings/str_cat.h"
@@ -18,6 +19,7 @@ DEFINE_string(input,
               "Nori-clone은 C++로 Nori를 재작성하기 위한 프로젝트입니다.",
               "Text to analyze");
 DEFINE_string(output, "nori.dot", "Output path for dotfile");
+DEFINE_int32(n_repeat, 1000, "num repeats");
 
 int main(int argc, char** argv) {
   FLAGS_alsologtostderr = 1;
@@ -32,14 +34,23 @@ int main(int argc, char** argv) {
   CHECK(status.ok()) << status.message();
 
   nori::NoriTokenizer tokenizer(&dictionary);
-  nori::GraphvizVisualizer visualizer;
   LOG(INFO) << "Input message: " << FLAGS_input;
-  nori::Lattice lattice(FLAGS_input);
+  nori::Lattice lattice;
 
-  status = tokenizer.tokenize(lattice, &visualizer);
-  CHECK(status.ok()) << status.message();
+  std::chrono::system_clock::time_point start =
+      std::chrono::system_clock::now();
 
-  LOG(INFO) << "Tokenization Result: ";
+  for (int i = 0; i < FLAGS_n_repeat; i++) {
+    lattice.clear();
+    lattice.setSentence(FLAGS_input);
+    tokenizer.tokenize(lattice).IgnoreError();
+  }
+
+  std::chrono::milliseconds elapsedMs =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now() - start);
+
+  LOG(INFO) << "Elapsed: " << elapsedMs.count() << "ms, Tokenization Result. ";
   for (const auto& token : *lattice.getTokens()) {
     std::string posTagStr = "";
     for (const auto& postag : token->morpheme->postag()) {
@@ -49,12 +60,6 @@ int main(int argc, char** argv) {
 
     LOG(INFO) << token->surface << ", " << posTagStr;
   }
-
-  LOG(INFO) << "Write output to file " << FLAGS_output;
-  std::ofstream ofs(FLAGS_output);
-  CHECK(ofs.good()) << "Cannot open file to write";
-  ofs << visualizer.str();
-  ofs.close();
 
   LOG(INFO) << "Done.";
 

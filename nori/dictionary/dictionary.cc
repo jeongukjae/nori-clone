@@ -90,6 +90,8 @@ absl::Status Dictionary::load(absl::string_view input) {
   // backwardSize
   backwardSize = connectionCost.backwardsize();
   forwardSize = connectionCost.forwardsize();
+  connectionCostData = connectionCost.costlists().data();
+  connectionCostMax = connectionCost.costlists_size();
 
   LOG(INFO) << "Done reading dictionary.";
 
@@ -108,12 +110,6 @@ const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
     return it->second;
   }
   return nori::CharacterClass::DEFAULT;
-}
-
-const int Dictionary::getConnectionCost(const int rightId,
-                                        const int leftId) const {
-  // TODO(jeongukjae) error handling
-  return connectionCost.costlists().at(backwardSize * rightId + leftId);
 }
 
 }  // namespace dictionary
