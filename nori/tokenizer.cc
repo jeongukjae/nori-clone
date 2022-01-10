@@ -148,9 +148,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       const nori::Morpheme* morpheme =
           &dictionary->getUnkDictionary()->morphememap().at(category);
       const int wordCost = morpheme->wordcost();
-      // auto spaceCost = internal::getSpacePenalty(morpheme->postag(),
-      // numSpaces);
-      const int spaceCost = 0;
+      auto spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
       int connectionCost;
       auto parent = internal::selectParent(nodesByPos[offset], morpheme,
                                            this->dictionary, connectionCost);

@@ -228,6 +228,8 @@ absl::Status UnknownDictionaryBuilder::parse(absl::string_view input) {
         utils::internal::simpleAtoi(entry.at(2)));
     (*morphemeMap)[chClass].set_wordcost(
         utils::internal::simpleAtoi(entry.at(3)));
+    (*morphemeMap)[chClass].mutable_postag()->Add(
+        utils::resolvePOSTag(entry.at(4)));
 
     return absl::OkStatus();
   };
