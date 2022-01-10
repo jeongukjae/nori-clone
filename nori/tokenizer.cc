@@ -38,16 +38,14 @@ struct TrieNode {
         parent(parent) {}
 };
 
-inline int getSpacePenalty(
-    const google::protobuf::RepeatedField<google::protobuf::int32> posTags,
-    int numSpaces) {
+inline int getSpacePenalty(const nori::Morpheme* morpheme, int numSpaces) {
   if (numSpaces == 0) return 0;
-  if (posTags.size() == 0) {
+  if (morpheme->postag_size() == 0) {
     LOG(ERROR) << "Cannot get postag";
     return 0;
   }
 
-  switch (nori::POSTag(posTags.at(0))) {
+  switch (nori::POSTag(morpheme->postag(0))) {
     case nori::POSTag::E:
     case nori::POSTag::J:
     case nori::POSTag::VCP:
@@ -80,21 +78,22 @@ inline std::shared_ptr<TrieNode> selectParent(
   auto candidatesSize = candidates.size();
   if (candidatesSize == 0) return nullptr;
 
-  std::shared_ptr<TrieNode> result = candidates[0];
+  int result = 0;
   auto minimumCost =
-      result->cost + dictionary->getConnectionCost(result->morpheme, morpheme);
+      candidates[0]->cost +
+      dictionary->getConnectionCost(candidates[0]->morpheme->rightid(),
+                                    morpheme->leftid());
 
   for (int i = 1; i < candidatesSize; i++) {
-    auto candidate = candidates[i];
-
-    auto cost = candidate->cost +
-                dictionary->getConnectionCost(candidate->morpheme, morpheme);
+    auto cost = candidates[i]->cost +
+                dictionary->getConnectionCost(
+                    candidates[i]->morpheme->rightid(), morpheme->leftid());
     if (cost < minimumCost) {
       minimumCost = cost;
-      result = candidate;
+      result = i;
     }
   }
-  return result;
+  return candidates[result];
 }
 
 }  // namespace internal
@@ -148,7 +147,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       auto parent = internal::selectParent(nodesForOffset, bosEosMorpheme,
                                            this->dictionary);
       auto connectionCost = this->dictionary->getConnectionCost(
-          parent->morpheme, this->dictionary->getBosEosMorpheme());
+          parent->morpheme->rightid(),
+          this->dictionary->getBosEosMorpheme()->leftid());
       auto eosNode = std::shared_ptr<internal::TrieNode>(new internal::TrieNode(
           nodeId++, parent->cost + connectionCost, parent->lastPositionIndex, 0,
           this->dictionary->getBosEosMorpheme(), parent));
@@ -187,8 +187,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
 
       auto parent =
           internal::selectParent(nodesForOffset, morpheme, this->dictionary);
-      auto connectionCost =
-          this->dictionary->getConnectionCost(parent->morpheme, morpheme);
+      auto connectionCost = this->dictionary->getConnectionCost(
+          parent->morpheme->rightid(), morpheme->leftid());
 
       int length =
           internal::groupingUnknownCharacters(current, category, dictionary);
@@ -228,13 +228,12 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
                                     .morphemes(j);
 
         auto wordCost = morpheme->wordcost();
-        auto spaceCost =
-            internal::getSpacePenalty(morpheme->postag(), numSpaces);
+        auto spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
 
         auto parent =
             internal::selectParent(nodesForOffset, morpheme, this->dictionary);
-        auto connectionCost =
-            this->dictionary->getConnectionCost(parent->morpheme, morpheme);
+        auto connectionCost = this->dictionary->getConnectionCost(
+            parent->morpheme->rightid(), morpheme->leftid());
 
         auto newNode = new internal::TrieNode(
             nodeId++, parent->cost + wordCost + connectionCost + spaceCost,

@@ -110,12 +110,10 @@ const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
   return nori::CharacterClass::DEFAULT;
 }
 
-const int Dictionary::getConnectionCost(
-    const nori::Morpheme* rightMorpheme,
-    const nori::Morpheme* leftMorpheme) const {
+const int Dictionary::getConnectionCost(const int rightId,
+                                        const int leftId) const {
   // TODO(jeongukjae) error handling
-  return connectionCost.costlists().at(backwardSize * rightMorpheme->rightid() +
-                                       leftMorpheme->leftid());
+  return connectionCost.costlists().at(backwardSize * rightId + leftId);
 }
 
 }  // namespace dictionary

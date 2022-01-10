@@ -50,8 +50,7 @@ class Dictionary {
   }
 
   // return connection costs from right, left ids
-  const int getConnectionCost(const nori::Morpheme* rightMorpheme,
-                              const nori::Morpheme* leftMorpheme) const;
+  const int getConnectionCost(const int rightId, const int leftId) const;
 
   const nori::Morpheme* getBosEosMorpheme() const {
     return &this->bosEosMorpheme;
