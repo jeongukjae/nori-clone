@@ -45,7 +45,7 @@ cc_test(
     ],
     deps = [
         ":tokenizer",
-        "@com_google_googletest//:gtest_main",
+        "@com_google_googletest//:gtest",
     ],
 )
 

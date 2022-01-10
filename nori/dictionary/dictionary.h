@@ -23,6 +23,8 @@ class Dictionary {
   // load dictionary from given path
   absl::Status load(absl::string_view path);
 
+  bool isInitialized() const { return initialized; }
+
   // return trie dictionary
   const Darts::DoubleArray* getTrie() const { return &trie; }
 
@@ -61,6 +63,8 @@ class Dictionary {
   absl::string_view getBosEosSurface() const { return this->bosEosSurface; }
 
  private:
+  bool initialized = false;
+
   Darts::DoubleArray trie;
   nori::TokenInfoDictionary tokenDictionary;
   nori::UnknownDictionary unkDictionary;

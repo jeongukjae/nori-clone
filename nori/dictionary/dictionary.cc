@@ -94,6 +94,7 @@ absl::Status Dictionary::load(absl::string_view input) {
   connectionCostMax = connectionCost.costlists_size();
 
   LOG(INFO) << "Done reading dictionary.";
+  initialized = true;
 
   return absl::OkStatus();
 }
