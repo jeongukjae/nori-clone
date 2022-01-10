@@ -5,6 +5,12 @@
 
 using namespace nori::utils;
 
+TEST(TestUtils, lowercaseUTF8) {
+  ASSERT_EQ(internal::lowercaseUTF8("Hello World!"), "hello world!");
+  ASSERT_EQ(internal::lowercaseUTF8("Hello 안녀ㅇWorld!"),
+            "hello 안녀ㅇworld!");
+}
+
 TEST(TestUtils, listDictionary) {
   std::vector<std::string> paths;
 
