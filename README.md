@@ -6,6 +6,13 @@ Standalone Nori Analyzer written in C++
 
 ## Installation
 
+## Build and test
+
+```sh
+bazel build //...
+bazel test //...
+```
+
 ## References
 
 * <https://www.elastic.co/kr/blog/nori-the-official-elasticsearch-plugin-for-korean-language-analysis>
