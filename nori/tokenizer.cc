@@ -131,6 +131,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     while (std::isspace(*current)) {
       current++;
       numSpaces++;
+
+      if (current == end) break;
     }
 
     // TODO(jeongukjae): search user dictionary first
