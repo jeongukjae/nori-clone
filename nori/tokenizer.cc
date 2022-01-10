@@ -262,8 +262,9 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
   }
 
   auto outputTokens = lattice.getMutableTokens();
-  outputTokens->resize(numNode);
+  outputTokens->reserve(numNode);
   currentNode = &bestEos;
+
   for (int index = numNode - 1; index >= 0;
        index--, currentNode = currentNode->parent) {
     size_t start = currentNode->lastPositionIndex - currentNode->length;
@@ -272,15 +273,16 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     if (currentNode->length == 0 &&
         (currentNode->lastPositionIndex == 0 ||
          currentNode->lastPositionIndex == inputText.size())) {
-      (*outputTokens)[index] = std::make_shared<Token>(
-          this->dictionary->getBosEosSurface(), currentNode->morpheme, start,
-          currentNode->length);
+      outputTokens->emplace_back(new Token(this->dictionary->getBosEosSurface(),
+                                           currentNode->morpheme, start,
+                                           currentNode->length));
     } else {
-      (*outputTokens)[index] = std::make_shared<Token>(
-          inputText.substr(start, currentNode->length), currentNode->morpheme,
-          start, currentNode->length);
+      outputTokens->emplace_back(
+          new Token(inputText.substr(start, currentNode->length),
+                    currentNode->morpheme, start, currentNode->length));
     }
   }
+  std::reverse(outputTokens->begin(), outputTokens->end());
 
   if (visualizer != nullptr) {
     visualizer->finish();
