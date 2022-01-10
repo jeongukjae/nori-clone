@@ -4,6 +4,7 @@
 #include <glog/logging.h>
 #include <google/protobuf/repeated_field.h>
 
+#include <map>
 #include <memory>
 #include <queue>
 #include <vector>
@@ -78,13 +79,14 @@ inline std::shared_ptr<TrieNode> selectParent(
     const std::vector<std::shared_ptr<internal::TrieNode>> candidates,
     const nori::Morpheme* morpheme,
     const nori::dictionary::Dictionary* dictionary) {
-  if (candidates.size() == 0) return nullptr;
+  auto candidatesSize = candidates.size();
+  if (candidatesSize == 0) return nullptr;
 
   std::shared_ptr<TrieNode> result = candidates[0];
   auto minimumCost = result->cost + dictionary->getConnectionCost(
                                         result->morpheme.get(), morpheme);
 
-  for (int i = 1; i < candidates.size(); i++) {
+  for (int i = 1; i < candidatesSize; i++) {
     auto candidate = candidates[i];
 
     auto cost = candidate->cost + dictionary->getConnectionCost(
@@ -117,8 +119,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
   std::vector<DartsResults> trieResults(maxTrieResults + 1);
 
   int nodeId = 0;
-  std::unordered_map<size_t, std::vector<std::shared_ptr<internal::TrieNode>>>
-      nodesByPos;
+  std::map<size_t, std::vector<std::shared_ptr<internal::TrieNode>>> nodesByPos;
 
   // bos node;
   nodesByPos[0].emplace_back(
@@ -129,10 +130,12 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
 
   size_t offset = 0;
   while ((current = begin + offset) <= end) {
-    if (nodesByPos[offset].size() == 0) {
+    auto nodesByPosIterator = nodesByPos.find(offset);
+    if (nodesByPosIterator == nodesByPos.end()) {
       U8_FWD_1_UNSAFE(begin, offset);
       continue;
     }
+    auto nodesForOffset = nodesByPosIterator->second;
 
     // skip whitespaces
     int numSpaces = 0;
@@ -144,7 +147,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     // Handling EOS node
     // end of parsing of this path
     if (current == end) {
-      auto parent = internal::selectParent(nodesByPos[offset], bosEosMorpheme,
+      auto parent = internal::selectParent(nodesForOffset, bosEosMorpheme,
                                            this->dictionary);
       auto connectionCost = this->dictionary->getConnectionCost(
           parent->morpheme.get(), this->dictionary->getBosEosMorpheme());
@@ -184,8 +187,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       // numSpaces);
       int spaceCost = 0;
 
-      auto parent = internal::selectParent(nodesByPos[offset], &morpheme,
-                                           this->dictionary);
+      auto parent =
+          internal::selectParent(nodesForOffset, &morpheme, this->dictionary);
       auto connectionCost = this->dictionary->getConnectionCost(
           parent->morpheme.get(), &morpheme);
 
@@ -208,7 +211,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
             wordCost, connectionCost, newNode->cost);
       }
 
-      offset += numSpaces + length;
+      offset += numSpaces;
+      U8_FWD_1_UNSAFE(begin, offset);
       continue;
     }
 
@@ -224,8 +228,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
         auto spaceCost =
             internal::getSpacePenalty(morpheme.postag(), numSpaces);
 
-        auto parent = internal::selectParent(nodesByPos[offset], &morpheme,
-                                             this->dictionary);
+        auto parent =
+            internal::selectParent(nodesForOffset, &morpheme, this->dictionary);
         auto connectionCost = this->dictionary->getConnectionCost(
             parent->morpheme.get(), &morpheme);
 
