@@ -76,11 +76,11 @@ int main(int argc, char** argv) {
     tokenizer.tokenize(lattice).IgnoreError();
   }
 
-  std::chrono::milliseconds elapsedMs =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
+  std::chrono::microseconds elapsedMs =
+      std::chrono::duration_cast<std::chrono::microseconds>(
           std::chrono::system_clock::now() - start);
 
-  LOG(INFO) << "Elapsed: " << elapsedMs.count() << "ms. ";
+  LOG(INFO) << "Elapsed: " << elapsedMs.count() << " micro seconds. ";
 
   if (FLAGS_print_output) {
     LOG(INFO) << "Tokenization Results.";
