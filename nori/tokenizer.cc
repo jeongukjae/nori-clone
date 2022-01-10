@@ -12,8 +12,6 @@
 #include "icu4c/source/common/unicode/utf.h"
 #include "nori/protos/dictionary.pb.h"
 
-#define MINIMUM_COST_DEFAULT 1e+10
-
 namespace nori {
 
 namespace internal {
@@ -73,21 +71,22 @@ int groupingUnknownCharacters(const char* current,
 
 TrieNode* selectParent(std::vector<internal::TrieNode>& candidates,
                        const nori::Morpheme* morpheme,
-                       const nori::dictionary::Dictionary* dictionary) {
+                       const nori::dictionary::Dictionary* dictionary,
+                       int& connectionCost) {
   auto candidatesSize = candidates.size();
   if (candidatesSize == 0) return nullptr;
 
   int result = 0;
-  auto minimumCost = candidates[0].cost +
-                     dictionary->getConnectionCost(
-                         candidates[0].morpheme->rightid(), morpheme->leftid());
+  connectionCost = candidates[0].cost +
+                   dictionary->getConnectionCost(
+                       candidates[0].morpheme->rightid(), morpheme->leftid());
 
   for (int i = 1; i < candidatesSize; i++) {
     auto cost = candidates[i].cost +
                 dictionary->getConnectionCost(candidates[i].morpheme->rightid(),
                                               morpheme->leftid());
-    if (cost < minimumCost) {
-      minimumCost = cost;
+    if (cost < connectionCost) {
+      connectionCost = cost;
       result = i;
     }
   }
@@ -120,11 +119,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
   // bos node;
   nodesByPos[0].emplace_back(nodeId++, 0, 0, 0, bosEosMorpheme);
 
-  internal::TrieNode bestEos(nodeId++, MINIMUM_COST_DEFAULT, inputText.length(),
-                             0, bosEosMorpheme);
-
   int offset = 0, numSpaces = 0;
-  while ((current = begin + offset) <= end) {
+  while ((current = begin + offset) < end) {
     if (nodesByPos[offset].size() == 0) {
       U8_FWD_1_UNSAFE(begin, offset);
       continue;
@@ -135,29 +131,6 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     while (std::isspace(*current)) {
       current++;
       numSpaces++;
-    }
-
-    // Handling EOS node
-    // end of parsing of this path
-    if (current == end) {
-      internal::TrieNode* parent = internal::selectParent(
-          nodesByPos[offset], bosEosMorpheme, this->dictionary);
-      if (visualizer != nullptr) {
-        visualizer->addEos(parent->lastPositionIndex - parent->length,
-                           parent->uniqueNodeId, parent->morpheme);
-      }
-
-      int connectionCost = this->dictionary->getConnectionCost(
-          parent->morpheme->rightid(),
-          this->dictionary->getBosEosMorpheme()->leftid());
-      int eosCost = parent->cost + connectionCost;
-
-      if (eosCost < bestEos.cost) {
-        bestEos.cost = eosCost;
-        bestEos.parent = parent;
-      }
-
-      break;
     }
 
     // TODO(jeongukjae): search user dictionary first
@@ -178,11 +151,9 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       // auto spaceCost = internal::getSpacePenalty(morpheme->postag(),
       // numSpaces);
       const int spaceCost = 0;
-
+      int connectionCost;
       auto parent = internal::selectParent(nodesByPos[offset], morpheme,
-                                           this->dictionary);
-      auto connectionCost = this->dictionary->getConnectionCost(
-          parent->morpheme->rightid(), morpheme->leftid());
+                                           this->dictionary, connectionCost);
 
       int length =
           internal::groupingUnknownCharacters(current, category, dictionary);
@@ -211,24 +182,19 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
 
     for (int k = 0; k < numNodes; ++k) {
       auto trieResult = trieResults[k];
-      auto morphemeSize = this->dictionary->getTokenDictionary()
-                              ->morphemelistmap()
-                              .at(trieResult.value)
-                              .morphemes_size();
+      auto morphemeList =
+          &this->dictionary->getTokenDictionary()->morphemelistmap().at(
+              trieResult.value);
+      auto morphemeSize = morphemeList->morphemes_size();
 
       for (int j = 0; j < morphemeSize; j++) {
-        const auto* morpheme = &this->dictionary->getTokenDictionary()
-                                    ->morphemelistmap()
-                                    .at(trieResult.value)
-                                    .morphemes(j);
+        const auto* morpheme = &morphemeList->morphemes(j);
 
         int wordCost = morpheme->wordcost();
         int spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
-
+        int connectionCost;
         internal::TrieNode* parent = internal::selectParent(
-            nodesByPos[offset], morpheme, this->dictionary);
-        int connectionCost = this->dictionary->getConnectionCost(
-            parent->morpheme->rightid(), morpheme->leftid());
+            nodesByPos[offset], morpheme, this->dictionary, connectionCost);
 
         int lastPositionIndex =
             parent->lastPositionIndex + numSpaces + trieResult.length;
@@ -254,35 +220,47 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     U8_FWD_1_UNSAFE(begin, offset);
   }
 
+  // Handling EOS node
+  // end of parsing of this path
+  int eosConnectionCost;
+  internal::TrieNode* bestPath = internal::selectParent(
+      nodesByPos[offset], bosEosMorpheme, this->dictionary, eosConnectionCost);
+  if (visualizer != nullptr) {
+    visualizer->addEos(bestPath->lastPositionIndex - bestPath->length,
+                       bestPath->uniqueNodeId, bestPath->morpheme);
+  }
+  internal::TrieNode eosNode(0, 0, inputText.length(), 0, bosEosMorpheme,
+                             bestPath);
+
+  // count node from eos to bos
   int numNode = 0;
-  internal::TrieNode* currentNode = &bestEos;
+  internal::TrieNode* currentNode = &eosNode;
+  std::vector<internal::TrieNode*> nodes;
   while (currentNode != NULL) {
+    nodes.push_back(currentNode);
     currentNode = currentNode->parent;
     numNode++;
   }
+  std::reverse(nodes.begin(), nodes.end());
 
+  // set outputs
   auto outputTokens = lattice.getMutableTokens();
   outputTokens->reserve(numNode);
-  currentNode = &bestEos;
+  currentNode = &eosNode;
 
-  for (int index = numNode - 1; index >= 0;
-       index--, currentNode = currentNode->parent) {
-    size_t start = currentNode->lastPositionIndex - currentNode->length;
+  for (const auto& node : nodes) {
+    size_t start = node->lastPositionIndex - node->length;
 
     // BOS or EOS
-    if (currentNode->length == 0 &&
-        (currentNode->lastPositionIndex == 0 ||
-         currentNode->lastPositionIndex == inputText.size())) {
-      outputTokens->emplace_back(new Token(this->dictionary->getBosEosSurface(),
-                                           currentNode->morpheme, start,
-                                           currentNode->length));
+    if (node->length == 0 && (node->lastPositionIndex == 0 ||
+                              node->lastPositionIndex == inputText.size())) {
+      outputTokens->emplace_back(this->dictionary->getBosEosSurface(),
+                                 node->morpheme, start, node->length);
     } else {
-      outputTokens->emplace_back(
-          new Token(inputText.substr(start, currentNode->length),
-                    currentNode->morpheme, start, currentNode->length));
+      outputTokens->emplace_back(inputText.substr(start, node->length),
+                                 node->morpheme, start, node->length);
     }
   }
-  std::reverse(outputTokens->begin(), outputTokens->end());
 
   if (visualizer != nullptr) {
     visualizer->finish();

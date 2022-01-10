@@ -42,12 +42,12 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Tokenization Result: ";
   for (const auto& token : *lattice.getTokens()) {
     std::string posTagStr = "";
-    for (const auto& postag : token->morpheme->postag()) {
+    for (const auto& postag : token.morpheme->postag()) {
       absl::StrAppend(&posTagStr, nori::POSTag_Name(postag), "+");
     }
     posTagStr.pop_back();
 
-    LOG(INFO) << token->surface << ", " << posTagStr;
+    LOG(INFO) << token.surface << ", " << posTagStr;
   }
 
   LOG(INFO) << "Write output to file " << FLAGS_output;

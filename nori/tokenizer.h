@@ -35,16 +35,16 @@ struct Lattice {
   void clearState() { tokens.clear(); }
   void setSentence(std::string sentence) { this->sentence = sentence; }
   const absl::string_view getSentence() const { return this->sentence; }
-  const std::vector<std::shared_ptr<Token>>* getTokens() const {
+  const std::vector<Token>* getTokens() const {
     return &this->tokens;
   }
-  std::vector<std::shared_ptr<Token>>* getMutableTokens() {
+  std::vector<Token>* getMutableTokens() {
     return &this->tokens;
   }
 
  private:
   std::string sentence;
-  std::vector<std::shared_ptr<Token>> tokens;
+  std::vector<Token> tokens;
 };
 
 class NoriTokenizer {
