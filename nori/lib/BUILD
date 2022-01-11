@@ -9,6 +9,17 @@ package(
 )
 
 cc_library(
+    name = "nori",
+    deps = [
+        ":graphviz_visualize",
+        ":tokenizer",
+        ":utils",
+        "//nori/lib/dictionary",
+        "//nori/lib/protos:dictionary_cc_proto",
+    ],
+)
+
+cc_library(
     name = "tokenizer",
     srcs = ["tokenizer.cc"],
     hdrs = ["tokenizer.h"],

@@ -4,6 +4,7 @@ cc_binary(
     name = "build_dictionary",
     srcs = ["build_dictionary.cc"],
     deps = [
+        "//nori/lib:nori",
         "//nori/lib/dictionary:builder",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
@@ -16,7 +17,7 @@ cc_binary(
     srcs = ["check_dictionary.cc"],
     data = ["//dictionary"],
     deps = [
-        "//nori/lib/dictionary",
+        "//nori/lib:nori",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -28,8 +29,7 @@ cc_binary(
     srcs = ["visualize_graphviz.cc"],
     data = ["//dictionary"],
     deps = [
-        "//nori/lib:tokenizer",
-        "//nori/lib/dictionary",
+        "//nori/lib:nori",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
@@ -41,8 +41,7 @@ cc_binary(
     srcs = ["check_tokenize.cc"],
     data = ["//dictionary"],
     deps = [
-        "//nori/lib:tokenizer",
-        "//nori/lib/dictionary",
+        "//nori/lib:nori",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
         "@com_google_absl//absl/strings",
