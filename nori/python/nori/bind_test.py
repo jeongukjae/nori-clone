@@ -1,0 +1,19 @@
+import unittest
+
+from nori.bind import NoriTokenizer, Dictionary
+
+class TestNoriTokenizer(unittest.TestCase):
+    def test_get_dictionary_info(self):
+        dictionary = Dictionary()
+        dictionary.load_prebuilt_dictionary("./dictionary")
+        tokenizer = NoriTokenizer(dictionary)
+
+        result = tokenizer.tokenize("화학 이외의 것")
+
+        self.assertEqual(result.sentence, "화학 이외의 것")
+        self.assertEqual(result.tokens[0].surface, "BOS/EOS")
+        self.assertEqual([token.surface for token in result.tokens[1:-1]], ['화학', '이외', '의', '것'])
+
+
+if __name__ == "__main__":
+    unittest.main()
