@@ -58,7 +58,7 @@ absl::Status exactMatchMorpheme(
         absl::StrCat("Cannot exact match morpheme with word ", word));
   }
 
-  auto morphemeList = &tokenDictionary->morphemelistmap().at(searchResult);
+  auto morphemeList = &tokenDictionary->morphemeslist(searchResult);
   if (morphemeList->morphemes_size() != 1) {
     return absl::InternalError("Cannot get right id with jongsung");
   }
@@ -79,7 +79,6 @@ absl::Status Dictionary::loadPrebuilt(absl::string_view input) {
 
   {
     std::string path = utils::internal::joinPath(input, NORI_DICT_FILE);
-    LOG(INFO) << "Read trie dictionary " << path;
     if (trie.open(path.c_str()) != 0) {
       return absl::InvalidArgumentError(
           absl::StrCat("Canont read trie dictionary from ", path));
@@ -88,21 +87,18 @@ absl::Status Dictionary::loadPrebuilt(absl::string_view input) {
 
   {
     std::string path = utils::internal::joinPath(input, NORI_DICT_META_FILE);
-    LOG(INFO) << "Read token info dictionary " << path;
     auto status = internal::deserializeProtobuf(path, tokenDictionary);
     if (!status.ok()) return status;
   }
 
   {
     std::string path = utils::internal::joinPath(input, NORI_UNK_FILE);
-    LOG(INFO) << "Read unk dictionary " << path;
     auto status = internal::deserializeProtobuf(path, unkDictionary);
     if (!status.ok()) return status;
   }
 
   {
     std::string path = utils::internal::joinPath(input, NORI_CHAR_FILE);
-    LOG(INFO) << "Read char dictionary " << path;
     auto status = internal::deserializeProtobuf(path, charDictionary);
     if (!status.ok()) return status;
   }
@@ -110,7 +106,6 @@ absl::Status Dictionary::loadPrebuilt(absl::string_view input) {
   {
     std::string path =
         utils::internal::joinPath(input, NORI_CONNECTION_COST_FILE);
-    LOG(INFO) << "Read connection costs " << path;
     auto status = internal::deserializeProtobuf(path, connectionCost);
     if (!status.ok()) return status;
   }
@@ -121,7 +116,6 @@ absl::Status Dictionary::loadPrebuilt(absl::string_view input) {
   connectionCostData = connectionCost.costlists().data();
   connectionCostMax = connectionCost.costlists_size();
 
-  LOG(INFO) << "Done reading dictionary.";
   initialized = true;
 
   return absl::OkStatus();

@@ -232,7 +232,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     for (int k = 0; k < numNodes; ++k) {
       auto trieResult = trieResults[k];
       auto morphemeList =
-          &this->dictionary->getTokenDictionary()->morphemelistmap().at(
+          &this->dictionary->getTokenDictionary()->morphemeslist(
               trieResult.value);
       auto morphemeSize = morphemeList->morphemes_size();
 

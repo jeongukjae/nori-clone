@@ -127,7 +127,7 @@ message MorphemeList {
 }
 
 message TokenInfoDictionary {
-  map<int32, MorphemeList> morphemeListMap = 1;
+  repeated MorphemeList morphemesList = 1;
 }
 
 message UnknownDictionary {

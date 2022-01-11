@@ -160,17 +160,18 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
 
   std::string lastValue = "";
   int entryValue = -1;
-  auto morphemeListMap = dictionary.mutable_morphemelistmap();
+  nori::MorphemeList* lastMorphemeList;
 
   for (int i = 0; i < entries.size(); i++) {
     if (entries[i][0] != lastValue) {
       keys.push_back(entries[i][0].c_str());
       lastValue = entries[i][0];
       entryValue++;
+      lastMorphemeList = dictionary.add_morphemeslist();
     }
 
     auto status = internal::convertMeCabCSVEntry(
-        entries[i], (*morphemeListMap)[entryValue].add_morphemes());
+        entries[i], lastMorphemeList->add_morphemes());
     if (!status.ok()) return status;
   }
 
