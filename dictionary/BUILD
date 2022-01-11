@@ -8,5 +8,8 @@ package(
 
 filegroup(
     name = "dictionary",
-    srcs = glob(["*.pb", "*.bin"]),
+    srcs = glob([
+        "*.pb",
+        "*.bin",
+    ]),
 )

@@ -30,10 +30,10 @@ cc_library(
     deps = [
         ":graphviz_visualize",
         "//nori/dictionary",
-        "@icu//:common",
-        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
         "@darts_clone",
+        "@icu//:common",
     ],
 )
 
@@ -56,7 +56,7 @@ cc_library(
     deps = [
         "//nori/dictionary",
         "@com_google_absl//absl/strings",
-    ]
+    ],
 )
 
 cc_test(

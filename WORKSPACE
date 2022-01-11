@@ -2,6 +2,31 @@ workspace(name = "nori")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
+# build Tools
+http_archive(
+    name = "io_bazel_rules_go",
+    sha256 = "2b1641428dff9018f9e85c0384f03ec6c10660d935b750e3fa1492a281a53b0f",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.29.0/rules_go-v0.29.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.29.0/rules_go-v0.29.0.zip",
+    ],
+)
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+go_rules_dependencies()
+
+go_register_toolchains(version = "1.17")
+
+http_archive(
+    name = "com_github_bazelbuild_buildtools",
+    sha256 = "ae34c344514e08c23e90da0e2d6cb700fcd28e80c02e23e4d5715dddcb42f7b3",
+    strip_prefix = "buildtools-4.2.2",
+    urls = [
+        "https://github.com/bazelbuild/buildtools/archive/refs/tags/4.2.2.tar.gz",
+    ],
+)
+
 # RULES
 http_archive(
     name = "rules_cc",
@@ -93,7 +118,7 @@ http_archive(
 
 http_archive(
     name = "com_github_google_re2",
+    sha256 = "3a20f05c57f907f78b817a53f2fb6e48077d2b1d0b17b39caf875c20f262230b",
     strip_prefix = "re2-2021-11-01",
     urls = ["https://github.com/google/re2/archive/2021-11-01.zip"],
-    sha256 = "3a20f05c57f907f78b817a53f2fb6e48077d2b1d0b17b39caf875c20f262230b",
 )
