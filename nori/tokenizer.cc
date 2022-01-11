@@ -18,16 +18,15 @@ namespace internal {
 
 struct TrieNode {
   int uniqueNodeId;
-  size_t cost;
-  size_t lastPositionIndex;
-  size_t length;
+  int cost;
+  int lastPositionIndex;
+  int length;
 
   const nori::Morpheme* morpheme;
   TrieNode* parent;
 
-  TrieNode(int uniqueNodeId, size_t cost, size_t lastPositionIndex,
-           size_t length, const nori::Morpheme* morpheme,
-           TrieNode* parent = nullptr)
+  TrieNode(int uniqueNodeId, int cost, int lastPositionIndex, int length,
+           const nori::Morpheme* morpheme, TrieNode* parent = nullptr)
       : uniqueNodeId(uniqueNodeId),
         cost(cost),
         lastPositionIndex(lastPositionIndex),
@@ -75,18 +74,20 @@ TrieNode* selectParent(std::vector<internal::TrieNode>& candidates,
                        int& connectionCost) {
   auto candidatesSize = candidates.size();
   if (candidatesSize == 0) return nullptr;
+  if (candidatesSize == 1) return &candidates[0];
 
   int result = 0;
-  connectionCost = candidates[0].cost +
-                   dictionary->getConnectionCost(
-                       candidates[0].morpheme->rightid(), morpheme->leftid());
+  connectionCost = dictionary->getConnectionCost(
+      candidates[0].morpheme->rightid(), morpheme->leftid());
+  int minCost = candidates[0].cost + connectionCost;
 
   for (int i = 1; i < candidatesSize; i++) {
-    auto cost = candidates[i].cost +
-                dictionary->getConnectionCost(candidates[i].morpheme->rightid(),
-                                              morpheme->leftid());
-    if (cost < connectionCost) {
-      connectionCost = cost;
+    auto currentConnectionCost = dictionary->getConnectionCost(
+        candidates[i].morpheme->rightid(), morpheme->leftid());
+    auto cost = candidates[i].cost + currentConnectionCost;
+    if (cost < minCost) {
+      minCost = cost;
+      connectionCost = currentConnectionCost;
       result = i;
     }
   }
@@ -136,6 +137,54 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     }
 
     // TODO(jeongukjae): search user dictionary first
+    if (dictionary->isUserInitialized()) {
+      const int numNodes =
+          dictionary->getUserDict()->getTrie()->commonPrefixSearch(
+              current, trieResults.data(), maxTrieResults,
+              static_cast<int>(end - current));
+
+      if (numNodes != 0) {
+        int index = 0;
+
+        if (numNodes > 0) {
+          // add longest user input
+          int length = trieResults[0].length;
+          for (int i = 1; i < numNodes; i++) {
+            if (length < trieResults[i].length) {
+              length = trieResults[i].length;
+              index = i;
+            }
+          }
+        }
+
+        const auto morpheme = &dictionary->getUserDict()->getMorphemes()->at(
+            trieResults[index].value);
+
+        int wordCost = morpheme->wordcost();
+        int spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
+        int connectionCost;
+        internal::TrieNode* parent = internal::selectParent(
+            nodesByPos[offset], morpheme, this->dictionary, connectionCost);
+
+        int lastPositionIndex =
+            parent->lastPositionIndex + numSpaces + trieResults[index].length;
+        int lastNodeId = nodeId;
+        int cost = parent->cost + wordCost + connectionCost + spaceCost;
+        nodesByPos[lastPositionIndex].emplace_back(
+            nodeId++, cost, lastPositionIndex, trieResults[index].length,
+            morpheme, parent);
+
+        if (visualizer != nullptr) {
+          visualizer->addNode(
+              parent->lastPositionIndex - parent->length, parent->uniqueNodeId,
+              parent->morpheme, parent->lastPositionIndex + numSpaces,
+              lastNodeId, morpheme,
+              std::string(begin + (parent->lastPositionIndex + numSpaces),
+                          begin + lastPositionIndex),
+              wordCost, connectionCost, cost);
+        }
+      }
+    }
 
     // pre-built dictionary
     const int numNodes = dictionary->getTrie()->commonPrefixSearch(

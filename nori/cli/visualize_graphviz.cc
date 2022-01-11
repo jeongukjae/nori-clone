@@ -12,8 +12,9 @@
 #include "nori/tokenizer.h"
 #include "nori/utils.h"
 
-DEFINE_string(dictionary, "/Users/jeongukjae/Documents/GitHub/nori/dictionary",
-              "Path to nori dictionary");
+DEFINE_string(dictionary, "./dictionary", "Path to nori dictionary");
+DEFINE_string(user_dictionary, "./dictionary/userdict.txt",
+              "Path to nori user dictionary");
 DEFINE_string(input,
               "Nori-clone은 C++로 Nori를 재작성하기 위한 프로젝트입니다.",
               "Text to analyze");
@@ -28,8 +29,13 @@ int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   nori::dictionary::Dictionary dictionary;
-  auto status = dictionary.load(FLAGS_dictionary);
+  auto status = dictionary.loadPrebuilt(FLAGS_dictionary);
   CHECK(status.ok()) << status.message();
+  if (FLAGS_user_dictionary != "") {
+    LOG(INFO) << "Read user dictionary: " << FLAGS_user_dictionary;
+    status = dictionary.loadUser(FLAGS_user_dictionary);
+    CHECK(status.ok()) << status.message();
+  }
 
   nori::NoriTokenizer tokenizer(&dictionary);
   nori::GraphvizVisualizer visualizer;

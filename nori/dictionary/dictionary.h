@@ -16,17 +16,43 @@
 namespace nori {
 namespace dictionary {
 
+class UserDictionary {
+ public:
+  // load dictionary from given path
+  absl::Status load(absl::string_view filename, int leftId, int rightId,
+                    int rightIdWithJongsung);
+
+  // return trie dictionary
+  const Darts::DoubleArray* getTrie() const { return &trie; }
+
+  const std::vector<nori::Morpheme>* getMorphemes() const { return &morphemes; }
+
+ private:
+  Darts::DoubleArray trie;
+  std::vector<nori::Morpheme> morphemes;
+};
+
 // TODO(jeongukjae): change dictionary format.
 // it is not good way to save large message in protobuf format.
 class Dictionary {
  public:
-  // load dictionary from given path
-  absl::Status load(absl::string_view path);
+  // load prebuilt dictionary from given path
+  absl::Status loadPrebuilt(absl::string_view path);
 
+  // load user dictionary from given path
+  absl::Status loadUser(absl::string_view filename);
+
+  // return is initialized
   bool isInitialized() const { return initialized; }
+
+  // return is initialized
+  bool isUserInitialized() const { return userInitialized; }
 
   // return trie dictionary
   const Darts::DoubleArray* getTrie() const { return &trie; }
+
+  // return user dictionary
+  const UserDictionary* getUserDict() const { return &userDictionary; }
 
   // return token dictionary
   const nori::TokenInfoDictionary* getTokenDictionary() const {
@@ -64,12 +90,14 @@ class Dictionary {
 
  private:
   bool initialized = false;
+  bool userInitialized = false;
 
   Darts::DoubleArray trie;
   nori::TokenInfoDictionary tokenDictionary;
   nori::UnknownDictionary unkDictionary;
   nori::CharacterClassDictionary charDictionary;
   nori::ConnectionCost connectionCost;
+  UserDictionary userDictionary;
 
   nori::Morpheme bosEosMorpheme;
   std::string bosEosSurface;

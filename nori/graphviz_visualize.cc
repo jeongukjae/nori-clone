@@ -53,7 +53,7 @@ void GraphvizVisualizer::addNode(size_t fromIndex, size_t fromNodeId,
                                  size_t toIndex, size_t toNodeId,
                                  const nori::Morpheme* toMorpheme,
                                  const std::string stringForm, int wordCost,
-                                 int connectionCost, size_t cost) {
+                                 int connectionCost, int cost) {
   auto fromNodeLabel = internal::getNodeLabel(fromIndex, fromNodeId);
   auto toNodeLabel = internal::getNodeLabel(toIndex, toNodeId);
 

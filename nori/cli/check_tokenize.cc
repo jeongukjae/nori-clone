@@ -13,40 +13,12 @@
 #include "nori/tokenizer.h"
 #include "nori/utils.h"
 
-DEFINE_string(dictionary, "/Users/jeongukjae/Documents/GitHub/nori/dictionary",
-              "Path to nori dictionary");
-DEFINE_string(
-    input,
-    "처음 네 컬럼은 MeCab 형식의 공통 필드입니다. 첫 번째 컬럼은 "
-    "단어(도서관)의 표층형(surface form)입니다. 마지막 컬럼은 분해된 "
-    "모습(도서관(library) => 도서(book) + 관(house))을 보여줍니다. 노리가 "
-    "입력을 분석할 때 가능한 모든 격자(lattice)를 만들기 위해 글자마다 이 "
-    "사전을 찾아봐야 합니다. 처음 네 컬럼은 MeCab 형식의 공통 필드입니다. 첫 "
-    "번째 컬럼은 단어(도서관)의 표층형(surface form)입니다. 마지막 컬럼은 "
-    "분해된 모습(도서관(library) => 도서(book) + 관(house))을 보여줍니다. "
-    "노리가 입력을 분석할 때 가능한 모든 격자(lattice)를 만들기 위해 글자마다 "
-    "이 사전을 찾아봐야 합니다. 처음 네 컬럼은 MeCab 형식의 공통 필드입니다. "
-    "첫 번째 컬럼은 단어(도서관)의 표층형(surface form)입니다. 마지막 컬럼은 "
-    "분해된 모습(도서관(library) => 도서(book) + 관(house))을 보여줍니다. "
-    "노리가 입력을 분석할 때 가능한 모든 격자(lattice)를 만들기 위해 글자마다 "
-    "이 사전을 찾아봐야 합니다. 처음 네 컬럼은 MeCab 형식의 공통 필드입니다. "
-    "첫 번째 컬럼은 단어(도서관)의 표층형(surface form)입니다. 마지막 컬럼은 "
-    "분해된 모습(도서관(library) => 도서(book) + 관(house))을 보여줍니다. "
-    "노리가 입력을 분석할 때 가능한 모든 격자(lattice)를 만들기 위해 글자마다 "
-    "이 사전을 찾아봐야 합니다. 처음 네 컬럼은 MeCab 형식의 공통 필드입니다. "
-    "첫 번째 컬럼은 단어(도서관)의 표층형(surface form)입니다. 마지막 컬럼은 "
-    "분해된 모습(도서관(library) => 도서(book) + 관(house))을 보여줍니다. "
-    "노리가 입력을 분석할 때 가능한 모든 격자(lattice)를 만들기 위해 글자마다 "
-    "이 사전을 찾아봐야 합니다. 처음 네 컬럼은 MeCab 형식의 공통 필드입니다. "
-    "첫 번째 컬럼은 단어(도서관)의 표층형(surface form)입니다. 마지막 컬럼은 "
-    "분해된 모습(도서관(library) => 도서(book) + 관(house))을 보여줍니다. "
-    "노리가 입력을 분석할 때 가능한 모든 격자(lattice)를 만들기 위해 글자마다 "
-    "이 사전을 찾아봐야 합니다. 처음 네 컬럼은 MeCab 형식의 공통 필드입니다. "
-    "첫 번째 컬럼은 단어(도서관)의 표층형(surface form)입니다. 마지막 컬럼은 "
-    "분해된 모습(도서관(library) => 도서(book) + 관(house))을 보여줍니다. "
-    "노리가 입력을 분석할 때 가능한 모든 격자(lattice)를 만들기 위해 글자마다 "
-    "이 사전을 찾아봐야 합니다.",
-    "Text to analyze");
+DEFINE_string(dictionary, "./dictionary", "Path to nori dictionary");
+DEFINE_string(user_dictionary, "./dictionary/userdict.txt",
+              "Path to nori user dictionary");
+DEFINE_string(input,
+              "Nori-clone은 c++로 Nori를 재작성하기 위한 프로젝트입니다.",
+              "Text to analyze");
 DEFINE_string(output, "nori.dot", "Output path for dotfile");
 DEFINE_int32(n_repeat, 1000, "num repeats");
 DEFINE_bool(print_output, false, "print output");
@@ -60,8 +32,13 @@ int main(int argc, char** argv) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   nori::dictionary::Dictionary dictionary;
-  auto status = dictionary.load(FLAGS_dictionary);
+  auto status = dictionary.loadPrebuilt(FLAGS_dictionary);
   CHECK(status.ok()) << status.message();
+  if (FLAGS_user_dictionary != "") {
+    LOG(INFO) << "Read user dictionary: " << FLAGS_user_dictionary;
+    status = dictionary.loadUser(FLAGS_user_dictionary);
+    CHECK(status.ok()) << status.message();
+  }
 
   nori::NoriTokenizer tokenizer(&dictionary);
   LOG(INFO) << "Input message: " << FLAGS_input;

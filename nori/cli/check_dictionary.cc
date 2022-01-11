@@ -9,6 +9,8 @@
 #include "nori/utils.h"
 
 DEFINE_string(dictionary, "./dictionary", "Path to nori dictionary");
+DEFINE_string(user_dictionary, "./dictionary/userdict.txt",
+              "Path to nori's user dictionary");
 
 int main(int argc, char** argv) {
   FLAGS_alsologtostderr = 1;
@@ -23,8 +25,14 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Dictionary path: " << FLAGS_dictionary;
 
   nori::dictionary::Dictionary dictionary;
-  auto status = dictionary.load(FLAGS_dictionary);
+  auto status = dictionary.loadPrebuilt(FLAGS_dictionary);
   CHECK(status.ok()) << status;
+
+  if (FLAGS_user_dictionary != "") {
+    LOG(INFO) << "Read user dictionary: " << FLAGS_user_dictionary;
+    status = dictionary.loadUser(FLAGS_user_dictionary);
+    CHECK(status.ok()) << status;
+  }
 
   google::protobuf::ShutdownProtobufLibrary();
   LOG(INFO) << "Done.";

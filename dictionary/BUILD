@@ -11,5 +11,6 @@ filegroup(
     srcs = glob([
         "*.pb",
         "*.bin",
+        "*.txt",
     ]),
 )

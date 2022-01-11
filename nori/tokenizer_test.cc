@@ -49,7 +49,7 @@ TEST(NoriTokenizer, testDefaultSentence) {
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
 
-  auto status = dictionary.load("./dictionary");
+  auto status = dictionary.loadPrebuilt("./dictionary");
   CHECK(status.ok()) << status;
 
   return RUN_ALL_TESTS();

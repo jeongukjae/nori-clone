@@ -14,6 +14,7 @@ cc_binary(
 cc_binary(
     name = "check_dictionary",
     srcs = ["check_dictionary.cc"],
+    data = ["//dictionary"],
     deps = [
         "//nori/dictionary",
         "@com_github_gflags_gflags//:gflags",
@@ -25,6 +26,7 @@ cc_binary(
 cc_binary(
     name = "visualize_graphviz",
     srcs = ["visualize_graphviz.cc"],
+    data = ["//dictionary"],
     deps = [
         "//nori:tokenizer",
         "//nori/dictionary",
@@ -37,6 +39,7 @@ cc_binary(
 cc_binary(
     name = "check_tokenize",
     srcs = ["check_tokenize.cc"],
+    data = ["//dictionary"],
     deps = [
         "//nori:tokenizer",
         "//nori/dictionary",
