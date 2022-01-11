@@ -1,5 +1,13 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+package(
+    default_visibility = [
+        "//nori:__pkg__",
+        "//nori:__subpackages__",
+    ],
+    licenses = ["notice"],
+)
+
 cc_binary(
     name = "build_dictionary",
     srcs = ["build_dictionary.cc"],
