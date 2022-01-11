@@ -22,7 +22,7 @@ py_library(
 py_test(
     name = "bind_test",
     srcs = ["bind_test.py"],
-    deps = [":nori_py"],
     data = ["//dictionary"],
     imports = [".."],
+    deps = [":nori_py"],
 )

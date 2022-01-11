@@ -39,11 +39,11 @@ cc_test(
     data = [
         "//dictionary",
     ],
+    linkstatic = True,
     deps = [
         ":tokenizer",
         "@com_google_googletest//:gtest",
     ],
-    linkstatic = True,
 )
 
 cc_library(
@@ -59,11 +59,11 @@ cc_library(
 cc_test(
     name = "graphviz_visualize_test",
     srcs = ["graphviz_visualize_test.cc"],
+    linkstatic = True,
     deps = [
         ":graphviz_visualize",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
 
 cc_library(
@@ -84,9 +84,9 @@ cc_test(
     name = "utils_test",
     srcs = ["utils_test.cc"],
     data = ["//testdata:listDirectory"],
+    linkstatic = True,
     deps = [
         ":utils",
         "@com_google_googletest//:gtest_main",
     ],
-    linkstatic = True,
 )
