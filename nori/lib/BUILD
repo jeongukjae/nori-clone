@@ -9,21 +9,6 @@ package(
 )
 
 cc_library(
-    name = "token_filters",
-    srcs = ["token_filters.cc"],
-    hdrs = ["token_filters.h"],
-)
-
-cc_test(
-    name = "token_filters_test",
-    srcs = ["token_filters_test.cc"],
-    deps = [
-        ":token_filters",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
     name = "tokenizer",
     srcs = ["tokenizer.cc"],
     hdrs = ["tokenizer.h"],
@@ -64,21 +49,6 @@ cc_test(
     srcs = ["graphviz_visualize_test.cc"],
     deps = [
         ":graphviz_visualize",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_library(
-    name = "analyzer",
-    srcs = ["analyzer.cc"],
-    hdrs = ["analyzer.h"],
-)
-
-cc_test(
-    name = "analyzer_test",
-    srcs = ["analyzer_test.cc"],
-    deps = [
-        ":analyzer",
         "@com_google_googletest//:gtest_main",
     ],
 )
