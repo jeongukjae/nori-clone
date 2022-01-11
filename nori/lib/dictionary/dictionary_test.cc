@@ -10,5 +10,6 @@ using namespace nori::dictionary;
 TEST(TestDictionary, load) {
   Dictionary dic;
   auto status = dic.loadPrebuilt("./dictionary");
+  auto status = dic.loadUser("./dictionary/userdict.txt");
   ASSERT_TRUE(status.ok()) << status.message();
 }
