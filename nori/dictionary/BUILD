@@ -19,6 +19,7 @@ cc_library(
         "@com_github_google_snappy//:snappy",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
+        "@com_github_google_re2//:re2",
         "@darts_clone",
         "@icu//:common",
     ],

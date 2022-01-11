@@ -90,3 +90,10 @@ http_archive(
     strip_prefix = "snappy-1.1.9",
     urls = ["https://github.com/google/snappy/archive/1.1.9.zip"],
 )
+
+http_archive(
+    name = "com_github_google_re2",
+    strip_prefix = "re2-2021-11-01",
+    urls = ["https://github.com/google/re2/archive/2021-11-01.zip"],
+    sha256 = "3a20f05c57f907f78b817a53f2fb6e48077d2b1d0b17b39caf875c20f262230b",
+)
