@@ -1,4 +1,4 @@
-#include "nori/dictionary/dictionary.h"
+#include "nori/lib/dictionary/dictionary.h"
 
 #include <darts.h>
 #include <glog/logging.h>
@@ -12,7 +12,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "icu4c/source/common/unicode/unistr.h"
-#include "nori/utils.h"
+#include "nori/lib/utils.h"
 #include "re2/re2.h"
 #include "snappy.h"
 

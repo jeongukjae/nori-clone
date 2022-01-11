@@ -7,8 +7,8 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "nori/dictionary/dictionary.h"
-#include "nori/graphviz_visualize.h"
+#include "nori/lib/dictionary/dictionary.h"
+#include "nori/lib/graphviz_visualize.h"
 
 namespace nori {
 
@@ -35,12 +35,8 @@ struct Lattice {
   void clearState() { tokens.clear(); }
   void setSentence(std::string sentence) { this->sentence = sentence; }
   const absl::string_view getSentence() const { return this->sentence; }
-  const std::vector<Token>* getTokens() const {
-    return &this->tokens;
-  }
-  std::vector<Token>* getMutableTokens() {
-    return &this->tokens;
-  }
+  const std::vector<Token>* getTokens() const { return &this->tokens; }
+  std::vector<Token>* getMutableTokens() { return &this->tokens; }
 
  private:
   std::string sentence;

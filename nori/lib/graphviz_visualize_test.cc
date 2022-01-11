@@ -1,4 +1,4 @@
-#include "nori/graphviz_visualize.h"
+#include "nori/lib/graphviz_visualize.h"
 
 #include "gtest/gtest.h"
 

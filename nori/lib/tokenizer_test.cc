@@ -1,10 +1,10 @@
-#include "nori/tokenizer.h"
+#include "nori/lib/tokenizer.h"
 
 #include <glog/logging.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "nori/dictionary/dictionary.h"
+#include "nori/lib/dictionary/dictionary.h"
 
 nori::dictionary::Dictionary dictionary;
 

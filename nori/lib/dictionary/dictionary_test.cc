@@ -1,9 +1,9 @@
-#include "nori/dictionary/dictionary.h"
+#include "nori/lib/dictionary/dictionary.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "nori/protos/dictionary.pb.h"
+#include "nori/lib/protos/dictionary.pb.h"
 
 using namespace nori::dictionary;
 

@@ -5,7 +5,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "nori/protos/dictionary.pb.h"
+#include "nori/lib/protos/dictionary.pb.h"
 
 #define NORI_DICT_FILE "dictionary.bin"
 #define NORI_DICT_META_FILE "dictionary_meta.pb"

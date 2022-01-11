@@ -7,11 +7,11 @@
 #include <fstream>
 
 #include "absl/strings/str_cat.h"
-#include "nori/dictionary/dictionary.h"
-#include "nori/graphviz_visualize.h"
-#include "nori/protos/dictionary.pb.h"
-#include "nori/tokenizer.h"
-#include "nori/utils.h"
+#include "nori/lib/dictionary/dictionary.h"
+#include "nori/lib/graphviz_visualize.h"
+#include "nori/lib/protos/dictionary.pb.h"
+#include "nori/lib/tokenizer.h"
+#include "nori/lib/utils.h"
 
 DEFINE_string(dictionary, "./dictionary", "Path to nori dictionary");
 DEFINE_string(user_dictionary, "./dictionary/userdict.txt",

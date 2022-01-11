@@ -6,7 +6,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "nori/protos/dictionary.pb.h"
+#include "nori/lib/protos/dictionary.pb.h"
 
 namespace nori {
 namespace utils {

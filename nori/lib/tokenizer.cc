@@ -1,4 +1,4 @@
-#include "nori/tokenizer.h"
+#include "nori/lib/tokenizer.h"
 
 #include <darts.h>
 #include <glog/logging.h>
@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "icu4c/source/common/unicode/utf.h"
-#include "nori/protos/dictionary.pb.h"
+#include "nori/lib/protos/dictionary.pb.h"
 
 namespace nori {
 

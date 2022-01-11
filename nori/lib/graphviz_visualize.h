@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "nori/protos/dictionary.pb.h"
+#include "nori/lib/protos/dictionary.pb.h"
 
 namespace nori {
 

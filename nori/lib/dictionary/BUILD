@@ -13,8 +13,8 @@ cc_library(
     srcs = ["dictionary.cc"],
     hdrs = ["dictionary.h"],
     deps = [
-        "//nori:utils",
-        "//nori/protos:dictionary_cc_proto",
+        "//nori/lib:utils",
+        "//nori/lib/protos:dictionary_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_github_google_re2//:re2",
         "@com_github_google_snappy//:snappy",
@@ -41,8 +41,8 @@ cc_library(
     hdrs = ["builder.h"],
     deps = [
         ":dictionary",
-        "//nori:utils",
-        "//nori/protos:dictionary_cc_proto",
+        "//nori/lib:utils",
+        "//nori/lib/protos:dictionary_cc_proto",
         "@com_github_google_glog//:glog",
         "@com_github_google_snappy//:snappy",
         "@com_google_absl//absl/status",

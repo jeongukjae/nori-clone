@@ -1,4 +1,4 @@
-#include "nori/dictionary/builder.h"
+#include "nori/lib/dictionary/builder.h"
 
 #include <glog/logging.h>
 
@@ -9,9 +9,9 @@
 
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
-#include "nori/dictionary/dictionary.h"
-#include "nori/protos/dictionary.pb.h"
-#include "nori/utils.h"
+#include "nori/lib/dictionary/dictionary.h"
+#include "nori/lib/protos/dictionary.pb.h"
+#include "nori/lib/utils.h"
 #include "snappy.h"
 
 namespace nori {

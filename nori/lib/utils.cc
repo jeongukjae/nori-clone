@@ -1,4 +1,4 @@
-#include "nori/utils.h"
+#include "nori/lib/utils.h"
 
 #include <dirent.h>
 #include <glog/logging.h>

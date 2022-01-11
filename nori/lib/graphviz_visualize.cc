@@ -1,7 +1,7 @@
-#include "nori/graphviz_visualize.h"
+#include "nori/lib/graphviz_visualize.h"
 
 #include "absl/strings/str_cat.h"
-#include "nori/protos/dictionary.pb.h"
+#include "nori/lib/protos/dictionary.pb.h"
 
 namespace nori {
 

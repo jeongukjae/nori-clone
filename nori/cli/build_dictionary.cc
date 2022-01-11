@@ -4,9 +4,9 @@
 #include <sys/types.h>
 
 #include "absl/strings/str_cat.h"
-#include "nori/dictionary/builder.h"
-#include "nori/protos/dictionary.pb.h"
-#include "nori/utils.h"
+#include "nori/lib/dictionary/builder.h"
+#include "nori/lib/protos/dictionary.pb.h"
+#include "nori/lib/utils.h"
 
 DEFINE_string(mecab_dic, "",
               "Path to mecab dictionary. This cli program reads "
