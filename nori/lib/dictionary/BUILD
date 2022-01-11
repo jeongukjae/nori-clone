@@ -33,6 +33,7 @@ cc_test(
         ":dictionary",
         "@com_google_googletest//:gtest_main",
     ],
+    linkstatic = True,
 )
 
 cc_library(
@@ -59,4 +60,5 @@ cc_test(
         ":builder",
         "@com_google_googletest//:gtest_main",
     ],
+    linkstatic = True,
 )

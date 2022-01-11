@@ -71,7 +71,7 @@ absl::Status exactMatchMorpheme(
 
 // Dictionary
 
-absl::Status Dictionary::loadPrebuilt(absl::string_view input) {
+absl::Status Dictionary::loadPrebuilt(std::string input) {
   this->bosEosSurface = "BOS/EOS";
   this->bosEosMorpheme.set_leftid(0);
   this->bosEosMorpheme.set_rightid(0);
@@ -121,7 +121,7 @@ absl::Status Dictionary::loadPrebuilt(absl::string_view input) {
   return absl::OkStatus();
 }
 
-absl::Status Dictionary::loadUser(absl::string_view filename) {
+absl::Status Dictionary::loadUser(std::string filename) {
   const nori::Morpheme *morphemeWithJongsung, *morphemeWithHangul;
   auto status = internal::exactMatchMorpheme(&trie, &tokenDictionary, "놀이방",
                                              morphemeWithJongsung);
@@ -154,7 +154,7 @@ const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
 
 // User Dictionary
 
-absl::Status UserDictionary::load(absl::string_view filename, int leftId,
+absl::Status UserDictionary::load(std::string filename, int leftId,
                                   int rightId, int rightIdWithJongsung) {
   trie.clear();
   morphemes.clear();

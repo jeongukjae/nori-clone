@@ -19,7 +19,7 @@ namespace dictionary {
 class UserDictionary {
  public:
   // load dictionary from given path
-  absl::Status load(absl::string_view filename, int leftId, int rightId,
+  absl::Status load(std::string filename, int leftId, int rightId,
                     int rightIdWithJongsung);
 
   // return trie dictionary
@@ -37,10 +37,10 @@ class UserDictionary {
 class Dictionary {
  public:
   // load prebuilt dictionary from given path
-  absl::Status loadPrebuilt(absl::string_view path);
+  absl::Status loadPrebuilt(std::string path);
 
   // load user dictionary from given path
-  absl::Status loadUser(absl::string_view filename);
+  absl::Status loadUser(std::string filename);
 
   // return is initialized
   bool isInitialized() const { return initialized; }

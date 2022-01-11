@@ -43,6 +43,7 @@ cc_test(
         ":tokenizer",
         "@com_google_googletest//:gtest",
     ],
+    linkstatic = True,
 )
 
 cc_library(
@@ -62,6 +63,7 @@ cc_test(
         ":graphviz_visualize",
         "@com_google_googletest//:gtest_main",
     ],
+    linkstatic = True,
 )
 
 cc_library(
@@ -86,4 +88,5 @@ cc_test(
         ":utils",
         "@com_google_googletest//:gtest_main",
     ],
+    linkstatic = True,
 )
