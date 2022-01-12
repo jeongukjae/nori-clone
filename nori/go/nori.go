@@ -2,7 +2,7 @@ package nori
 
 /*
 #include <stdlib.h>
-#include "nori/go/wrapper.h"
+#include <nori/go/wrapper.h>
 */
 import "C"
 import (
