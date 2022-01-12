@@ -47,5 +47,6 @@ jobs:
 
     - name: Build and test all modules
       run: |
+        bazel run //:buildifier_test
         bazel build //...
         bazel test //...
