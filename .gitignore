@@ -2,6 +2,7 @@
 bazel-*
 .vscode/settings.json
 .vscode/c_cpp_properties.json
+dist/*.whl
 nori.dot
 outfile.png
 
