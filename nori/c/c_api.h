@@ -1,5 +1,5 @@
-#ifndef __NORI_WRAPPER_FOR_GO_H__
-#define __NORI_WRAPPER_FOR_GO_H__
+#ifndef __NORI_C_API_H__
+#define __NORI_C_API_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,4 +32,4 @@ void freeLattice(const Lattice* lattice);
 }
 #endif
 
-#endif  // __NORI_WRAPPER_FOR_GO_H__
+#endif  // __NORI_C_API_H__

@@ -1,4 +1,4 @@
-#include "nori/go/wrapper.h"
+#include "nori/c/c_api.h"
 
 #include "nori/lib/dictionary/dictionary.h"
 #include "nori/lib/tokenizer.h"
@@ -35,7 +35,8 @@ void freeTokenizer(Dictionary* dictionary, Tokenizer* tokenizer) {
   delete reinterpret_cast<nori::NoriTokenizer*>(tokenizer);
 }
 
-int tokenize(const Tokenizer* tokenizer, const char* str, Lattice** latticeOut) {
+int tokenize(const Tokenizer* tokenizer, const char* str,
+             Lattice** latticeOut) {
   nori::Lattice* lattice = new nori::Lattice(std::string(str));
   *latticeOut = reinterpret_cast<Lattice*>(lattice);
 
@@ -51,5 +52,4 @@ int tokenize(const Tokenizer* tokenizer, const char* str, Lattice** latticeOut) 
 void freeLattice(const Lattice* lattice) {
   delete reinterpret_cast<const nori::Lattice*>(lattice);
 }
-
 }
