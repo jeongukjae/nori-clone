@@ -33,7 +33,7 @@ pkg_tar(
 )
 
 pkg_tar(
-    name = "libnori_go",
+    name = "libnori_c",
     extension = "tar.gz",
     deps = [
         ":cheaders",
