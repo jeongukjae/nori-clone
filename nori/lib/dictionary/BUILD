@@ -29,7 +29,6 @@ cc_test(
     name = "dictionary_test",
     srcs = ["dictionary_test.cc"],
     data = ["//dictionary"],
-    linkstatic = True,
     deps = [
         ":dictionary",
         "@com_google_googletest//:gtest_main",
@@ -56,7 +55,6 @@ cc_test(
     name = "builder_test",
     srcs = ["builder_test.cc"],
     data = ["//testdata:dictionaryBuilder"],
-    linkstatic = True,
     deps = [
         ":builder",
         "@com_google_googletest//:gtest_main",

@@ -1,2 +1,5 @@
+build --enable_platform_specific_config
 build --cxxopt='-std=c++17'
 build -c opt
+
+build:linux --linkopt=-ldl
