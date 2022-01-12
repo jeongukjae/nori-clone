@@ -7,6 +7,7 @@ extern "C" {
 
 typedef struct Tokenizer_H Tokenizer;
 typedef struct Dictionary_H Dictionary;
+typedef struct Lattice_H Lattice;
 
 // initialize using given dictionary path and user dictionary path.
 // set dictionary pointer in output.
@@ -23,9 +24,9 @@ int initializeTokenizer(const char* dictionaryPath,
 
 void freeTokenizer(Dictionary* dictionary, Tokenizer* tokenizer);
 
-int tokenize(const Tokenizer* tokenizer, const char* str, void** latticeOut);
+int tokenize(const Tokenizer* tokenizer, const char* str, Lattice** latticeOut);
 
-void freeLattice(const void* lattice);
+void freeLattice(const Lattice* lattice);
 
 #ifdef __cplusplus
 }

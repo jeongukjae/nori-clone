@@ -35,9 +35,9 @@ void freeTokenizer(Dictionary* dictionary, Tokenizer* tokenizer) {
   delete reinterpret_cast<nori::NoriTokenizer*>(tokenizer);
 }
 
-int tokenize(const Tokenizer* tokenizer, const char* str, void** latticeOut) {
+int tokenize(const Tokenizer* tokenizer, const char* str, Lattice** latticeOut) {
   nori::Lattice* lattice = new nori::Lattice(std::string(str));
-  *latticeOut = lattice;
+  *latticeOut = reinterpret_cast<Lattice*>(lattice);
 
   absl::Status status =
       reinterpret_cast<const nori::NoriTokenizer*>(tokenizer)->tokenize(
@@ -48,5 +48,8 @@ int tokenize(const Tokenizer* tokenizer, const char* str, void** latticeOut) {
   return 0;
 }
 
-void freeLattice(const void* lattice) { delete lattice; }
+void freeLattice(const Lattice* lattice) {
+  delete reinterpret_cast<const nori::Lattice*>(lattice);
+}
+
 }
