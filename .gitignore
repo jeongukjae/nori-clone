@@ -1,11 +1,3 @@
-## Project specific
-bazel-*
-.vscode/settings.json
-.vscode/c_cpp_properties.json
-dist/*.whl
-nori.dot
-outfile.png
-
 # Prerequisites
 *.d
 
@@ -38,3 +30,12 @@ outfile.png
 *.exe
 *.out
 *.app
+
+## Project specific
+bazel-*
+.vscode/settings.json
+.vscode/c_cpp_properties.json
+dist/*.whl
+nori.dot
+outfile.png
+!go.mod

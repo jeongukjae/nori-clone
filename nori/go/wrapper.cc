@@ -3,9 +3,12 @@
 #include "nori/lib/dictionary/dictionary.h"
 #include "nori/lib/tokenizer.h"
 
+extern "C" {
+
 int initializeTokenizer(const char* dictionaryPath,
-                        const char* userDictionaryPath, void** dictionaryOutput,
-                        void** tokenizerOutput) {
+                        const char* userDictionaryPath,
+                        Dictionary** dictionaryOutput,
+                        Tokenizer** tokenizerOutput) {
   nori::dictionary::Dictionary* dictionary = new nori::dictionary::Dictionary();
   absl::Status status = dictionary->loadPrebuilt(std::string(dictionaryPath));
   if (!status.ok()) {
@@ -20,25 +23,25 @@ int initializeTokenizer(const char* dictionaryPath,
       return 2;
     }
   }
-  nori::NoriTokenizer* tokenizer = new nori::NoriTokenizer(
-      static_cast<const nori::dictionary::Dictionary*>(dictionary));
-  *tokenizerOutput = tokenizer;
-  *dictionaryOutput = dictionary;
+  nori::NoriTokenizer* tokenizer = new nori::NoriTokenizer(dictionary);
+  *tokenizerOutput = reinterpret_cast<Tokenizer*>(tokenizer);
+  *dictionaryOutput = reinterpret_cast<Dictionary*>(dictionary);
 
   return 0;
 }
 
-void freeTokenizer(void* dictionary, void* tokenizer) {
-  delete dictionary;
-  delete tokenizer;
+void freeTokenizer(Dictionary* dictionary, Tokenizer* tokenizer) {
+  delete reinterpret_cast<nori::dictionary::Dictionary*>(dictionary);
+  delete reinterpret_cast<nori::NoriTokenizer*>(tokenizer);
 }
 
-int tokenize(const void* tokenizer, const char* str, void** latticeOut) {
+int tokenize(const Tokenizer* tokenizer, const char* str, void** latticeOut) {
   nori::Lattice* lattice = new nori::Lattice(std::string(str));
   *latticeOut = lattice;
 
   absl::Status status =
-      static_cast<const nori::NoriTokenizer*>(tokenizer)->tokenize(*lattice);
+      reinterpret_cast<const nori::NoriTokenizer*>(tokenizer)->tokenize(
+          *lattice);
   if (!status.ok()) {
     return 1;
   }
@@ -46,3 +49,4 @@ int tokenize(const void* tokenizer, const char* str, void** latticeOut) {
 }
 
 void freeLattice(const void* lattice) { delete lattice; }
+}

@@ -1,6 +1,13 @@
 #ifndef __NORI_WRAPPER_FOR_GO_H__
 #define __NORI_WRAPPER_FOR_GO_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct Tokenizer_H Tokenizer;
+typedef struct Dictionary_H Dictionary;
+
 // initialize using given dictionary path and user dictionary path.
 // set dictionary pointer in output.
 //
@@ -10,13 +17,18 @@
 // * if userDictionaryPath is NULL, this function will skip loading user
 //   dictionary
 int initializeTokenizer(const char* dictionaryPath,
-                        const char* userDictionaryPath, void** dictionaryOutput,
-                        void** tokenizerOutput);
+                        const char* userDictionaryPath,
+                        Dictionary** dictionaryOutput,
+                        Tokenizer** tokenizerOutput);
 
-void freeTokenizer(void* dictionary, void* tokenizer);
+void freeTokenizer(Dictionary* dictionary, Tokenizer* tokenizer);
 
-int tokenize(const void* tokenizer, const char* str, void** latticeOut);
+int tokenize(const Tokenizer* tokenizer, const char* str, void** latticeOut);
 
 void freeLattice(const void* lattice);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  // __NORI_WRAPPER_FOR_GO_H__
