@@ -5,6 +5,18 @@
 
 using namespace nori::utils;
 
+TEST(TestUtils, hasJongsungAtLast) {
+  ASSERT_EQ(internal::hasJongsungAtLast("Hello World!"), false);
+  ASSERT_EQ(internal::hasJongsungAtLast("Hello 안녀ㅇWorld!"), false);
+  ASSERT_EQ(internal::hasJongsungAtLast("안녕"), true);
+  ASSERT_EQ(internal::hasJongsungAtLast("안녀"), false);
+  ASSERT_EQ(internal::hasJongsungAtLast("힣"), true);
+  ASSERT_EQ(internal::hasJongsungAtLast("가"), false);
+  ASSERT_EQ(internal::hasJongsungAtLast("12"), false);
+  ASSERT_EQ(internal::hasJongsungAtLast("안ㄱ"), false);
+  ASSERT_EQ(internal::hasJongsungAtLast("뭐"), false);
+}
+
 TEST(TestUtils, lowercaseUTF8) {
   ASSERT_EQ(lowercaseUTF8("Hello World!"), "hello world!");
   ASSERT_EQ(lowercaseUTF8("Hello 안녀ㅇWorld!"), "hello 안녀ㅇworld!");

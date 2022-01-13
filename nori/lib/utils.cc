@@ -17,6 +17,21 @@ namespace nori {
 namespace utils {
 namespace internal {
 
+bool hasJongsungAtLast(absl::string_view input) {
+  const char* s = input.data();
+  int length = input.length();
+  UChar32 lastChar;
+
+  for (int i = 0; i < length;) {
+    U8_NEXT(s, i, length, lastChar);
+  }
+
+  // lastChar < "가" || lastChar > "힣"
+  if (lastChar < 0xAC00 || lastChar > 0xD7A3) return false;
+
+  return ((lastChar - 0xAC00) % 28) != 0;
+}
+
 absl::Status normalizeUTF8(const std::string input, std::string& output,
                            absl::string_view normalizationForm) {
   icu::ErrorCode icuError;

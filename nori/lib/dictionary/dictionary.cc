@@ -154,8 +154,8 @@ const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
 
 // User Dictionary
 
-absl::Status UserDictionary::load(std::string filename, int leftId,
-                                  int rightId, int rightIdWithJongsung) {
+absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
+                                  int rightIdWithJongsung) {
   trie.clear();
   morphemes.clear();
 
@@ -205,8 +205,11 @@ absl::Status UserDictionary::load(std::string filename, int leftId,
     nori::Morpheme morpheme;
 
     morpheme.set_leftid(leftId);
-    // TODO(jeongukaje): set right id
-    morpheme.set_rightid(rightId);
+    if (utils::internal::hasJongsungAtLast(term[0])) {
+      morpheme.set_rightid(rightIdWithJongsung);
+    } else {
+      morpheme.set_rightid(rightId);
+    }
     morpheme.set_wordcost(-100000);
     morpheme.set_postype(term.size() == 1 ? nori::POSType::MORPHEME
                                           : nori::POSType::COMPOUND);
