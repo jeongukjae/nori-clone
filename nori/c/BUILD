@@ -18,14 +18,14 @@ cc_library(
         "c_api.cc",
         ":headers",
     ],
-    alwayslink = True,
     deps = ["//nori/lib:nori"],
+    alwayslink = True,
 )
 
 cc_binary(
     name = "libnori_c_api.so",
-    deps = [":c_api"],
     linkshared = True,
+    deps = [":c_api"],
 )
 
 cc_test(
