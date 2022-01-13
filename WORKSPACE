@@ -67,13 +67,6 @@ http_archive(
 )
 
 http_archive(
-    name = "com_github_google_benchmark",
-    sha256 = "bb9f771e942387c4e000c5bb067ef225a6ef3a9b5a2ce9084ede8dcdaf230bfd",
-    strip_prefix = "benchmark-fe2e8aa1b4b01a8d2a7675c1edb3fb0ed48ce11c",
-    urls = ["https://github.com/google/benchmark/archive/fe2e8aa1b4b01a8d2a7675c1edb3fb0ed48ce11c.zip"],
-)
-
-http_archive(
     name = "com_github_gflags_gflags",
     sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",
     strip_prefix = "gflags-2.2.2",
