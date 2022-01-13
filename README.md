@@ -1,10 +1,57 @@
 # nori
 
-Standalone Nori Analyzer written in C++
+Standalone Nori (Korean Morphological Analyzer in Apache Lucene) written in C++.
 
 ## Introduction
 
-## Installation
+ElasticSearch provides high-quality/performance Korean morphological analyzer `nori`. But `nori`'s code is strongly coupled with the Lucene codebase, and `nori` is written in Java that is the main language in the Lucene project. So, it's hard to use `nori` standalone in Python or Golang with the same performance. So for the portability and usage, I re-implemented almost the same algorithms with nori in Lucene using C++.
+
+## Usage
+
+This project is written in C++, but also provides Python and Golang binding.
+
+### C++
+
+```cpp
+#include "nori/lib/tokenizer.h"
+#include "nori/lib/dictionary/dictionary.h"
+
+nori::dictionary::Dictionary dictionary;
+auto status = dictionary.loadPrebuilt("./dictionary");
+CHECK(status.ok()) << status.message();
+status = dictionary.loadUser("./dictionary/userdict.txt");
+CHECK(status.ok()) << status.message();
+
+const nori::NoriTokenizer tokenizer(&dictionary);
+nori::Lattice lattice("이 프로젝트는 nori를 재작성하는 프로젝트입니다.");
+
+status = tokenizer.tokenize(lattice);
+ASSERT_TRUE(status.ok());
+
+for (int i = 0; i < lattice.getTokens()->size(); i++) {
+    LOG(INFO) << lattice.getTokens()->at(i).surface;
+}
+```
+
+### Python
+
+```py
+import nori
+
+dictionary = nori.Dictionary()
+dictionary.load_prebuilt_dictionary("./dictionary")
+dictionary.load_user_dictionary("./dictionary")
+tokenizer = nori.NoriTokenizer(dictionary)
+
+result = tokenizer.tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.")
+
+for token in result.tokens:
+    print(token.surface)
+```
+
+### Golang
+
+<!-- TODO(jeongukjae): add golang example -->
 
 ## Build and test
 
