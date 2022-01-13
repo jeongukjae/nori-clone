@@ -45,16 +45,6 @@ absl::Status normalizeUTF8(const std::string input, std::string& output,
   return absl::OkStatus();
 }
 
-std::string lowercaseUTF8(const absl::string_view input) {
-  std::string output;
-
-  icu::UnicodeString us(input.data(), "UTF-8");
-  us.toLower();
-  us.toUTF8String(output);
-
-  return output;
-}
-
 void listDirectory(absl::string_view directory, std::vector<std::string>& paths,
                    std::function<bool(std::string)> functor) {
   std::string direcotryString = absl::StrCat(directory);
@@ -172,6 +162,16 @@ bool isDirectory(const std::string& path) {
     return true;
   }
   return false;
+}
+
+std::string lowercaseUTF8(const absl::string_view input) {
+  std::string output;
+
+  icu::UnicodeString us(input.data(), "UTF-8");
+  us.toLower();
+  us.toUTF8String(output);
+
+  return output;
 }
 
 }  // namespace utils

@@ -16,8 +16,6 @@ namespace internal {
 absl::Status normalizeUTF8(const std::string input, std::string& output,
                            absl::string_view normalizationForm);
 
-std::string lowercaseUTF8(const absl::string_view input);
-
 // list all files in the directory. This function returns paths as sorted order.
 // If functor returns false for given paths, this function will filter them.
 //
@@ -55,6 +53,9 @@ nori::POSTag resolvePOSTag(absl::string_view name);
 
 // check is directory
 bool isDirectory(const std::string& path);
+
+// lowercase string
+std::string lowercaseUTF8(const absl::string_view input);
 
 }  // namespace utils
 }  // namespace nori

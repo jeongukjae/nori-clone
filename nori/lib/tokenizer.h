@@ -12,6 +12,13 @@
 
 namespace nori {
 
+// Token output of nori::Lattice
+//
+// surface is absl::string_view type because original input data will be stored
+// in nori::Lattice::sentence. We don't need additional copy.
+//
+// You can access all sub-tokens of the compound token via
+// nori::Token::morpheme::expression.
 struct Token {
   const absl::string_view surface;
   const nori::Morpheme* morpheme;
@@ -23,26 +30,45 @@ struct Token {
       : surface(surface), morpheme(morpheme), offset(offset), length(length) {}
 };
 
+// Lattice struct.
+//
+// You have to initialize this struct and pass to tokenizer method to get
+// output.
 struct Lattice {
+ private:
+  std::string sentence;
+  std::vector<Token> tokens;
+
  public:
   Lattice() {}
+  // Same as ccalling setSentence method after initializing this struct.
   Lattice(std::string sentence) : sentence(sentence) {}
 
+  // clear internal states
   void clear() {
     clearState();
     sentence.clear();
   }
-  void clearState() { tokens.clear(); }
-  void setSentence(std::string sentence) { this->sentence = sentence; }
-  const absl::string_view getSentence() const { return this->sentence; }
-  const std::vector<Token>* getTokens() const { return &this->tokens; }
-  std::vector<Token>* getMutableTokens() { return &this->tokens; }
 
- private:
-  std::string sentence;
-  std::vector<Token> tokens;
+  // clear only tokens
+  void clearState() { tokens.clear(); }
+
+  // set sentence
+  void setSentence(std::string sentence) { this->sentence = sentence; }
+
+  // get sentence
+  const absl::string_view getSentence() const { return this->sentence; }
+
+  // get output tokens
+  const std::vector<Token>* getTokens() const { return &this->tokens; }
+
+  // get mutable tokens.
+  // I recommend not to call this method. This method is added for using inside
+  // of nori::Tokenizer
+  std::vector<Token>* getMutableTokens() { return &this->tokens; }
 };
 
+// Tokenizer class
 class NoriTokenizer {
  public:
   NoriTokenizer(const nori::dictionary::Dictionary* dictionary,

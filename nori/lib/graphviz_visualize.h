@@ -7,6 +7,11 @@
 
 namespace nori {
 
+// Visualizing tokenizer path using dotfile format.
+//
+// you can convert the output of GraphvizVisualizer::str to png using below
+// command.
+//   dot -Tpng path-to-dotfile > outfile.png
 class GraphvizVisualizer {
  public:
   GraphvizVisualizer(const std::string graphName = "nori",
@@ -18,16 +23,24 @@ class GraphvizVisualizer {
         bosLabel(bosLabel),
         eosLabel(eosLabel) {}
 
+  // clear internal states
   void reset();
+
+  // add node path
   void addNode(size_t fromIndex, size_t fromNodeId,
                const nori::Morpheme* fromMorpheme, size_t toIndex,
                size_t toNodeId, const nori::Morpheme* toMorpheme,
                const std::string stringForm, int wordCost, int connectionCost,
                int cost);
+
+  // add final node path
   void addEos(size_t fromIndex, size_t fromNodeId,
               const nori::Morpheme* fromMorpheme);
+
+  // wrap up
   void finish();
 
+  // get final output data
   const std::string str() const { return data; }
 
  private:

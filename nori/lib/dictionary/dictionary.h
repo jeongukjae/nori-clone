@@ -16,15 +16,19 @@
 namespace nori {
 namespace dictionary {
 
+// User dictionary interface.
+// you don't need to access this class directly, because
+// nori::dictionary::Dictionary class has userDictionary path.
 class UserDictionary {
  public:
   // load dictionary from given path
   absl::Status load(std::string filename, int leftId, int rightId,
                     int rightIdWithJongsung);
 
-  // return trie dictionary
+  // return trie dictionary.
   const Darts::DoubleArray* getTrie() const { return &trie; }
 
+  // get all morphemes for the trie.
   const std::vector<nori::Morpheme>* getMorphemes() const { return &morphemes; }
 
  private:
@@ -99,6 +103,7 @@ class Dictionary {
   nori::ConnectionCost connectionCost;
   UserDictionary userDictionary;
 
+  // for tokenizer
   nori::Morpheme bosEosMorpheme;
   std::string bosEosSurface;
 
