@@ -90,13 +90,24 @@ PYBIND11_MODULE(bind, m) {
       .def_property_readonly(
           "expr",
           [](const PyToken &token) {
-            return stringifyExpression(token.morpheme->expression());
+            auto exprs = token.morpheme->expression();
+
+            std::vector<std::pair<std::string, std::string>> tokens;
+            tokens.reserve(exprs.size());
+
+            for (const auto &expression : exprs) {
+              tokens.push_back(
+                  std::make_pair(expression.surface(),
+                                 nori::POSTag_Name(expression.postag())));
+            }
+
+            return tokens;
           })
       .def("__repr__", [](const PyToken &token) {
         return absl::StrCat(
             "<Token sruface=\"", token.surface, "\", postag=\"",
             absl::StrJoin(getPostags(token.morpheme->postag()), "+"),
-            "\", expression=\"",
+            "\", expr=\"",
             stringifyExpression(token.morpheme->expression()),
             "\", offset=", token.offset, ", length=", token.length, ">");
       });
