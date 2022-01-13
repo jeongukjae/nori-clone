@@ -14,9 +14,7 @@ pybind_extension(
 py_library(
     name = "nori_py",
     srcs = ["__init__.py"],
-    data = [
-        ":bind.so",
-    ],
+    data = [":bind.so"],
 )
 
 py_test(
