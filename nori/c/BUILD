@@ -19,6 +19,18 @@ cc_library(
     deps = ["//nori/lib:nori"],
 )
 
+cc_test(
+    name = "nori_c_api_test",
+    srcs = ["c_api_test.cc"],
+    data = [
+        "//dictionary",
+    ],
+    deps = [
+        ":nori_c_api",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 pkg_tar(
     name = "cheaders",
     srcs = [":headers"],
