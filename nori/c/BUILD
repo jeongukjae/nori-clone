@@ -13,10 +13,19 @@ filegroup(
 )
 
 cc_library(
-    name = "nori_c_api",
-    srcs = ["c_api.cc"],
-    hdrs = [":headers"],
+    name = "c_api",
+    srcs = [
+        "c_api.cc",
+        ":headers",
+    ],
+    alwayslink = True,
     deps = ["//nori/lib:nori"],
+)
+
+cc_binary(
+    name = "libnori_c_api.so",
+    deps = [":c_api"],
+    linkshared = True,
 )
 
 cc_test(
@@ -26,7 +35,7 @@ cc_test(
         "//dictionary",
     ],
     deps = [
-        ":nori_c_api",
+        ":c_api",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -40,7 +49,7 @@ pkg_tar(
 
 pkg_tar(
     name = "clib",
-    srcs = [":nori_c_api"],
+    srcs = [":libnori_c_api.so"],
     package_dir = "lib",
 )
 

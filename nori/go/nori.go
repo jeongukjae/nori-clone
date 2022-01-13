@@ -1,6 +1,8 @@
 package nori
 
 /*
+#cgo LDFLAGS: -lnori_c_api
+
 #include <stdlib.h>
 #include "nori/c/c_api.h"
 */

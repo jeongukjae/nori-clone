@@ -7,7 +7,7 @@ licenses(["notice"])
 go_library(
     name = "nori",
     srcs = ["nori.go"],
-    cdeps = ["//nori/c:nori_c_api"],
+    cdeps = ["//nori/c:c_api"],
     cgo = True,
     importpath = "github.com/jeongukjae/nori-clone/nori/go",
 )
