@@ -1,0 +1,1 @@
+# Compare with original lucene
