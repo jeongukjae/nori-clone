@@ -4,5 +4,5 @@ java_binary(
     main_class = "NoriRunner",
     deps = [
         "@maven//:org_apache_lucene_lucene_analyzers_nori",
-    ]
+    ],
 )
