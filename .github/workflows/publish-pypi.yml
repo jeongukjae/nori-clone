@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7, 3.8, 3.9, 3.10]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -36,16 +36,15 @@ jobs:
         yum install -y patchelf rsync
     - name: Build wheel
       run: |
-        export PATH="$PATH:$HOME/bin"
-
         # setup python
         export PYTHON=python${{ matrix.python-version }}
         mkdir -p .tmp-py-bin && ln -s `which $PYTHON` .tmp-py-bin/python3
 
-        bazel build \
-            --action_env=PATH=$PATH:`pwd`/.tmp-py-bin \
-            //python:build_pip_pkg \
-            --verbose_failures
+        export PATH="$PATH:$HOME/bin:$(pwd)/.tmp-py-bin"
+        python -V
+
+        bazel build //nori/python:build_pip_pkg --verbose_failures
+        ./bazel-bin/python/build_pip_pkg artifacts
     - name: Build and publish
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
@@ -72,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7, 3.8, 3.9, 3.10]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v2
@@ -84,7 +83,7 @@ jobs:
       run: |
         curl -LO https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-${BAZEL_TARGET}-x86_64.sh
         chmod +x bazel-${BAZEL_VERSION}-installer-${BAZEL_TARGET}-x86_64.sh
-        ./bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh --user
+        ./bazel-${BAZEL_VERSION}-installer-${BAZEL_TARGET}-x86_64.sh --user
         rm bazel-${BAZEL_VERSION}-installer-${BAZEL_TARGET}-x86_64.sh
     - name: Install dependencies
       run: |
@@ -95,8 +94,8 @@ jobs:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
-        bazel build -s //python:build_pip_pkg --verbose_failures
-        ./bazel-bin/python/build_pip_pkg artifacts
+        bazel build //nori/python:build_pip_pkg --verbose_failures
+        ./bazel-bin/nori/python/build_pip_pkg artifacts
         if [[ "1" == "${{ github.event.inputs.upload_pypi }}" ]] ; then
           # upload pypi
           twine upload artifacts/*
