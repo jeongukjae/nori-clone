@@ -60,7 +60,7 @@ function main() {
   pushd ${TMPDIR}
   echo $(date) : "=== Building wheel"
 
-  python3 setup.py bdist_wheel
+  python setup.py bdist_wheel
 
   cp dist/*.whl "${DEST}"
   popd
