@@ -44,7 +44,7 @@ jobs:
         python -V
 
         bazel build //nori/python:build_pip_pkg --verbose_failures
-        ./bazel-bin/python/build_pip_pkg artifacts
+        ./bazel-bin/nori/python/build_pip_pkg artifacts
     - name: Build and publish
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
