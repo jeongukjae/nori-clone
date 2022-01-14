@@ -37,10 +37,10 @@ jobs:
     - name: Build wheel
       run: |
         # setup python
-        export PYTHON=python${{ matrix.python-version }}
-        mkdir -p .tmp-py-bin && ln -s `which $PYTHON` .tmp-py-bin/python3
+        mkdir -p .tmp-py-bin
+        ln -s `which python${{ matrix.python-version }}` .tmp-py-bin/python
 
-        export PATH="$PATH:$HOME/bin:$(pwd)/.tmp-py-bin"
+        export PATH="$(pwd)/.tmp-py-bin:$PATH:$HOME/bin"
         python -V
 
         bazel build //nori/python:build_pip_pkg --verbose_failures
