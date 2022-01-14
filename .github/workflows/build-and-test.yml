@@ -1,4 +1,4 @@
-name: Build and test binding modules
+name: Build and test all
 
 on:
   push:
