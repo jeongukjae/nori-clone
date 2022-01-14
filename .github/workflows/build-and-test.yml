@@ -34,14 +34,7 @@ jobs:
       run: |
         curl -LO https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh
         chmod +x bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh
-        if [[ "${{ matrix.os }}" == "macos-latest" ]] ; then
-          (echo "===== Bazel installation Attempt: 1 ====" && ./bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh --user) ||
-          (echo "===== Bazel installation Attempt: 2 ====" && ./bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh --user) ||
-          (echo "===== Bazel installation Attempt: 3 ====" && ./bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh --user) ||
-          (echo "===== Bazel installation Step Failed ====" && exit 1);
-        else
-          ./bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh --user;
-        fi
+        ./bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh --user
         export PATH="$PATH:$HOME/bin"
         rm bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh
 
