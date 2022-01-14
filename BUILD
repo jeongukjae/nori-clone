@@ -1,5 +1,5 @@
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "buildifier_test")
-load("//tools/lint:clang_format.bzl", "clang_format", "clang_format_test")
+load("//tools/lint/clang_format:def.bzl", "clang_format", "clang_format_test")
 
 buildifier(name = "buildifier")
 
