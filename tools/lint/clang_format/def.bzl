@@ -33,7 +33,7 @@ clang_format = rule(
         "exclude_patterns": attr.string_list(allow_empty = True),
         "_cmd": attr.string(default = "clang-format"),
         "_template": attr.label(
-            default = "//tools/lint:clang_format.template.bash",
+            default = "//tools/lint/clang_format:clang_format.template.bash",
             allow_single_file = True,
         ),
     },
@@ -49,7 +49,7 @@ clang_format_test = rule(
         "exclude_patterns": attr.string_list(allow_empty = True),
         "_cmd": attr.string(default = "clang-format"),
         "_template": attr.label(
-            default = "//tools/lint:clang_format.template.bash",
+            default = "//tools/lint/clang_format:clang_format.template.bash",
             allow_single_file = True,
         ),
     },
