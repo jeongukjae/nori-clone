@@ -107,8 +107,7 @@ PYBIND11_MODULE(bind, m) {
         return absl::StrCat(
             "<Token sruface=\"", token.surface, "\", postag=\"",
             absl::StrJoin(getPostags(token.morpheme->postag()), "+"),
-            "\", expr=\"",
-            stringifyExpression(token.morpheme->expression()),
+            "\", expr=\"", stringifyExpression(token.morpheme->expression()),
             "\", offset=", token.offset, ", length=", token.length, ">");
       });
 
