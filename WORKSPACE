@@ -160,6 +160,6 @@ maven_install(
 
 http_jar(
     name = "com_github_google_google_java_format",
-    url = "https://github.com/google/google-java-format/releases/download/v1.13.0/google-java-format-1.13.0-all-deps.jar",
     sha256 = "a036ac9392ff6f2e668791324c26bd73963b09682ed4a0d4cbc117fd6ea3fe55",
+    url = "https://github.com/google/google-java-format/releases/download/v1.13.0/google-java-format-1.13.0-all-deps.jar",
 )
