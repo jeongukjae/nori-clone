@@ -4,7 +4,7 @@ Standalone Nori (Korean Morphological Analyzer in Apache Lucene) written in C++.
 
 ## Introduction
 
-ElasticSearch provides high-quality/performance Korean morphological analyzer `nori`. But `nori`'s code is strongly coupled with the Lucene codebase, and `nori` is written in Java that is the main language in the Lucene project. So, it's hard to use `nori` standalone in Python or Golang with the same performance. So for the portability and usage, I re-implemented almost the same algorithms with nori in Lucene using C++.
+ElasticSearch provides high-quality/performance Korean morphological analyzer `nori`. But `nori`'s code is strongly coupled with the Lucene codebase, and `nori` is written in Java that is the main language in the Lucene project. So, it's hard to use `nori` standalone in Python or Golang with the same performance. Therefore, I re-implemented almost the same algorithms with `nori` in Lucene using C++ for the portability and usability.
 
 ## Usage
 
