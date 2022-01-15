@@ -2,10 +2,15 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 package(
     default_visibility = [
-        "//nori:__pkg__",
-        "//nori:__subpackages__",
+        "//:__pkg__",
+        "//:__subpackages__",
     ],
     licenses = ["notice"],
+)
+
+filegroup(
+    name = "clang_format_files",
+    srcs = glob(["*.cc"]),
 )
 
 cc_binary(

@@ -27,7 +27,7 @@ def _clang_format_impl_factory(ctx, test_rule = False):
     return DefaultInfo(
         files = depset([executable]),
         executable = executable,
-        runfiles = ctx.runfiles(files = runfiles)
+        runfiles = ctx.runfiles(files = runfiles),
     )
 
 def _get_attrs_clang_format(test_rule = False):
@@ -46,7 +46,7 @@ def _get_attrs_clang_format(test_rule = False):
                 allow_empty = False,
                 allow_files = [".cc", ".h", ".c"],
             ),
-            "config": attr.label(allow_single_file=True)
+            "config": attr.label(allow_single_file = True),
         })
 
     return attrs

@@ -2,10 +2,18 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
 package(
     default_visibility = [
-        "//nori:__pkg__",
-        "//nori:__subpackages__",
+        "//:__pkg__",
+        "//:__subpackages__",
     ],
     licenses = ["notice"],
+)
+
+filegroup(
+    name = "clang_format_files",
+    srcs = glob([
+        "*.cc",
+        "*.h",
+    ]) + ["//nori/lib/dictionary:clang_format_files"],
 )
 
 cc_library(

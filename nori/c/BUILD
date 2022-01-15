@@ -20,8 +20,8 @@ filegroup(
 cc_library(
     name = "c_api",
     srcs = [
-        ":srcs",
         ":headers",
+        ":srcs",
     ],
     deps = ["//nori/lib:nori"],
     alwayslink = True,

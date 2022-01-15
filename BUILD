@@ -22,12 +22,15 @@ clang_format(
 
 clang_format_test(
     name = "clang_format_test",
-    exclude_patterns = ["./third_party/*"],
-    config = ".clang-format",
     srcs = [
-        "//nori/c:srcs",
         "//nori/c:headers",
+        "//nori/c:srcs",
+        "//nori/cli:clang_format_files",
+        "//nori/lib:clang_format_files",
+        "//nori/python/nori:clang_format_files",
     ],
+    config = ".clang-format",
+    exclude_patterns = ["./third_party/*"],
 )
 
 google_java_format(name = "google_java_format")

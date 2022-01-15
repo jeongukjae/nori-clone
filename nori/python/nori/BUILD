@@ -2,6 +2,11 @@ load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "clang_format_files",
+    srcs = glob(["*.cc"]),
+)
+
 pybind_extension(
     name = "bind",
     srcs = ["bind.cc"],
