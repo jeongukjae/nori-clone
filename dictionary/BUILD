@@ -1,8 +1,5 @@
 package(
-    default_visibility = [
-        "//nori:__pkg__",
-        "//nori:__subpackages__",
-    ],
+    default_visibility = ["//visibility:public"],
     licenses = ["notice"],
 )
 
