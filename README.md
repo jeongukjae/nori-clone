@@ -51,7 +51,27 @@ for token in result.tokens:
 
 ### Golang
 
-<!-- TODO(jeongukjae): add golang example -->
+```golang
+import (
+    "fmt"
+
+    nori "github.com/jeongukjae/nori-clone/nori/go"
+)
+
+tokenizer, err := nori.New("./dictionary", "./dictionary/userdict.txt")
+if err != nil {
+    // ...
+}
+
+tokens, err := tokenizer.Tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.")
+if err != nil {
+    // ...
+}
+
+for _, token := range *tokens {
+    fmt.Println(token.Surface)
+}
+```
 
 ## Build and test
 
