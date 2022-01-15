@@ -40,7 +40,7 @@ import nori
 
 dictionary = nori.Dictionary()
 dictionary.load_prebuilt_dictionary("./dictionary")
-dictionary.load_user_dictionary("./dictionary")
+dictionary.load_user_dictionary("./dictionary/userdict.txt")
 tokenizer = nori.NoriTokenizer(dictionary)
 
 result = tokenizer.tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.")
