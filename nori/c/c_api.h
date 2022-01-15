@@ -5,9 +5,34 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
+
 typedef struct Tokenizer_H Tokenizer;
 typedef struct Dictionary_H Dictionary;
-typedef struct Lattice_H Lattice;
+
+typedef struct {
+  int leftId;
+  int rightId;
+  int wordCost;
+  int posType;
+  int* posTag;
+  int posTagLength;
+
+  int exprLength;
+  int* exprPosTag;
+  const char** exprSurface;
+} Morpheme;
+
+typedef struct {
+  size_t offset;
+  size_t length;
+  Morpheme morpheme;
+} Token;
+
+typedef struct {
+  Token* tokens;
+  int tokenLength;
+} Lattice;
 
 // initialize using given dictionary path and user dictionary path.
 // set dictionary pointer in output.
@@ -22,10 +47,14 @@ int initializeTokenizer(const char* dictionaryPath,
                         Dictionary** dictionaryOutput,
                         Tokenizer** tokenizerOutput);
 
-void freeTokenizer(Dictionary* dictionary, Tokenizer* tokenizer);
+// Free tokenizer resources
+void freeTokenizer(const Dictionary* dictionary, const Tokenizer* tokenizer);
 
+// tokenize input str
+// input string must be NULL-terminated
 int tokenize(const Tokenizer* tokenizer, const char* str, Lattice** latticeOut);
 
+// free lattice resource
 void freeLattice(const Lattice* lattice);
 
 #ifdef __cplusplus
