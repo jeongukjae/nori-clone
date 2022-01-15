@@ -40,7 +40,7 @@ public class NoriRunner {
                 while (tokenStream.incrementToken()) {
                     if (posAtt.getLeftPOS() == POS.Tag.SP && posAtt.getRightPOS() == POS.Tag.SP)
                         continue;
-                    String token = input.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
+                    String token = input.substring(offsetAtt.startOffset(), offsetAtt.endOffset()).trim();
                     System.out.println(
                             token
                                     + ", "

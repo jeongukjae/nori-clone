@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "nori/lib/dictionary/dictionary.h"
 #include "nori/lib/graphviz_visualize.h"
 #include "nori/lib/protos/dictionary.pb.h"
@@ -62,13 +63,12 @@ int main(int argc, char** argv) {
   if (FLAGS_print_output) {
     LOG(INFO) << "Tokenization Results.";
     for (const auto& token : *lattice.getTokens()) {
-      std::string posTagStr = "";
+      std::vector<std::string> posTagStr;
       for (const auto& postag : token.morpheme->postag()) {
-        absl::StrAppend(&posTagStr, nori::POSTag_Name(postag), "+");
+        posTagStr.push_back(nori::POSTag_Name(postag));
       }
-      posTagStr.pop_back();
 
-      LOG(INFO) << token.surface << ", " << posTagStr;
+      LOG(INFO) << token.surface << ", " << absl::StrJoin(posTagStr, "+");
     }
   }
 

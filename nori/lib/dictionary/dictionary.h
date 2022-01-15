@@ -76,6 +76,12 @@ class Dictionary {
   // return character calss
   const nori::CharacterClass getCharClass(const char* text) const;
 
+  const nori::CharacterClassDictionary::CategoryDefinition* getCharDef(
+      const char* text) const {
+    auto cls = this->getCharClass(text);
+    return &charDictionary.invokemap().at(cls);
+  }
+
   // return conneciton costs
   const nori::ConnectionCost* getConnectionCosts() const {
     return &connectionCost;
