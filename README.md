@@ -62,6 +62,7 @@ tokenizer, err := nori.New("./dictionary", "./dictionary/userdict.txt")
 if err != nil {
     // ...
 }
+defer tokenizer.Free()
 
 tokens, err := tokenizer.Tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.")
 if err != nil {
