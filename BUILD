@@ -4,15 +4,27 @@ load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier", "bui
 load("//tools/lint/clang_format:def.bzl", "clang_format", "clang_format_test")
 load("//tools/lint/google_java_format:def.bzl", "google_java_format", "google_java_format_test")
 
+test_suite(
+    name = "lint_all",
+    tests = [
+        ":buildifier_test",
+        ":clang_format_test",
+        ":google_java_format_test",
+    ],
+)
+
 buildifier(name = "buildifier")
 
 buildifier_test(
     name = "buildifier_test",
-    srcs = glob([
-        "**/*.bzl",
-        "**/*.bazel",
-        "**/BUILD",
-    ]) + ["WORKSPACE"],
+    srcs = glob(
+        [
+            "**/*.bzl",
+            "**/*.bazel",
+            "**/BUILD",
+        ],
+        exclude = ["bazel-*/**/*"],
+    ) + ["WORKSPACE"],
 )
 
 clang_format(
