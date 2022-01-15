@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i < FLAGS_n_repeat; i++) {
     lattice.clear();
-    lattice.setSentence(FLAGS_input);
+    lattice.setSentence(FLAGS_input).IgnoreError();
     tokenizer.tokenize(lattice).IgnoreError();
   }
 
