@@ -38,8 +38,13 @@ jobs:
         export PATH="$PATH:$HOME/bin"
         rm bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh
 
+    - name: (macos) install clang-format
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install clang-format
+        which clang-format
+
     - name: Build and test all modules
       run: |
-        bazel run //:buildifier_test
         bazel build //...
         bazel test //...
