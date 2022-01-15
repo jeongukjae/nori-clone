@@ -7,9 +7,9 @@ import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.analysis.ko.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
-import java.io.IOException;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.text.Normalizer;
-import java.util.Scanner;
 
 public class NoriRunner {
     public static void main(String[] args) {
@@ -29,20 +29,31 @@ public class NoriRunner {
                     }
                 };
 
-        Scanner sc = new Scanner(System.in);
-        while (sc.hasNextLine()) {
-            String input = sc.nextLine();
-            TokenStream tokenStream = analyzer.tokenStream("dummy", input);
-            OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
-            PartOfSpeechAttribute posAtt = tokenStream.addAttribute(PartOfSpeechAttribute.class);
-            System.out.println(input);
-            try {
+        try {
+            TokenStream tokenStream = analyzer.tokenStream("dummy", "token");
+            tokenStream.reset();
+            while (tokenStream.incrementToken()) {}
+            tokenStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        String line;
+        try {
+            long start = System.currentTimeMillis();
+            BufferedReader inFile = new BufferedReader(new FileReader(args[0]));
+            while ((line = inFile.readLine()) != null) {
+                TokenStream tokenStream = analyzer.tokenStream("dummy", line);
+                OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
+                PartOfSpeechAttribute posAtt =
+                        tokenStream.addAttribute(PartOfSpeechAttribute.class);
+                System.out.println(line);
                 tokenStream.reset();
                 while (tokenStream.incrementToken()) {
                     if (posAtt.getLeftPOS() == POS.Tag.SP && posAtt.getRightPOS() == POS.Tag.SP)
                         continue;
                     String token =
-                            input.substring(offsetAtt.startOffset(), offsetAtt.endOffset()).trim();
+                            line.substring(offsetAtt.startOffset(), offsetAtt.endOffset()).trim();
                     System.out.println(
                             Normalizer.normalize(token, Normalizer.Form.NFKC)
                                     + ", "
@@ -51,14 +62,15 @@ public class NoriRunner {
                                     + posAtt.getLeftPOS().toString()
                                     + ", "
                                     + posAtt.getRightPOS().toString());
-
                     tokenStream.clearAttributes();
                 }
                 tokenStream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("");
             }
-            System.out.println("");
+            long finish = System.currentTimeMillis();
+            System.out.println("Elapsed time: " + (finish - start) + "ms");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         analyzer.close();
