@@ -17,18 +17,19 @@ buildifier_test(
 
 clang_format(
     name = "clang_format",
-    exclude_patterns = [
-        "./third_party/*",
-    ],
+    exclude_patterns = ["./third_party/*"],
 )
 
 clang_format_test(
     name = "clang_format_test",
-    exclude_patterns = [
-        "./third_party/*",
-    ],
+    exclude_patterns = ["./third_party/*"],
 )
 
 google_java_format(name = "google_java_format")
 
-google_java_format_test(name = "google_java_format_test")
+google_java_format_test(
+    name = "google_java_format_test",
+    srcs = [
+        "//tools/comparison:nori_runner_srcs",
+    ],
+)

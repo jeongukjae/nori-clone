@@ -6,13 +6,19 @@ JAVA_FORMAT_JAR=@@JAR@@
 java_format_jar=$(readlink "$JAVA_FORMAT_JAR")
 ARGS=@@ARGS@@
 
-if ! cd "$BUILD_WORKSPACE_DIRECTORY"; then
-  echo "Unable to change to workspace (BUILD_WORKSPACE_DIRECTORY: ${BUILD_WORKSPACE_DIRECTORY})"
-  exit 1
+if [[ ! -z "${TEST_WORKSPACE+x}" && -z "${BUILD_WORKSPACE_DIRECTORY+x}" ]]; then
+  FIND_FILE_TYPE="l"
+else
+  # Change into the workspace directory if this is _not_ a test
+  if ! cd "$BUILD_WORKSPACE_DIRECTORY"; then
+    echo "Unable to change to workspace (BUILD_WORKSPACE_DIRECTORY: ${BUILD_WORKSPACE_DIRECTORY})"
+    exit 1
+  fi
 fi
 
-find . \
-  -type "${FIND_FILE_TYPE:-f}" \
+FILES=$(find . \
+  -type ${FIND_FILE_TYPE:-f} \
   @@EXCLUDE_PATTERNS@@ \
   \( -name '*.java' \
-  \) -print | xargs java -jar "$java_format_jar" "${ARGS[@]}"
+  \) -print)
+echo $FILES | xargs java -jar "$java_format_jar" "${ARGS[@]}"
