@@ -154,7 +154,7 @@ const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
   if (it != charDictionary.codetocategorymap().end()) {
     return it->second;
   }
-  return nori::CharacterClass::DEFAULT;
+  return nori::CharacterClass::HANGUL;
 }
 
 // User Dictionary
