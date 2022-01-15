@@ -1,3 +1,5 @@
+from sys import argv, stdin
+
 import nori
 
 dictionary = nori.Dictionary()
@@ -5,8 +7,17 @@ dictionary.load_prebuilt_dictionary("./dictionary/legacy")
 dictionary.load_user_dictionary("./dictionary/legacy/userdict.txt")
 tokenizer = nori.NoriTokenizer(dictionary)
 
-result = tokenizer.tokenize("2018 평창 동계 올림픽")
-print(result)
+def run_with_iterator(f):
+    for line in f:
+        result = tokenizer.tokenize(line)
 
-for token in result.tokens:
-    print(token.surface, token.postag, token.postype)
+        print(line.rstrip())
+        for token in result.tokens[1:-1]:
+            print(f"{token.surface}, {token.postype}, {token.postag[0]}, {token.postag[-1]}")
+        print()
+
+if len(argv) != 1:
+    with open(argv[1]) as f:
+        run_with_iterator(f)
+else:
+    run_with_iterator(stdin)

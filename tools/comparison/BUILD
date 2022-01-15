@@ -22,3 +22,14 @@ py_binary(
     imports = ["../../nori/python"],
     deps = ["//nori/python/nori:nori_py"],
 )
+
+sh_binary(
+    name = "compare_outputs",
+    srcs = ["compare_outputs.sh"],
+    data = [
+        "data.txt",
+        ":nori_clone_runner",
+        ":nori_runner",
+        "//dictionary/legacy:dictionary",
+    ],
+)

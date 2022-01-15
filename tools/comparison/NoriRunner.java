@@ -1,41 +1,62 @@
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ko.KoreanAnalyzer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ko.KoreanTokenizer;
+import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.analysis.ko.tokenattributes.PartOfSpeechAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Scanner;
 
 public class NoriRunner {
     public static void main(String[] args) {
-        Set<POS.Tag> stopTags = new HashSet<>();
-        KoreanAnalyzer analyzer =
-                new KoreanAnalyzer(null, KoreanTokenizer.DecompoundMode.DISCARD, stopTags, false);
+        Analyzer analyzer =
+                new Analyzer() {
+                    @Override
+                    protected TokenStreamComponents createComponents(String fieldName) {
+                        // keep punctuation and compound nouns
+                        Tokenizer tokenizer =
+                                new KoreanTokenizer(
+                                        TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY,
+                                        null,
+                                        DecompoundMode.NONE,
+                                        false,
+                                        false);
+                        return new TokenStreamComponents(tokenizer, tokenizer);
+                    }
+                };
 
-        final TokenStream tokenStream = analyzer.tokenStream("dummy", "2018 평창 동게 올림픽");
-        CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
-        PartOfSpeechAttribute posAtt = tokenStream.addAttribute(PartOfSpeechAttribute.class);
+        Scanner sc = new Scanner(System.in);
+        while (sc.hasNextLine()) {
+            String input = sc.nextLine();
+            TokenStream tokenStream = analyzer.tokenStream("dummy", input);
+            OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
+            PartOfSpeechAttribute posAtt = tokenStream.addAttribute(PartOfSpeechAttribute.class);
+            System.out.println(input);
+            try {
+                tokenStream.reset();
+                while (tokenStream.incrementToken()) {
+                    if (posAtt.getLeftPOS() == POS.Tag.SP && posAtt.getRightPOS() == POS.Tag.SP)
+                        continue;
+                    String token = input.substring(offsetAtt.startOffset(), offsetAtt.endOffset());
+                    System.out.println(
+                            token
+                                    + ", "
+                                    + posAtt.getPOSType().toString()
+                                    + ", "
+                                    + posAtt.getLeftPOS().toString()
+                                    + ", "
+                                    + posAtt.getRightPOS().toString());
 
-        try {
-            tokenStream.reset();
-            while (tokenStream.incrementToken()) {
-                System.out.println(
-                        termAtt.toString()
-                                + ", "
-                                + posAtt.getPOSType().toString()
-                                + ", "
-                                + posAtt.getLeftPOS().toString()
-                                + ", "
-                                + posAtt.getRightPOS().toString());
-
-                tokenStream.clearAttributes();
+                    tokenStream.clearAttributes();
+                }
+                tokenStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            tokenStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("");
         }
 
         analyzer.close();
