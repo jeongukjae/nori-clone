@@ -26,12 +26,12 @@ int main(int argc, char** argv) {
 
   nori::dictionary::Dictionary dictionary;
   auto status = dictionary.loadPrebuilt(FLAGS_dictionary);
-  CHECK(status.ok()) << status;
+  CHECK(status.ok()) << status.message();
 
   if (FLAGS_user_dictionary != "") {
     LOG(INFO) << "Read user dictionary: " << FLAGS_user_dictionary;
     status = dictionary.loadUser(FLAGS_user_dictionary);
-    CHECK(status.ok()) << status;
+    CHECK(status.ok()) << status.message();
   }
 
   google::protobuf::ShutdownProtobufLibrary();

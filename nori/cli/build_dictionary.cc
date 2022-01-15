@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
   nori::dictionary::builder::MeCabDictionaryBuilder builder(
       FLAGS_normalize, FLAGS_normalization_form);
   auto status = builder.build(FLAGS_mecab_dic, FLAGS_output);
-  CHECK(status.ok()) << status;
+  CHECK(status.ok()) << status.message();
 
   google::protobuf::ShutdownProtobufLibrary();
   LOG(INFO) << "Done.";

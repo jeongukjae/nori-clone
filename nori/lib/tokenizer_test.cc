@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
 
   auto status = dictionary.loadPrebuilt("./dictionary");
-  CHECK(status.ok()) << status;
+  CHECK(status.ok()) << status.message();
 
   return RUN_ALL_TESTS();
 }
