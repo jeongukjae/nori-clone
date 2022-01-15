@@ -124,17 +124,6 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
   std::vector<std::vector<internal::TrieNode>> nodesByPos(inputText.length() +
                                                           1);
 
-  // std::string in = "ㅋ", out;
-  // utils::internal::normalizeUTF8(in, out, "NFKC");
-  // LOG(INFO) << dictionary->getTrie()->commonPrefixSearch(
-  //                  out.data(), trieResults.data(), maxTrieResults,
-  //                  out.length())
-  //           << "," << out.length();
-  // LOG(INFO) << nori::POSTag_Name(this->dictionary->getTokenDictionary()
-  //                                    ->morphemeslist(trieResults[0].value)
-  //                                    .morphemes(0)
-  //                                    .postag(0));
-
   // bos node;
   nodesByPos[0].emplace_back(nodeId++, 0, 0, 0, bosEosMorpheme);
 
@@ -212,9 +201,6 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
         static_cast<int>(end - current));
     if (numNodes > maxTrieResults)
       return absl::InternalError("Cannot search trie");
-
-    // LOG(INFO) << offset << ", " << numNodes << ", " << current << ","
-    //           << static_cast<int>(end - current);
 
     // handling unknown characters
     auto charDef = dictionary->getCharDef(current);
