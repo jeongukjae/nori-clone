@@ -42,7 +42,7 @@ struct Lattice {
  public:
   Lattice() {}
   // Same as ccalling setSentence method after initializing this struct.
-  Lattice(std::string sentence) : sentence(sentence) {}
+  Lattice(std::string sentence) { setSentence(sentence); }
 
   // clear internal states
   void clear() {

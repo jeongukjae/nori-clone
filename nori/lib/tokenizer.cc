@@ -132,8 +132,10 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     while (std::isspace(*current)) {
       current++;
       numSpaces++;
+    }
 
-      if (current == end) break;
+    if (current == end) {
+      break;
     }
 
     if (dictionary->isUserInitialized()) {

@@ -18,6 +18,7 @@ TEST(NoriTokenizer, testDefaultSentence) {
       "화학               이외의 것",
       "화학 이외의              것",
       "화학             이외의              것",
+      "화학 이외의 것 ",
   };
   std::vector<std::string> expectedTokens = {"화학", "이외", "의", "것"};
   std::vector<std::vector<nori::POSTag>> expectedPOS = {
