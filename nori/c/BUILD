@@ -1,8 +1,8 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 package(default_visibility = [
-    "//nori:__pkg__",
-    "//nori:__subpackages__",
+    "//:__pkg__",
+    "//:__subpackages__",
 ])
 
 licenses(["notice"])
@@ -12,10 +12,15 @@ filegroup(
     srcs = ["c_api.h"],
 )
 
+filegroup(
+    name = "srcs",
+    srcs = ["c_api.cc"],
+)
+
 cc_library(
     name = "c_api",
     srcs = [
-        "c_api.cc",
+        ":srcs",
         ":headers",
     ],
     deps = ["//nori/lib:nori"],

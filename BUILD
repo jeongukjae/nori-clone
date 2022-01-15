@@ -23,6 +23,11 @@ clang_format(
 clang_format_test(
     name = "clang_format_test",
     exclude_patterns = ["./third_party/*"],
+    config = ".clang-format",
+    srcs = [
+        "//nori/c:srcs",
+        "//nori/c:headers",
+    ],
 )
 
 google_java_format(name = "google_java_format")
