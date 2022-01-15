@@ -74,11 +74,11 @@ TrieNode* selectParent(std::vector<internal::TrieNode>& candidates,
                        int& connectionCost) {
   auto candidatesSize = candidates.size();
   if (candidatesSize == 0) return nullptr;
+  connectionCost = dictionary->getConnectionCost(
+      candidates[0].morpheme->rightid(), morpheme->leftid());
   if (candidatesSize == 1) return &candidates[0];
 
   int result = 0;
-  connectionCost = dictionary->getConnectionCost(
-      candidates[0].morpheme->rightid(), morpheme->leftid());
   int minCost = candidates[0].cost + connectionCost;
 
   for (int i = 1; i < candidatesSize; i++) {
