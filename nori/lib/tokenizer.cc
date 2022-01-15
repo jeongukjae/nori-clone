@@ -55,13 +55,19 @@ int getSpacePenalty(const nori::Morpheme* morpheme, int numSpaces) {
   }
 }
 
-int groupingUnknownCharacters(const char* current,
+int groupingUnknownCharacters(const char* current, const char* end,
                               nori::CharacterClass category,
-                              const nori::dictionary::Dictionary* dictionary) {
+                              const nori::dictionary::Dictionary* dictionary,
+                              const bool doGroup) {
   int offset = 0;
   U8_FWD_1_UNSAFE(current, offset);
 
-  while (dictionary->getCharClass(current + offset) == category) {
+  if (!doGroup) {
+    return offset;
+  }
+
+  while ((dictionary->getCharClass(current + offset) == category) &&
+         (current + offset < end)) {
     U8_FWD_1_UNSAFE(current, offset);
   }
 
@@ -138,6 +144,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       break;
     }
 
+    // find user dictionary
     if (dictionary->isUserInitialized()) {
       const int numNodes =
           dictionary->getUserDict()->getTrie()->commonPrefixSearch(
@@ -195,7 +202,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       return absl::InternalError("Cannot search trie");
 
     // handling unknown characters
-    if (numNodes == 0) {
+    auto charDef = dictionary->getCharDef(current);
+    if ((numNodes == 0) || charDef->invoke() == 1) {
       auto category = dictionary->getCharClass(current);
       const nori::Morpheme* morpheme =
           &dictionary->getUnkDictionary()->morphememap().at(category);
@@ -205,8 +213,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       auto parent = internal::selectParent(nodesByPos[offset], morpheme,
                                            this->dictionary, connectionCost);
 
-      int length =
-          internal::groupingUnknownCharacters(current, category, dictionary);
+      int length = internal::groupingUnknownCharacters(
+          current, end, category, dictionary, charDef->group() == 1);
 
       auto lastPositionIndex = parent->lastPositionIndex + numSpaces + length;
       auto lastNodeId = nodeId;
@@ -225,9 +233,11 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
             wordCost, connectionCost, cost);
       }
 
-      offset += numSpaces;
-      U8_FWD_1_UNSAFE(begin, offset);
-      continue;
+      if (numNodes == 0) {
+        offset += numSpaces;
+        U8_FWD_1_UNSAFE(begin, offset);
+        continue;
+      }
     }
 
     for (int k = 0; k < numNodes; ++k) {
@@ -273,8 +283,9 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
   // Handling EOS node
   // end of parsing of this path
   int eosConnectionCost;
-  internal::TrieNode* bestPath = internal::selectParent(
-      nodesByPos[offset], bosEosMorpheme, this->dictionary, eosConnectionCost);
+  internal::TrieNode* bestPath =
+      internal::selectParent(nodesByPos.at(offset), bosEosMorpheme,
+                             this->dictionary, eosConnectionCost);
   if (visualizer != nullptr) {
     visualizer->addEos(bestPath->lastPositionIndex - bestPath->length,
                        bestPath->uniqueNodeId, bestPath->morpheme);
