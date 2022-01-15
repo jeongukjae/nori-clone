@@ -17,6 +17,22 @@ type NoriTokenizer struct {
 	dictionary *C.Dictionary
 }
 
+type TokenExpression struct {
+	Surface string
+	POSTag  int
+}
+
+type Token struct {
+	Surface string
+
+	LeftId     int
+	RightId    int
+	WordCost   int
+	POSType    int
+	POSTag     []int
+	Expression []TokenExpression
+}
+
 func New(dicPath string, userDicPath string) (*NoriTokenizer, error) {
 	cDicPath := C.CString(dicPath)
 	defer C.free(unsafe.Pointer(cDicPath))
@@ -41,6 +57,61 @@ func New(dicPath string, userDicPath string) (*NoriTokenizer, error) {
 	return &tokenizer, nil
 }
 
-func (nt *NoriTokenizer) clear() {
+func (nt *NoriTokenizer) Tokenize(input string) (*[]Token, error) {
+	cInput := C.CString(input)
+	defer C.free(unsafe.Pointer(cInput))
+
+	var lattice *C.Lattice
+	ret := C.tokenize(nt.tokenizer, cInput, &lattice)
+	if ret == 1 {
+		return nil, fmt.Errorf("Cannot tokenize input string %s", input)
+	}
+	defer C.freeLattice(lattice)
+
+	tokenLength := int(lattice.tokenLength)
+	tokens := make([]Token, tokenLength)
+
+	cTokens := (*[1 << 30]C.Token)(unsafe.Pointer(lattice.tokens))
+
+	tokens[0].Surface = "BOS/EOS"
+	tokens[tokenLength-1].Surface = "BOS/EOS"
+
+	for i := 1; i < tokenLength-1; i++ {
+		cToken := cTokens[i]
+		start := int(cToken.offset)
+		end := start + int(cToken.length)
+
+		tokens[i].Surface = input[start:end]
+
+		cMorpheme := cToken.morpheme
+		tokens[i].LeftId = int(cMorpheme.leftId)
+		tokens[i].RightId = int(cMorpheme.rightId)
+		tokens[i].WordCost = int(cMorpheme.wordCost)
+		tokens[i].POSType = int(cMorpheme.posType)
+
+		posTagLength := int(cMorpheme.posTagLength)
+		tokens[i].POSTag = make([]int, int(cMorpheme.posTagLength))
+		cPOSTag := (*[1 << 30]C.int)(unsafe.Pointer(cMorpheme.posTag))
+		for j := 0; j < posTagLength; j++ {
+			tokens[i].POSTag[j] = int(cPOSTag[j])
+		}
+
+		expressionLength := int(cMorpheme.exprLength)
+		tokens[i].Expression = make([]TokenExpression, expressionLength)
+		if expressionLength != 0 {
+			cExprPOS := (*[1 << 30]C.int)(unsafe.Pointer(cMorpheme.exprPosTag))
+			cExprSurface := (*[1 << 30]*C.char)(unsafe.Pointer(cMorpheme.exprSurface))
+
+			for j := 0; j < expressionLength; j++ {
+				tokens[i].Expression[j].POSTag = int(cExprPOS[j])
+				tokens[i].Expression[j].Surface = C.GoString(cExprSurface[j])
+			}
+		}
+	}
+
+	return &tokens, nil
+}
+
+func (nt *NoriTokenizer) Free() {
 	C.freeTokenizer(nt.dictionary, nt.tokenizer)
 }
