@@ -268,8 +268,7 @@ absl::Status CharacterClassDictionaryBuilder::parse(absl::string_view input) {
   std::string line;
   std::regex spaceRegex("\\s+");
   std::regex commentRegex("\\s*#.*");
-  auto charCategoryDefinitionMap =
-      charDictionary.mutable_charcategorydefinitionmap();
+  auto invokeMap = charDictionary.mutable_invokemap();
   auto codeToCategoryMap = charDictionary.mutable_codetocategorymap();
 
   while (std::getline(ifs, line)) {
@@ -290,10 +289,9 @@ absl::Status CharacterClassDictionaryBuilder::parse(absl::string_view input) {
         return absl::InvalidArgumentError(
             absl::StrCat("Cannot read character class ", splits[0]));
       }
-      auto categoryDef = (*charCategoryDefinitionMap)[chCls];
-      categoryDef.set_invoke(utils::internal::simpleAtoi(splits[1]));
-      categoryDef.set_invoke(utils::internal::simpleAtoi(splits[2]));
-      categoryDef.set_invoke(utils::internal::simpleAtoi(splits[3]));
+      (*invokeMap)[chCls].set_invoke(utils::internal::simpleAtoi(splits[1]));
+      (*invokeMap)[chCls].set_group(utils::internal::simpleAtoi(splits[2]));
+      (*invokeMap)[chCls].set_length(utils::internal::simpleAtoi(splits[3]));
     } else {
       std::vector<std::string> tokens = absl::StrSplit(line, " ");
 
