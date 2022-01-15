@@ -150,6 +150,7 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 
 maven_install(
     artifacts = [
+        "org.apache.lucene:lucene-core:8.11.1",
         "org.apache.lucene:lucene-analyzers-nori:8.11.1",
     ],
     repositories = [

@@ -10,6 +10,7 @@ java_binary(
     srcs = [":nori_runner_srcs"],
     main_class = "NoriRunner",
     deps = [
+        "@maven//:org_apache_lucene_lucene_core",
         "@maven//:org_apache_lucene_lucene_analyzers_nori",
     ],
 )
