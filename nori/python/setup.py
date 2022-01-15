@@ -17,8 +17,8 @@ with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.md'),
 
 setup(
     name="nori-clone",
-    version="0.1.0",
-    python_requires=">=3.6",
+    version="0.1.1",
+    python_requires=">=3.7",
     packages=find_packages(),
     url="https://github.com/jeongukjae/nori-clone",
     long_description=long_description,
