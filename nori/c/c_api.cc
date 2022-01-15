@@ -52,31 +52,32 @@ int tokenize(const Tokenizer* rawTokenizer, const char* str,
 
   // TODO(jeongukjae): (eos/bos)
   for (int i = 1; i < tokenSize - 1; i++) {
-    auto& token = (*latticeOut)->tokens[i];
+    auto* token = ((*latticeOut)->tokens + i);
     auto& ccToken = lattice.getTokens()->at(i);
-    token.offset = ccToken.offset;
-    token.length = ccToken.length;
-    token.morpheme.leftId = ccToken.morpheme->leftid();
-    token.morpheme.rightId = ccToken.morpheme->rightid();
-    token.morpheme.wordCost = ccToken.morpheme->wordcost();
-    token.morpheme.posType = ccToken.morpheme->postype();
+    token->offset = ccToken.offset;
+    token->length = ccToken.length;
+    token->morpheme.leftId = ccToken.morpheme->leftid();
+    token->morpheme.rightId = ccToken.morpheme->rightid();
+    token->morpheme.wordCost = ccToken.morpheme->wordcost();
+    token->morpheme.posType = ccToken.morpheme->postype();
 
     int posTagLength = ccToken.morpheme->postag().size();
-    token.morpheme.posTagLength = posTagLength;
-    token.morpheme.posTag = new int[posTagLength];
+    token->morpheme.posTagLength = posTagLength;
+    token->morpheme.posTag = new int[posTagLength];
     for (int j = 0; j < posTagLength; j++) {
-      token.morpheme.posTag[j] = ccToken.morpheme->postag(j);
+      token->morpheme.posTag[j] = ccToken.morpheme->postag(j);
     }
 
     int exprLength = ccToken.morpheme->expression_size();
-    token.morpheme.exprLength = exprLength;
+    token->morpheme.exprLength = exprLength;
     if (exprLength != 0) {
-      token.morpheme.exprSurface = new const char*[exprLength];
-      token.morpheme.exprPosTag = new int[exprLength];
+      token->morpheme.exprSurface = new const char*[exprLength];
+      token->morpheme.exprPosTag = new int[exprLength];
       for (int j = 0; j < exprLength; j++) {
-        token.morpheme.exprSurface[i] =
+        token->morpheme.exprSurface[j] =
             ccToken.morpheme->expression(j).surface().data();
-        token.morpheme.exprPosTag[i] = ccToken.morpheme->expression(j).postag();
+        token->morpheme.exprPosTag[j] =
+            ccToken.morpheme->expression(j).postag();
       }
     }
   }

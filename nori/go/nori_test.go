@@ -43,3 +43,18 @@ func TestTokenize(t *testing.T) {
 		}
 	}
 }
+
+func TestTokenizeWithExpr(t *testing.T) {
+	tokenizer, err := New("../../dictionary", "")
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+	defer tokenizer.Free()
+
+	_, err = tokenizer.Tokenize("Nori-clone은 c++로 Nori를 재작성하기 위한 프로젝트입니다.")
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+}
