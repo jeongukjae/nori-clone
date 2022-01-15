@@ -15,7 +15,6 @@ public class NoriRunner {
         KoreanAnalyzer analyzer =
                 new KoreanAnalyzer(null, KoreanTokenizer.DecompoundMode.DISCARD, stopTags, false);
 
-        // TODO(jeongukjae): add analyzer code
         final TokenStream tokenStream = analyzer.tokenStream("dummy", "2018 평창 동게 올림픽");
         CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
         PartOfSpeechAttribute posAtt = tokenStream.addAttribute(PartOfSpeechAttribute.class);

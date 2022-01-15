@@ -50,7 +50,6 @@ int tokenize(const Tokenizer* rawTokenizer, const char* str,
   (*latticeOut)->tokenLength = tokenSize;
   (*latticeOut)->tokens = new Token[tokenSize];
 
-  // TODO(jeongukjae): (eos/bos)
   for (int i = 1; i < tokenSize - 1; i++) {
     auto* token = ((*latticeOut)->tokens + i);
     auto& ccToken = lattice.getTokens()->at(i);

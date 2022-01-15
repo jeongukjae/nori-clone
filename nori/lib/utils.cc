@@ -36,7 +36,7 @@ absl::Status normalizeUTF8(const std::string input, std::string& output,
                            absl::string_view normalizationForm) {
   icu::ErrorCode icuError;
   const icu::Normalizer2* normalizer;
-  // TODO(jeongukjae): add normalization form
+
   if (normalizationForm == "NFKC") {
     normalizer = icu::Normalizer2::getNFKCInstance(icuError);
   } else {

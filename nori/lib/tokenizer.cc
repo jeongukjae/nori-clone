@@ -136,7 +136,6 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       if (current == end) break;
     }
 
-    // TODO(jeongukjae): search user dictionary first
     if (dictionary->isUserInitialized()) {
       const int numNodes =
           dictionary->getUserDict()->getTrie()->commonPrefixSearch(

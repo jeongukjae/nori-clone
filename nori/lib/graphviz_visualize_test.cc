@@ -21,8 +21,6 @@ TEST(GraphvizVisualizer, emptyGraph) {
       "}");
 }
 
-// TODO(jeongukjae): addNode and addEosNode test cases
-
 TEST(GraphVisualizer, addNodeAndAddEos) {
   nori::GraphvizVisualizer visualizer("testGraph", "Helvetica", "BOS", "EOS");
 
