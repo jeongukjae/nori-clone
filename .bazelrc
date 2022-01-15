@@ -3,3 +3,5 @@ build --cxxopt='-std=c++17'
 build -c opt
 
 build:linux --linkopt=-ldl
+
+test --test_output errors
