@@ -134,6 +134,11 @@ absl::Status Dictionary::loadUser(std::string filename) {
   status = userDictionary.load(filename, morphemeWithJongsung->leftid(),
                                morphemeWithHangul->rightid(),
                                morphemeWithJongsung->rightid());
+  if (absl::IsCancelled(status)) {
+    LOG(WARNING) << status.message();
+    return absl::OkStatus();
+  }
+
   if (status.ok()) userInitialized = true;
   return status;
 }
@@ -189,8 +194,12 @@ absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
     std::vector<std::string> splits = absl::StrSplit(line, " ");
     terms.push_back(splits);
   }
-
   ifs.close();
+
+  if (terms.size() == 0) {
+    // early exit to prevent error
+    return absl::CancelledError("# terms in User Dictionary == 0");
+  }
 
   std::stable_sort(
       terms.begin(), terms.end(),
