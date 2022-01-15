@@ -10,7 +10,15 @@ java_binary(
     srcs = [":nori_runner_srcs"],
     main_class = "NoriRunner",
     deps = [
-        "@maven//:org_apache_lucene_lucene_core",
         "@maven//:org_apache_lucene_lucene_analyzers_nori",
+        "@maven//:org_apache_lucene_lucene_core",
     ],
+)
+
+py_binary(
+    name = "nori_clone_runner",
+    srcs = ["nori_clone_runner.py"],
+    data = ["//dictionary/legacy:dictionary"],
+    imports = ["../../nori/python"],
+    deps = ["//nori/python/nori:nori_py"],
 )
