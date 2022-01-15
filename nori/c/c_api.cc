@@ -39,7 +39,7 @@ int tokenize(const Tokenizer* rawTokenizer, const char* str,
              Lattice** latticeOut) {
   auto tokenizer = reinterpret_cast<const nori::NoriTokenizer*>(rawTokenizer);
   nori::Lattice lattice;
-  lattice.setSentence(std::string(str));
+  lattice.setSentence(std::string(str), false).IgnoreError();
   auto status = tokenizer->tokenize(lattice);
   if (!status.ok()) {
     return 1;

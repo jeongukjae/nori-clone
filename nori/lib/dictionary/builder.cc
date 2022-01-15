@@ -182,9 +182,11 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
 
   // search 10'th item to check Trie is built properly
   int searchResult;
-  trie->exactMatchSearch(keys[10], searchResult);
-  if (searchResult != 10)
-    return absl::InternalError("Trie isn't built properly.");
+  for (int i = 0; i < keys.size(); i++) {
+    trie->exactMatchSearch(keys[i], searchResult);
+    if (searchResult != i)
+      return absl::InternalError("Trie isn't built properly.");
+  }
 
   return absl::OkStatus();
 }

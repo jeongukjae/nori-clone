@@ -137,8 +137,14 @@ PYBIND11_MODULE(bind, m) {
       .def(py::init<const nori::dictionary::Dictionary *>())
       .def("tokenize", [](const nori::NoriTokenizer &tokenizer,
                           const std::string sentence) {
-        nori::Lattice lattice(sentence);
-        auto status = tokenizer.tokenize(lattice);
+        nori::Lattice lattice;
+        auto status = lattice.setSentence(sentence);
+        if (!status.ok()) {
+          throw std::runtime_error(
+              absl::StrCat("Cannot normalize string ", sentence));
+        }
+
+        status = tokenizer.tokenize(lattice);
         if (!status.ok()) {
           throw std::runtime_error(
               absl::StrCat("Cannot tokenize string ", sentence));

@@ -8,6 +8,7 @@ import org.apache.lucene.analysis.ko.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 import java.io.IOException;
+import java.text.Normalizer;
 import java.util.Scanner;
 
 public class NoriRunner {
@@ -40,9 +41,10 @@ public class NoriRunner {
                 while (tokenStream.incrementToken()) {
                     if (posAtt.getLeftPOS() == POS.Tag.SP && posAtt.getRightPOS() == POS.Tag.SP)
                         continue;
-                    String token = input.substring(offsetAtt.startOffset(), offsetAtt.endOffset()).trim();
+                    String token =
+                            input.substring(offsetAtt.startOffset(), offsetAtt.endOffset()).trim();
                     System.out.println(
-                            token
+                            Normalizer.normalize(token, Normalizer.Form.NFKC)
                                     + ", "
                                     + posAtt.getPOSType().toString()
                                     + ", "

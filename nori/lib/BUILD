@@ -34,6 +34,7 @@ cc_library(
     deps = [
         ":graphviz_visualize",
         "//nori/lib/dictionary",
+        ":utils",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@darts_clone",

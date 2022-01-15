@@ -43,7 +43,9 @@ int main(int argc, char** argv) {
 
   nori::NoriTokenizer tokenizer(&dictionary);
   LOG(INFO) << "Input message: " << FLAGS_input;
-  nori::Lattice lattice(FLAGS_input);
+  nori::Lattice lattice;
+  status = lattice.setSentence(FLAGS_input);
+  CHECK(status.ok()) << status.message();
 
   std::chrono::system_clock::time_point start =
       std::chrono::system_clock::now();

@@ -18,7 +18,7 @@ bool hasJongsungAtLast(absl::string_view input);
 
 // normalize utf8 string
 absl::Status normalizeUTF8(const std::string input, std::string& output,
-                           absl::string_view normalizationForm);
+                           absl::string_view normalizationForm = "NFKC");
 
 // list all files in the directory. This function returns paths as sorted order.
 // If functor returns false for given paths, this function will filter them.

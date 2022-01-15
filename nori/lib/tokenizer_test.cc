@@ -30,8 +30,10 @@ TEST(NoriTokenizer, testDefaultSentence) {
 
   for (const auto& tt : testCases) {
     nori::NoriTokenizer tokenizer(&dictionary);
-    nori::Lattice lattice(tt);
-    auto status = tokenizer.tokenize(lattice);
+    nori::Lattice lattice;
+    auto status = lattice.setSentence(tt);
+    ASSERT_TRUE(status.ok());
+    status = tokenizer.tokenize(lattice);
     ASSERT_TRUE(status.ok());
 
     for (int i = 0; i < expectedTokens.size(); i++) {

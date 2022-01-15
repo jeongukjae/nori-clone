@@ -9,6 +9,7 @@
 #include "absl/strings/string_view.h"
 #include "nori/lib/dictionary/dictionary.h"
 #include "nori/lib/graphviz_visualize.h"
+#include "nori/lib/utils.h"
 
 namespace nori {
 
@@ -41,8 +42,6 @@ struct Lattice {
 
  public:
   Lattice() {}
-  // Same as ccalling setSentence method after initializing this struct.
-  Lattice(std::string sentence) { setSentence(sentence); }
 
   // clear internal states
   void clear() {
@@ -54,7 +53,13 @@ struct Lattice {
   void clearState() { tokens.clear(); }
 
   // set sentence
-  void setSentence(std::string sentence) { this->sentence = sentence; }
+  absl::Status setSentence(std::string sentence, bool normalize = true) {
+    if (normalize) {
+      return utils::internal::normalizeUTF8(sentence, this->sentence);
+    }
+    this->sentence = sentence;
+    return absl::OkStatus();
+  }
 
   // get sentence
   const absl::string_view getSentence() const { return this->sentence; }

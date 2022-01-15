@@ -41,7 +41,9 @@ int main(int argc, char** argv) {
   nori::NoriTokenizer tokenizer(&dictionary);
   nori::GraphvizVisualizer visualizer;
   LOG(INFO) << "Input message: " << FLAGS_input;
-  nori::Lattice lattice(FLAGS_input);
+  nori::Lattice lattice;
+  status = lattice.setSentence(FLAGS_input);
+  CHECK(status.ok()) << status.message();
 
   status = tokenizer.tokenize(lattice, &visualizer);
   CHECK(status.ok()) << status.message();
