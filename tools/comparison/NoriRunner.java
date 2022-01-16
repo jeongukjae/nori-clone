@@ -10,6 +10,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.text.Normalizer;
+import java.util.ArrayList;
 
 public class NoriRunner {
     public static void main(String[] args) {
@@ -38,11 +39,22 @@ public class NoriRunner {
             e.printStackTrace();
         }
 
-        String line;
+        // read all
+        ArrayList<String> lines = new ArrayList<String>();
+        try {
+            BufferedReader inFile = new BufferedReader(new FileReader(args[0]));
+            String line;
+            while ((line = inFile.readLine()) != null) {
+                lines.add(line);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // tokenize
         try {
             long start = System.currentTimeMillis();
-            BufferedReader inFile = new BufferedReader(new FileReader(args[0]));
-            while ((line = inFile.readLine()) != null) {
+            for (String line : lines) {
                 TokenStream tokenStream = analyzer.tokenStream("dummy", line);
                 OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
                 PartOfSpeechAttribute posAtt =

@@ -17,12 +17,16 @@ def run_with_iterator(f):
             print(f"{token.surface}, {token.postype}, {token.postag[0]}, {token.postag[-1]}")
         print()
 
-start_time = time.time()
 
 if len(argv) != 1:
+    # read all lines from the input file
     with open(argv[1]) as f:
-        run_with_iterator(f)
+        lines = f.readlines()
+
+    start_time = time.time()
+    run_with_iterator(lines)
 else:
+    start_time = time.time()
     run_with_iterator(stdin)
 
 end_time = time.time()
