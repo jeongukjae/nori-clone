@@ -43,11 +43,7 @@ jobs:
         brew install clang-format
         which clang-format
 
-    - name: Fetch required external deps
-      run: |
-        bazel fetch //...
-
     - name: Build and test all modules
       run: |
-        bazel build //...
+        bazel build //... --loading_phase_threads 2
         bazel test //...
