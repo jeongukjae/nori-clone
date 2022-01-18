@@ -8,7 +8,7 @@ class TestNoriTokenizer(unittest.TestCase):
         dictionary.load_prebuilt_dictionary("./dictionary")
         tokenizer = NoriTokenizer(dictionary)
 
-        result = tokenizer.tokenize("화학 이외의 것")
+        result = tokenizer.tokenize("화학 이외의 것", True)
 
         self.assertEqual(result.sentence, "화학 이외의 것")
         self.assertEqual(result.tokens[0].surface, "BOS/EOS")
@@ -20,7 +20,7 @@ class TestNoriTokenizer(unittest.TestCase):
         dictionary.load_prebuilt_dictionary("./dictionary")
         tokenizer = NoriTokenizer(dictionary)
 
-        result = tokenizer.tokenize("붕어빵")
+        result = tokenizer.tokenize("붕어빵", True)
         self.assertEqual(len(result.tokens), 3)
         self.assertEqual(len(result.tokens[1].expr), 2)
         self.assertEqual(result.tokens[1].expr, [('붕어', 'NNG'), ('빵', 'NNG')])
