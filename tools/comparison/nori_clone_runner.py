@@ -10,7 +10,9 @@ tokenizer = nori.NoriTokenizer(dictionary)
 
 def run_with_iterator(f):
     for line in f:
-        result = tokenizer.tokenize(line)
+        # https://github.com/apache/lucene/blob/2e2c4818d10e7db3ba6fabf5c0db630ad2cb57b0/gradle/generation/nori.gradle#L74
+        # disable NFKC normalization
+        result = tokenizer.tokenize(line, False)
 
         print(line.rstrip())
         for token in result.tokens[1:-1]:
