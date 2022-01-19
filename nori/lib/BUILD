@@ -1,5 +1,3 @@
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
-
 package(
     default_visibility = [
         "//:__pkg__",
@@ -33,8 +31,8 @@ cc_library(
     hdrs = ["tokenizer.h"],
     deps = [
         ":graphviz_visualize",
-        "//nori/lib/dictionary",
         ":utils",
+        "//nori/lib/dictionary",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@darts_clone",
