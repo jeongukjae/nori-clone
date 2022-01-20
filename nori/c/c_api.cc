@@ -35,11 +35,11 @@ void freeTokenizer(const Dictionary* dictionary, const Tokenizer* tokenizer) {
   delete reinterpret_cast<const nori::NoriTokenizer*>(tokenizer);
 }
 
-int tokenize(const Tokenizer* rawTokenizer, const char* str,
+int tokenize(const Tokenizer* rawTokenizer, const char* str, int normalize,
              Lattice** latticeOut) {
   auto tokenizer = reinterpret_cast<const nori::NoriTokenizer*>(rawTokenizer);
   nori::Lattice lattice;
-  lattice.setSentence(std::string(str), false).IgnoreError();
+  lattice.setSentence(std::string(str), normalize == 1).IgnoreError();
   auto status = tokenizer->tokenize(lattice);
   if (!status.ok()) {
     return 1;

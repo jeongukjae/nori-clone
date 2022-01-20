@@ -17,7 +17,7 @@ TEST(CApiTest, tokenize) {
 
   Lattice* lattice;
   const char* input = "화학 이외의 것";
-  status = tokenize(tokenizer, input, &lattice);
+  status = tokenize(tokenizer, input, true, &lattice);
   ASSERT_EQ(status, 0);
 
   // BOS/화학/이외/의/것/EOS

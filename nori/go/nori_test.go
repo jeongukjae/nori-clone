@@ -19,7 +19,7 @@ func TestTokenize(t *testing.T) {
 	}
 	defer tokenizer.Free()
 
-	tokens, err := tokenizer.Tokenize("화학 이외의 것")
+	tokens, err := tokenizer.Tokenize("화학 이외의 것", true)
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
@@ -52,7 +52,7 @@ func TestTokenizeWithExpr(t *testing.T) {
 	}
 	defer tokenizer.Free()
 
-	_, err = tokenizer.Tokenize("Nori-clone은 c++로 Nori를 재작성하기 위한 프로젝트입니다.")
+	_, err = tokenizer.Tokenize("Nori-clone은 c++로 Nori를 재작성하기 위한 프로젝트입니다.", true)
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
