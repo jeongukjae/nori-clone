@@ -8,7 +8,7 @@
 pip install nori-clone
 ```
 
-### Tutorial
+### How to use
 
 ```python
 import nori

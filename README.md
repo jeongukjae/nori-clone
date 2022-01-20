@@ -39,29 +39,7 @@ See [./nori/python](./nori/python/README.md)
 
 ### Golang
 
-```golang
-import (
-    "fmt"
-
-    nori "github.com/jeongukjae/nori-clone/nori/go"
-)
-
-tokenizer, err := nori.New("./dictionary", "./dictionary/userdict.txt")
-if err != nil {
-    // ...
-}
-defer tokenizer.Free()
-
-// False means do not normalize sentence
-tokens, err := tokenizer.Tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.", false)
-if err != nil {
-    // ...
-}
-
-for _, token := range *tokens {
-    fmt.Println(token.Surface)
-}
-```
+See [./nori/go](./nori/go/README.md)
 
 ## Build and test
 
