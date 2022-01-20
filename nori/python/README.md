@@ -8,6 +8,28 @@
 pip install nori-clone
 ```
 
+### Build from source
+
+You can build pip package using Bazel.
+
+```sh
+$ bazel build //nori/python:build_pip_pkg
+INFO: Analyzed target //nori/python:build_pip_pkg (0 packages loaded, 0 targets configured).
+INFO: Found 1 target...
+Target //nori/python:build_pip_pkg up-to-date:
+  bazel-bin/nori/python/build_pip_pkg
+...
+$ ./bazel-bin/nori/python/build_pip_pkg dist
+++ uname -s
+++ tr A-Z a-z
+...
+++ date
++ echo Thu Jan 20 21:59:37 KST 2022 : '=== Output wheel file is in: ./dist'
+Thu Jan 20 21:59:37 KST 2022 : === Output wheel file is in: ./dist
+```
+
+You can find your own wheel file in `./dist`.
+
 ### How to use
 
 ```python

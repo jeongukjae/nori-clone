@@ -12,9 +12,9 @@ function is_windows() {
 }
 
 if is_windows; then
-  PIP_FILE_PREFIX="bazel-bin/nori/python/build_pip_pkg.exe.runfiles/nori/"
+  PIP_FILE_PREFIX="bazel-bin/nori/python/build_pip_pkg.exe.runfiles/nori-clone/"
 else
-  PIP_FILE_PREFIX="bazel-bin/nori/python/build_pip_pkg.runfiles/nori/"
+  PIP_FILE_PREFIX="bazel-bin/nori/python/build_pip_pkg.runfiles/nori-clone/"
 fi
 
 function main() {
