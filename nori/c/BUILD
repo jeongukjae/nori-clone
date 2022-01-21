@@ -1,9 +1,6 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
-package(default_visibility = [
-    "//:__pkg__",
-    "//:__subpackages__",
-])
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
