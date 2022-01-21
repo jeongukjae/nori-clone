@@ -56,7 +56,9 @@ status = dictionary.loadUser("./dictionary/userdict.txt");
 CHECK(status.ok()) << status.message();
 
 const nori::NoriTokenizer tokenizer(&dictionary);
-nori::Lattice lattice("이 프로젝트는 nori를 재작성하는 프로젝트입니다.");
+nori::Lattice lattice;
+status = lattice.setSentence("이 프로젝트는 nori를 재작성하는 프로젝트입니다.", false);
+CHECK(status.ok()) << status.message();
 
 status = tokenizer.tokenize(lattice);
 CHECK(status.ok()) << status.message();
