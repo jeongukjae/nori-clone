@@ -3,7 +3,7 @@ workspace(name = "nori-clone")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_jar")
 
 # Deps
-load("//nori:repo.bzl", "nori_workspace")
+load("//nori:workspace.bzl", "nori_workspace")
 
 nori_workspace()
 
@@ -30,7 +30,7 @@ http_archive(
     url = "https://github.com/bazelbuild/buildtools/archive/refs/tags/4.2.2.tar.gz",
 )
 
-# RULES
+# protobuf
 http_archive(
     name = "rules_proto",
     sha256 = "66bfdf8782796239d3875d37e7de19b1d94301e8972b3cbd2446b332429b4df1",

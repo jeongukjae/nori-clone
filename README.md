@@ -12,26 +12,7 @@ This project is written in C++, but also provides Python and Golang binding.
 
 ### C++
 
-```cpp
-#include "nori/lib/tokenizer.h"
-#include "nori/lib/dictionary/dictionary.h"
-
-nori::dictionary::Dictionary dictionary;
-auto status = dictionary.loadPrebuilt("./dictionary");
-CHECK(status.ok()) << status.message();
-status = dictionary.loadUser("./dictionary/userdict.txt");
-CHECK(status.ok()) << status.message();
-
-const nori::NoriTokenizer tokenizer(&dictionary);
-nori::Lattice lattice("이 프로젝트는 nori를 재작성하는 프로젝트입니다.");
-
-status = tokenizer.tokenize(lattice);
-ASSERT_TRUE(status.ok());
-
-for (int i = 0; i < lattice.getTokens()->size(); i++) {
-    LOG(INFO) << lattice.getTokens()->at(i).surface;
-}
-```
+See [./nori/lib](./nori/lib/README.md)
 
 ### Python
 
