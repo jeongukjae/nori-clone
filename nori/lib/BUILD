@@ -1,10 +1,4 @@
-package(
-    default_visibility = [
-        "//:__pkg__",
-        "//:__subpackages__",
-    ],
-    licenses = ["notice"],
-)
+package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "clang_format_files",
