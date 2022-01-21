@@ -59,7 +59,7 @@ const nori::NoriTokenizer tokenizer(&dictionary);
 nori::Lattice lattice("이 프로젝트는 nori를 재작성하는 프로젝트입니다.");
 
 status = tokenizer.tokenize(lattice);
-ASSERT_TRUE(status.ok());
+CHECK(status.ok()) << status.message();
 
 for (int i = 0; i < lattice.getTokens()->size(); i++) {
     LOG(INFO) << lattice.getTokens()->at(i).surface;
