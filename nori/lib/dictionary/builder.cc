@@ -104,6 +104,7 @@ absl::Status MeCabDictionaryBuilder::build(absl::string_view input,
 // TokenInfoDictionaryBuilder class
 
 absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
+  // 1. Read all csvs
   std::vector<std::string> paths;
   utils::internal::listDirectory(input, paths, [](absl::string_view path) {
     return absl::EndsWithIgnoreCase(path, ".csv");
@@ -115,7 +116,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
   std::vector<std::vector<std::string>> entries;
   entries.reserve(1000000);
 
-  // read csv files and append all rows into entries.
+  // 2. read csv files and append all rows into entries.
   for (const auto& path : paths) {
     std::ifstream ifs(path);
     if (ifs.fail())
@@ -149,6 +150,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
     LOG(INFO) << "Read " << path << ". # terms: " << entries.size();
   }
 
+  // 3. prepare building trie dictionary
   std::stable_sort(
       entries.begin(), entries.end(),
       [](const std::vector<std::string> a, const std::vector<std::string> b) {
@@ -180,7 +182,6 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
   if (trie->build(keys.size(), const_cast<char**>(&keys[0])) != 0)
     return absl::InternalError("Cannot build trie.");
 
-  // search 10'th item to check Trie is built properly
   int searchResult;
   for (int i = 0; i < keys.size(); i++) {
     trie->exactMatchSearch(keys[i], searchResult);
