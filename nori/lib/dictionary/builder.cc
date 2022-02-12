@@ -180,15 +180,18 @@ absl::Status DictionaryBuilder::buildTokenInfos(absl::string_view input) {
   if (trie->build(keys.size(), const_cast<char**>(&keys[0])) != 0)
     return absl::InternalError("Cannot build trie.");
 
+  noriDictionary.mutable_darts_array()->assign(
+      static_cast<const char*>(trie->array()), trie->total_size());
+
+  trie->set_array(noriDictionary.darts_array().data(),
+                  noriDictionary.darts_array().size());
+
   int searchResult;
   for (int i = 0; i < keys.size(); i++) {
     trie->exactMatchSearch(keys[i], searchResult);
     if (searchResult != i)
       return absl::InternalError("Trie isn't built properly.");
   }
-
-  noriDictionary.mutable_darts_array()->assign(
-      static_cast<const char*>(trie->array()), trie->size());
 
   return absl::OkStatus();
 }

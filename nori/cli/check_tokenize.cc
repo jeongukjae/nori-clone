@@ -14,8 +14,9 @@
 #include "nori/lib/tokenizer.h"
 #include "nori/lib/utils.h"
 
-DEFINE_string(dictionary, "./dictionary", "Path to nori dictionary");
-DEFINE_string(user_dictionary, "./dictionary/userdict.txt",
+DEFINE_string(dictionary, "./dictionary/latest-dictionary.nori",
+              "Path to nori dictionary");
+DEFINE_string(user_dictionary, "./dictionary/latest-userdict.txt",
               "Path to nori user dictionary");
 DEFINE_string(input,
               "Nori-clone은 c++로 Nori를 재작성하기 위한 프로젝트입니다.",
