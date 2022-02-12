@@ -81,7 +81,9 @@ class NoriTokenizer {
   absl::Status tokenize(Lattice& lattice,
                         GraphvizVisualizer* visualizer = nullptr) const;
 
-  const nori::dictionary::Dictionary* getDictionary() const { return dictionary; }
+  const nori::dictionary::Dictionary* getDictionary() const {
+    return dictionary;
+  }
 
  private:
   const nori::dictionary::Dictionary* dictionary;
