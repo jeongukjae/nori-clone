@@ -183,4 +183,7 @@ message Dictionary {
   int32 right_id_nng = 11;
   int32 right_id_nng_t = 12;
   int32 right_id_nng_f = 13;
+
+  bool normalize = 20;
+  string normalization_form = 21;
 }

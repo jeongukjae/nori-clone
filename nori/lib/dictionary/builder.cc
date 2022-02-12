@@ -82,6 +82,11 @@ absl::Status serializeCompressedProtobuf(const std::string path,
 absl::Status DictionaryBuilder::build(absl::string_view inputDirectory) {
   absl::Status status;
 
+  noriDictionary.set_normalize(normalize);
+  if (normalize) {
+    noriDictionary.set_normalization_form(normalizationForm);
+  }
+
   status = this->buildTokenInfos(inputDirectory);
   if (!status.ok()) return status;
   status = this->buildUnknownTokenInfos(inputDirectory);
