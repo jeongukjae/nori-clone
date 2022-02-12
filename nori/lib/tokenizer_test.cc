@@ -6,7 +6,7 @@
 
 #include "nori/lib/dictionary/dictionary.h"
 
-nori::dictionary::Dictionary dictionary;
+nori::dictionary::Dictionary legacyDictionary, dictionary;
 
 TEST(NoriTokenizer, loadTokenizer) {
   nori::NoriTokenizer tokenizer(&dictionary);
@@ -31,7 +31,7 @@ TEST(NoriTokenizer, testDefaultSentence) {
   for (const auto& tt : testCases) {
     nori::NoriTokenizer tokenizer(&dictionary);
     nori::Lattice lattice;
-    auto status = lattice.setSentence(tt);
+    auto status = lattice.setSentence(tt, dictionary.getNormalizer());
     ASSERT_TRUE(status.ok());
     status = tokenizer.tokenize(lattice);
     ASSERT_TRUE(status.ok());

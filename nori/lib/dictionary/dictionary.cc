@@ -68,6 +68,10 @@ absl::Status Dictionary::loadPrebuilt(std::string input) {
   connectionCostData = dictionary.connection_cost().cost_lists().data();
   connectionCostMax = dictionary.connection_cost().cost_lists_size();
 
+  // normalizer
+  normalizer.setDoNormalize(dictionary.do_normalize(),
+                            dictionary.normalization_form());
+
   initialized = true;
 
   return absl::OkStatus();

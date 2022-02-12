@@ -40,10 +40,11 @@ int main(int argc, char** argv) {
   }
 
   nori::NoriTokenizer tokenizer(&dictionary);
+  auto normalizer = dictionary.getNormalizer();
   nori::GraphvizVisualizer visualizer;
   LOG(INFO) << "Input message: " << FLAGS_input;
   nori::Lattice lattice;
-  status = lattice.setSentence(FLAGS_input);
+  status = lattice.setSentence(FLAGS_input, normalizer);
   CHECK(status.ok()) << status.message();
 
   status = tokenizer.tokenize(lattice, &visualizer);

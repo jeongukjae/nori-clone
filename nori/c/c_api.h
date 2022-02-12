@@ -53,12 +53,10 @@ void freeTokenizer(const Dictionary* dictionary, const Tokenizer* tokenizer);
 // tokenize input str.
 // input string must be NULL-terminated.
 //
-// This function will return 0 if tokenize succeed, 1 if tokenizer cannot
-// tokenize. If tokenization failed, you don't need to call freeLattice.
-//
-// if normalize is 1, str would be normalized in NFKC
-int tokenize(const Tokenizer* tokenizer, const char* str, int normalize,
-             Lattice** latticeOut);
+// This function will return 0 if tokenize succeed, 1 if normalization failed, 2
+// if tokenizer cannot tokenize. If tokenization failed, you don't need to call
+// freeLattice.
+int tokenize(const Tokenizer* tokenizer, const char* str, Lattice** latticeOut);
 
 // free lattice resource
 void freeLattice(const Lattice* lattice);

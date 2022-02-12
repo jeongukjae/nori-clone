@@ -43,9 +43,10 @@ int main(int argc, char** argv) {
   }
 
   nori::NoriTokenizer tokenizer(&dictionary);
+  auto normalizer = dictionary.getNormalizer();
   LOG(INFO) << "Input message: " << FLAGS_input;
   nori::Lattice lattice;
-  status = lattice.setSentence(FLAGS_input);
+  status = lattice.setSentence(FLAGS_input, normalizer);
   CHECK(status.ok()) << status.message();
 
   std::chrono::system_clock::time_point start =
@@ -53,7 +54,7 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i < FLAGS_n_repeat; i++) {
     lattice.clear();
-    lattice.setSentence(FLAGS_input).IgnoreError();
+    lattice.setSentence(FLAGS_input, normalizer).IgnoreError();
     tokenizer.tokenize(lattice).IgnoreError();
   }
 

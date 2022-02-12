@@ -53,12 +53,9 @@ struct Lattice {
   void clearState() { tokens.clear(); }
 
   // set sentence
-  absl::Status setSentence(std::string sentence, bool normalize = true) {
-    if (normalize) {
-      return utils::internal::normalizeUTF8(sentence, this->sentence);
-    }
-    this->sentence = sentence;
-    return absl::OkStatus();
+  absl::Status setSentence(std::string sentence,
+                           const dictionary::Normalizer* normalizer) {
+    return normalizer->normalize(sentence, this->sentence);
   }
 
   // get sentence
@@ -83,6 +80,8 @@ class NoriTokenizer {
   // Tokenize input text and save tokenized information to lattice
   absl::Status tokenize(Lattice& lattice,
                         GraphvizVisualizer* visualizer = nullptr) const;
+
+  const nori::dictionary::Dictionary* getDictionary() const { return dictionary; }
 
  private:
   const nori::dictionary::Dictionary* dictionary;

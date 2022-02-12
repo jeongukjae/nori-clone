@@ -6,6 +6,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "nori/lib/protos/dictionary.pb.h"
+#include "nori/lib/utils.h"
 
 #define NORI_DICT_FILE "dictionary.bin"
 #define NORI_DICT_META_FILE "dictionary_meta.pb"
@@ -18,7 +19,7 @@ namespace dictionary {
 
 // User dictionary interface.
 // you don't need to access this class directly, because
-// nori::dictionary::Dictionary class has userDictionary path.
+// nori::dictionary::Dictionary class has userDictionary field.
 class UserDictionary {
  public:
   // load dictionary from given path
@@ -38,8 +39,28 @@ class UserDictionary {
   std::vector<nori::protos::Morpheme> morphemes;
 };
 
-// TODO(jeongukjae): change dictionary format.
-// it is not good way to save large message in protobuf format.
+class Normalizer {
+ public:
+  Normalizer() : doNormalize(false) {}
+
+  void setDoNormalize(bool doNormalize, const std::string normalizationForm) {
+    this->doNormalize = doNormalize;
+    this->normalizationForm = normalizationForm;
+  }
+
+  absl::Status normalize(const std::string in, std::string& out) const {
+    if (doNormalize)
+      return utils::internal::normalizeUTF8(in, out, normalizationForm);
+
+    out.assign(in);
+    return absl::OkStatus();
+  }
+
+ private:
+  bool doNormalize;
+  std::string normalizationForm;
+};
+
 class Dictionary {
  public:
   // load prebuilt dictionary from given path
@@ -91,7 +112,10 @@ class Dictionary {
   const nori::protos::Morpheme* getBosEosMorpheme() const {
     return &this->bosEosMorpheme;
   }
+
   absl::string_view getBosEosSurface() const { return this->bosEosSurface; }
+
+  const Normalizer* getNormalizer() const { return &normalizer; }
 
  private:
   bool initialized = false;
@@ -99,6 +123,7 @@ class Dictionary {
 
   Darts::DoubleArray trie;
   nori::protos::Dictionary dictionary;
+  Normalizer normalizer;
   UserDictionary userDictionary;
 
   // for tokenizer

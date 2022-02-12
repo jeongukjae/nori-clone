@@ -57,17 +57,12 @@ func New(dicPath string, userDicPath string) (*NoriTokenizer, error) {
 	return &tokenizer, nil
 }
 
-func (nt *NoriTokenizer) Tokenize(input string, normalize bool) (*[]Token, error) {
+func (nt *NoriTokenizer) Tokenize(input string) (*[]Token, error) {
 	cInput := C.CString(input)
 	defer C.free(unsafe.Pointer(cInput))
 
-	cNormalize := 0
-	if normalize {
-		cNormalize = 1
-	}
-
 	var lattice *C.Lattice
-	ret := C.tokenize(nt.tokenizer, cInput, C.int(cNormalize), &lattice)
+	ret := C.tokenize(nt.tokenizer, cInput, &lattice)
 	if ret == 1 {
 		return nil, fmt.Errorf("Cannot tokenize input string %s", input)
 	}

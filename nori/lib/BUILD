@@ -39,6 +39,7 @@ cc_test(
     srcs = ["tokenizer_test.cc"],
     data = [
         "//dictionary",
+        "//dictionary:legacy_dictionary",
     ],
     deps = [
         ":tokenizer",
