@@ -57,7 +57,7 @@ CHECK(status.ok()) << status.message();
 
 const nori::NoriTokenizer tokenizer(&dictionary);
 nori::Lattice lattice;
-status = lattice.setSentence("이 프로젝트는 nori를 재작성하는 프로젝트입니다.", false);
+status = lattice.setSentence("이 프로젝트는 nori를 재작성하는 프로젝트입니다.");
 CHECK(status.ok()) << status.message();
 
 status = tokenizer.tokenize(lattice);

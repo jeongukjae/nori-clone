@@ -46,14 +46,14 @@ import (
     nori "github.com/jeongukjae/nori-clone/nori/go"
 )
 
-tokenizer, err := nori.New("./dictionary", "./dictionary/userdict.txt")
+// Pass empty string if you don't want to load user dictionary
+tokenizer, err := nori.New("./dictionary/latest-dictionary.nori", "./dictionary/latest-userdict.txt")
 if err != nil {
     // ...
 }
 defer tokenizer.Free()
 
-// False means do not normalize sentence
-tokens, err := tokenizer.Tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.", false)
+tokens, err := tokenizer.Tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.")
 if err != nil {
     // ...
 }

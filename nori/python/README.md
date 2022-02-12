@@ -36,12 +36,11 @@ You can find your own wheel file in `./dist`.
 import nori
 
 dictionary = nori.Dictionary()
-dictionary.load_prebuilt_dictionary("./dictionary")
-dictionary.load_user_dictionary("./dictionary/userdict.txt")
+dictionary.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
+dictionary.load_user_dictionary("./dictionary/latest-userdict.txt")
 tokenizer = nori.NoriTokenizer(dictionary)
 
-# False means do not normalize sentence
-result = tokenizer.tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.", False)
+result = tokenizer.tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.")
 
 for token in result.tokens:
     print(token.surface)
