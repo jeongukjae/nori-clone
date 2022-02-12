@@ -57,7 +57,7 @@ absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
 
 // serialize, compress, and save protobuf message
 template <class T>
-absl::Status serializeCompressedProtobuf(const absl::string_view path,
+absl::Status serializeCompressedProtobuf(const std::string path,
                                          const T& message) {
   std::string pbData;
   if (!message.SerializeToString(&pbData)) {
@@ -94,7 +94,7 @@ absl::Status DictionaryBuilder::build(absl::string_view inputDirectory) {
   return absl::OkStatus();
 }
 
-absl::Status DictionaryBuilder::save(absl::string_view outputFilename) {
+absl::Status DictionaryBuilder::save(std::string outputFilename) {
   return internal::serializeCompressedProtobuf(outputFilename, noriDictionary);
 }
 

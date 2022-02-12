@@ -45,7 +45,7 @@ class DictionaryBuilder {
 
   ~DictionaryBuilder() = default;
   absl::Status build(absl::string_view inputDirectory);
-  absl::Status save(absl::string_view outputFilename);
+  absl::Status save(std::string outputFilename);
 
  private:
   absl::Status buildTokenInfos(absl::string_view inputDirectory);
