@@ -10,17 +10,9 @@ ElasticSearch provides high-quality/performance Korean morphological analyzer `n
 
 This project is written in C++, but also provides Python and Golang binding.
 
-### C++
-
-See [./nori/lib](./nori/lib/README.md)
-
-### Python
-
-See [./nori/python](./nori/python/README.md)
-
-### Golang
-
-See [./nori/go](./nori/go/README.md)
+* [C++ docs](./nori/lib/README.md)
+* [Python docs](./nori/python/README.md)
+* [Golang docs](./nori/go/README.md)
 
 ## Build and test
 
