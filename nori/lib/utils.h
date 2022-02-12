@@ -12,9 +12,17 @@ namespace nori {
 namespace utils {
 namespace internal {
 
+namespace LastCharType {
+enum LastCharType {
+  NNG = 1,
+  NNG_T = 2,
+  NNG_F = 3,
+};
+}
+
 // detect that term has jongsung at last character to use in
 // nori::dictionary::UserDictionary.
-bool hasJongsungAtLast(absl::string_view input);
+LastCharType::LastCharType detectLastCharacterType(absl::string_view input);
 
 // normalize utf8 string
 absl::Status normalizeUTF8(const std::string input, std::string& output,

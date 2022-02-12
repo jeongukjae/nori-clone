@@ -5,16 +5,25 @@
 
 using namespace nori::utils;
 
-TEST(TestUtils, hasJongsungAtLast) {
-  ASSERT_EQ(internal::hasJongsungAtLast("Hello World!"), false);
-  ASSERT_EQ(internal::hasJongsungAtLast("Hello 안녀ㅇWorld!"), false);
-  ASSERT_EQ(internal::hasJongsungAtLast("안녕"), true);
-  ASSERT_EQ(internal::hasJongsungAtLast("안녀"), false);
-  ASSERT_EQ(internal::hasJongsungAtLast("힣"), true);
-  ASSERT_EQ(internal::hasJongsungAtLast("가"), false);
-  ASSERT_EQ(internal::hasJongsungAtLast("12"), false);
-  ASSERT_EQ(internal::hasJongsungAtLast("안ㄱ"), false);
-  ASSERT_EQ(internal::hasJongsungAtLast("뭐"), false);
+TEST(TestUtils, detectLastCharacterType) {
+  ASSERT_EQ(internal::detectLastCharacterType("Hello World!"),
+            internal::LastCharType::NNG);
+  ASSERT_EQ(internal::detectLastCharacterType("Hello 안녀ㅇWorld!"),
+            internal::LastCharType::NNG);
+  ASSERT_EQ(internal::detectLastCharacterType("안녕"),
+            internal::LastCharType::NNG_T);
+  ASSERT_EQ(internal::detectLastCharacterType("안녀"),
+            internal::LastCharType::NNG_F);
+  ASSERT_EQ(internal::detectLastCharacterType("힣"),
+            internal::LastCharType::NNG_T);
+  ASSERT_EQ(internal::detectLastCharacterType("가"),
+            internal::LastCharType::NNG_F);
+  ASSERT_EQ(internal::detectLastCharacterType("12"),
+            internal::LastCharType::NNG);
+  ASSERT_EQ(internal::detectLastCharacterType("안ㄱ"),
+            internal::LastCharType::NNG);
+  ASSERT_EQ(internal::detectLastCharacterType("뭐"),
+            internal::LastCharType::NNG_F);
 }
 
 TEST(TestUtils, lowercaseUTF8) {

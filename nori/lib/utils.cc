@@ -17,7 +17,7 @@ namespace nori {
 namespace utils {
 namespace internal {
 
-bool hasJongsungAtLast(absl::string_view input) {
+LastCharType::LastCharType detectLastCharacterType(absl::string_view input) {
   const char* s = input.data();
   int length = input.length();
   UChar32 lastChar;
@@ -27,9 +27,12 @@ bool hasJongsungAtLast(absl::string_view input) {
   }
 
   // lastChar < "가" || lastChar > "힣"
-  if (lastChar < 0xAC00 || lastChar > 0xD7A3) return false;
+  if (lastChar < 0xAC00 || lastChar > 0xD7A3) return LastCharType::NNG;
 
-  return ((lastChar - 0xAC00) % 28) != 0;
+  if (((lastChar - 0xAC00) % 28) != 0) {
+    return LastCharType::NNG_T;
+  }
+  return LastCharType::NNG_F;
 }
 
 absl::Status normalizeUTF8(const std::string input, std::string& output,

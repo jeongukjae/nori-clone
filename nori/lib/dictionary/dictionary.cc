@@ -158,8 +158,11 @@ absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
     nori::protos::Morpheme morpheme;
 
     morpheme.set_left_id(leftId);
-    if (utils::internal::hasJongsungAtLast(term[0])) {
+    auto lastCharType = utils::internal::detectLastCharacterType(term[0]);
+    if (lastCharType == utils::internal::LastCharType::NNG_T) {
       morpheme.set_right_id(rightId_T);
+    } else if (lastCharType == utils::internal::LastCharType::NNG_F) {
+      morpheme.set_right_id(rightId_F);
     } else {
       morpheme.set_right_id(rightId);
     }
