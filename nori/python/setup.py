@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 from setuptools.dist import Distribution
 
 class BinaryDistribution(Distribution):
-  """This class is needed in order to create OS specific wheels."""
+    """This class is needed in order to create OS specific wheels."""
 
-  def has_ext_modules(self):
-    return True
+    def has_ext_modules(self):
+        return True
 
-  def is_pure(self):
-    return True
+    def is_pure(self):
+        return True
 
 
 with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.md'), encoding='utf-8') as f:

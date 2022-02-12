@@ -64,6 +64,8 @@ func (nt *NoriTokenizer) Tokenize(input string) (*[]Token, error) {
 	var lattice *C.Lattice
 	ret := C.tokenize(nt.tokenizer, cInput, &lattice)
 	if ret == 1 {
+		return nil, fmt.Errorf("Cannot normalize input string %s", input)
+	} else if ret == 2 {
 		return nil, fmt.Errorf("Cannot tokenize input string %s", input)
 	}
 	defer C.freeLattice(lattice)
