@@ -4,10 +4,17 @@ package(default_visibility = ["//visibility:private"])
 
 licenses(["notice"])
 
+# Same as libnori_c_api
+cc_import(
+    name = "c_api",
+    hdrs = ["//nori/c:headers"],
+    shared_library = "//nori/c:libnori_c_api.so",
+)
+
 go_library(
     name = "nori",
     srcs = ["nori.go"],
-    cdeps = ["//nori/c:c_api"],
+    cdeps = [":c_api"],
     cgo = True,
     importpath = "github.com/jeongukjae/nori-clone/nori/go",
 )
