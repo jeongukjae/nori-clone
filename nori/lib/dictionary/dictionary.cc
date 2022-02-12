@@ -46,27 +46,6 @@ absl::Status deserializeProtobuf(const std::string& path, T& message) {
   return absl::OkStatus();
 }
 
-absl::Status exactMatchMorpheme(const Darts::DoubleArray* trie,
-                                const nori::protos::Tokens* tokens,
-                                const std::string word,
-                                const nori::protos::Morpheme*& outputMorpheme) {
-  int searchResult;
-  trie->exactMatchSearch(word.data(), searchResult);
-
-  if (searchResult == -1) {
-    return absl::InternalError(
-        absl::StrCat("Cannot exact match morpheme with word ", word));
-  }
-
-  auto morphemeList = &tokens->morphemes_list(searchResult);
-  if (morphemeList->morphemes_size() != 1) {
-    return absl::InternalError("Cannot get right id with jongsung");
-  }
-  outputMorpheme = &morphemeList->morphemes(0);
-
-  return absl::OkStatus();
-}
-
 }  // namespace internal
 
 // Dictionary
@@ -95,18 +74,9 @@ absl::Status Dictionary::loadPrebuilt(std::string input) {
 }
 
 absl::Status Dictionary::loadUser(std::string filename) {
-  const nori::protos::Morpheme *morphemeWithJongsung, *morphemeWithHangul;
-  auto status = internal::exactMatchMorpheme(&trie, &dictionary.tokens(),
-                                             "놀이방", morphemeWithJongsung);
-  if (!status.ok()) return status;
-
-  status = internal::exactMatchMorpheme(&trie, &dictionary.tokens(), "딱지놀이",
-                                        morphemeWithHangul);
-  if (!status.ok()) return status;
-
-  status = userDictionary.load(filename, morphemeWithJongsung->left_id(),
-                               morphemeWithHangul->right_id(),
-                               morphemeWithJongsung->right_id());
+  auto status = userDictionary.load(
+      filename, dictionary.left_id_nng(), dictionary.right_id_nng(),
+      dictionary.right_id_nng_t(), dictionary.right_id_nng_f());
   if (absl::IsCancelled(status)) {
     LOG(WARNING) << status.message();
     return absl::OkStatus();
@@ -134,7 +104,7 @@ const nori::protos::CharacterClass Dictionary::getCharClass(
 // User Dictionary
 
 absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
-                                  int rightIdWithJongsung) {
+                                  int rightId_T, int rightId_F) {
   trie.clear();
   morphemes.clear();
 
@@ -189,7 +159,7 @@ absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
 
     morpheme.set_left_id(leftId);
     if (utils::internal::hasJongsungAtLast(term[0])) {
-      morpheme.set_right_id(rightIdWithJongsung);
+      morpheme.set_right_id(rightId_T);
     } else {
       morpheme.set_right_id(rightId);
     }

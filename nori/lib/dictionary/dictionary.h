@@ -23,13 +23,15 @@ class UserDictionary {
  public:
   // load dictionary from given path
   absl::Status load(std::string filename, int leftId, int rightId,
-                    int rightIdWithJongsung);
+                    int rightId_T, int rightId_F);
 
   // return trie dictionary.
   const Darts::DoubleArray* getTrie() const { return &trie; }
 
   // get all morphemes for the trie.
-  const std::vector<nori::protos::Morpheme>* getMorphemes() const { return &morphemes; }
+  const std::vector<nori::protos::Morpheme>* getMorphemes() const {
+    return &morphemes;
+  }
 
  private:
   Darts::DoubleArray trie;

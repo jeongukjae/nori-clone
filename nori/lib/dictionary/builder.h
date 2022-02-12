@@ -51,6 +51,7 @@ class DictionaryBuilder {
   absl::Status buildTokenInfos(absl::string_view inputDirectory);
   absl::Status buildUnknownTokenInfos(absl::string_view inputDirectory);
   absl::Status buildConnectionCost(absl::string_view inputDirectory);
+  absl::Status findLeftRightIds(absl::string_view inputDirectory);
 
   nori::protos::Dictionary noriDictionary;
 

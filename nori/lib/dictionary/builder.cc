@@ -88,6 +88,8 @@ absl::Status DictionaryBuilder::build(absl::string_view inputDirectory) {
   if (!status.ok()) return status;
   status = this->buildConnectionCost(inputDirectory);
   if (!status.ok()) return status;
+  status = this->findLeftRightIds(inputDirectory);
+  if (!status.ok()) return status;
 
   return absl::OkStatus();
 }
@@ -349,6 +351,65 @@ absl::Status DictionaryBuilder::buildConnectionCost(absl::string_view input) {
   noriDictionary.mutable_connection_cost()->set_backward_size(backwardSize);
 
   ifs.close();
+  return absl::OkStatus();
+}
+
+absl::Status DictionaryBuilder::findLeftRightIds(absl::string_view input) {
+  // find requried left id
+  {
+    const auto path = utils::internal::joinPath(input, "left-id.def");
+    LOG(INFO) << "Read left-ids (left-id.def) " << path;
+    std::ifstream ifs(path);
+    if (ifs.fail())
+      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+
+    std::string line;
+    while (std::getline(ifs, line)) {
+      // NNG LeftId
+      if (absl::StrContains(line, "NNG,*,*,*,*,*,*,*")) {
+        std::vector<std::string> splits = absl::StrSplit(line, " ");
+        noriDictionary.set_left_id_nng(utils::internal::simpleAtoi(splits[0]));
+      }
+    }
+  }
+
+  // find requried right ids
+  {
+    const auto path = utils::internal::joinPath(input, "right-id.def");
+    LOG(INFO) << "Read right-ids (right-id.def) " << path;
+    std::ifstream ifs(path);
+    if (ifs.fail())
+      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+
+    std::string line;
+    while (std::getline(ifs, line)) {
+      // NNG rightId
+      if (absl::StrContains(line, "NNG,*,*,*,*,*,*,*")) {
+        std::vector<std::string> splits = absl::StrSplit(line, " ");
+        noriDictionary.set_right_id_nng(utils::internal::simpleAtoi(splits[0]));
+      }
+
+      // NNG rightId with jongsung
+      else if (absl::StrContains(line, "NNG,*,T,*,*,*,*,*")) {
+        std::vector<std::string> splits = absl::StrSplit(line, " ");
+        noriDictionary.set_right_id_nng_t(
+            utils::internal::simpleAtoi(splits[0]));
+      }
+
+      // NNG rightId without jongsung
+      else if (absl::StrContains(line, "NNG,*,F,*,*,*,*,*")) {
+        std::vector<std::string> splits = absl::StrSplit(line, " ");
+        noriDictionary.set_right_id_nng_f(
+            utils::internal::simpleAtoi(splits[0]));
+      }
+    }
+  }
+
+  LOG(INFO) << "left-id for NNG: " << noriDictionary.left_id_nng()
+            << ", right-id for NNG: " << noriDictionary.right_id_nng()
+            << ", right-id with Jongsung: " << noriDictionary.right_id_nng_t()
+            << ", right-id w/o Jongsung: " << noriDictionary.right_id_nng_f();
+
   return absl::OkStatus();
 }
 

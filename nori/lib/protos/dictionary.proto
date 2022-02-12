@@ -178,4 +178,9 @@ message Dictionary {
   Tokens tokens = 2;
   UnknownTokens unknown_tokens = 3;
   ConnectionCost connection_cost = 4;
+
+  int32 left_id_nng = 10;
+  int32 right_id_nng = 11;
+  int32 right_id_nng_t = 12;
+  int32 right_id_nng_f = 13;
 }
