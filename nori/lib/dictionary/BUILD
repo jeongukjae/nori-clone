@@ -33,8 +33,8 @@ cc_test(
         "//testdata:dictionaryBuilder",
     ],
     deps = [
-        ":dictionary",
         ":builder",
+        ":dictionary",
         "@com_google_googletest//:gtest_main",
     ],
 )

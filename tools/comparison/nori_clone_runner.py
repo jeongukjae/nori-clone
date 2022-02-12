@@ -4,8 +4,8 @@ from sys import argv, stdin
 import nori
 
 dictionary = nori.Dictionary()
-dictionary.load_prebuilt_dictionary("./dictionary/legacy")
-dictionary.load_user_dictionary("./dictionary/legacy/userdict.txt")
+dictionary.load_prebuilt_dictionary("./dictionary/legacy-dictionary.nori")
+dictionary.load_user_dictionary("./dictionary/legacy-userdict.txt")
 tokenizer = nori.NoriTokenizer(dictionary)
 
 def run_with_iterator(f):

@@ -11,7 +11,8 @@ TEST(CApiTest, tokenize) {
   Tokenizer* tokenizer;
 
   // load tokenizer
-  int status = initializeTokenizer("./dictionary", "./dictionary/userdict.txt",
+  int status = initializeTokenizer("./dictionary/latest-dictionary.nori",
+                                   "./dictionary/latest-userdict.txt",
                                    &dictionary, &tokenizer);
   ASSERT_EQ(status, 0);
 

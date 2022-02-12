@@ -18,7 +18,7 @@ java_binary(
 py_binary(
     name = "nori_clone_runner",
     srcs = ["nori_clone_runner.py"],
-    data = ["//dictionary/legacy:dictionary"],
+    data = ["//dictionary:legacy_dictionary"],
     imports = ["../../nori/python"],
     deps = ["//nori/python/nori:nori_py"],
 )

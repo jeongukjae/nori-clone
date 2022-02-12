@@ -52,7 +52,7 @@ TEST(NoriTokenizer, testDefaultSentence) {
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
 
-  auto status = dictionary.loadPrebuilt("./dictionary");
+  auto status = dictionary.loadPrebuilt("./dictionary/latest-dictionary.nori");
   CHECK(status.ok()) << status.message();
 
   return RUN_ALL_TESTS();

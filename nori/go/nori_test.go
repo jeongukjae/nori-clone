@@ -3,7 +3,7 @@ package nori
 import "testing"
 
 func TestLoadNoriTokenizer(t *testing.T) {
-	tokenizer, err := New("../../dictionary", "../../dictionary/userdict.txt")
+	tokenizer, err := New("../../dictionary/latest-dictionary.nori", "../../dictionary/latest-userdict.txt")
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
@@ -12,7 +12,7 @@ func TestLoadNoriTokenizer(t *testing.T) {
 }
 
 func TestTokenize(t *testing.T) {
-	tokenizer, err := New("../../dictionary", "")
+	tokenizer, err := New("../../dictionary/latest-dictionary.nori", "")
 	if err != nil {
 		t.Log(err)
 		t.FailNow()
@@ -45,7 +45,7 @@ func TestTokenize(t *testing.T) {
 }
 
 func TestTokenizeWithExpr(t *testing.T) {
-	tokenizer, err := New("../../dictionary", "")
+	tokenizer, err := New("../../dictionary/latest-dictionary.nori", "")
 	if err != nil {
 		t.Log(err)
 		t.FailNow()

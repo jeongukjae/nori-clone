@@ -5,7 +5,7 @@ from nori.bind import NoriTokenizer, Dictionary
 class TestNoriTokenizer(unittest.TestCase):
     def test_get_dictionary_info(self):
         dictionary = Dictionary()
-        dictionary.load_prebuilt_dictionary("./dictionary")
+        dictionary.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
         tokenizer = NoriTokenizer(dictionary)
 
         result = tokenizer.tokenize("화학 이외의 것", True)
@@ -17,7 +17,7 @@ class TestNoriTokenizer(unittest.TestCase):
 
     def test_get_expressions(self):
         dictionary = Dictionary()
-        dictionary.load_prebuilt_dictionary("./dictionary")
+        dictionary.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
         tokenizer = NoriTokenizer(dictionary)
 
         result = tokenizer.tokenize("붕어빵", True)
