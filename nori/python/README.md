@@ -46,4 +46,6 @@ for token in result.tokens:
     print(token.surface)
 ```
 
+You can check the inferface of Python binding [here(`./nori/bind.pyi`)](./nori/bind.pyi).
+
 <!-- TODO(jeongukjae): add description -->
