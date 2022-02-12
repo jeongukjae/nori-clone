@@ -23,11 +23,11 @@ struct TrieNode {
   int lastPositionIndex;
   int length;
 
-  const nori::Morpheme* morpheme;
+  const nori::protos::Morpheme* morpheme;
   TrieNode* parent;
 
   TrieNode(int uniqueNodeId, int cost, int lastPositionIndex, int length,
-           const nori::Morpheme* morpheme, TrieNode* parent = nullptr)
+           const nori::protos::Morpheme* morpheme, TrieNode* parent = nullptr)
       : uniqueNodeId(uniqueNodeId),
         cost(cost),
         lastPositionIndex(lastPositionIndex),
@@ -36,20 +36,20 @@ struct TrieNode {
         parent(parent) {}
 };
 
-int getSpacePenalty(const nori::Morpheme* morpheme, int numSpaces) {
+int getSpacePenalty(const nori::protos::Morpheme* morpheme, int numSpaces) {
   if (numSpaces == 0) return 0;
-  if (morpheme->postag_size() == 0) {
+  if (morpheme->pos_tags_size() == 0) {
     LOG(ERROR) << "Cannot get postag";
     return 0;
   }
 
-  switch (nori::POSTag(morpheme->postag(0))) {
-    case nori::POSTag::E:
-    case nori::POSTag::J:
-    case nori::POSTag::VCP:
-    case nori::POSTag::XSA:
-    case nori::POSTag::XSN:
-    case nori::POSTag::XSV:
+  switch (nori::protos::POSTag(morpheme->pos_tags(0))) {
+    case nori::protos::POSTag::E:
+    case nori::protos::POSTag::J:
+    case nori::protos::POSTag::VCP:
+    case nori::protos::POSTag::XSA:
+    case nori::protos::POSTag::XSN:
+    case nori::protos::POSTag::XSV:
       return 3000;
     default:
       return 0;
@@ -57,7 +57,7 @@ int getSpacePenalty(const nori::Morpheme* morpheme, int numSpaces) {
 }
 
 int groupingUnknownCharacters(const char* current, const char* end,
-                              nori::CharacterClass category,
+                              nori::protos::CharacterClass category,
                               const nori::dictionary::Dictionary* dictionary,
                               const bool doGroup) {
   int offset = 0;
@@ -76,13 +76,13 @@ int groupingUnknownCharacters(const char* current, const char* end,
 }
 
 TrieNode* selectParent(std::vector<internal::TrieNode>& candidates,
-                       const nori::Morpheme* morpheme,
+                       const nori::protos::Morpheme* morpheme,
                        const nori::dictionary::Dictionary* dictionary,
                        int& connectionCost) {
   auto candidatesSize = candidates.size();
   if (candidatesSize == 0) return nullptr;
   connectionCost = dictionary->getConnectionCost(
-      candidates[0].morpheme->rightid(), morpheme->leftid());
+      candidates[0].morpheme->right_id(), morpheme->left_id());
   if (candidatesSize == 1) return &candidates[0];
 
   int result = 0;
@@ -90,7 +90,7 @@ TrieNode* selectParent(std::vector<internal::TrieNode>& candidates,
 
   for (int i = 1; i < candidatesSize; i++) {
     auto currentConnectionCost = dictionary->getConnectionCost(
-        candidates[i].morpheme->rightid(), morpheme->leftid());
+        candidates[i].morpheme->right_id(), morpheme->left_id());
     auto cost = candidates[i].cost + currentConnectionCost;
     if (cost < minCost) {
       minCost = cost;
@@ -112,7 +112,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     visualizer->reset();
   }
 
-  const nori::Morpheme* bosEosMorpheme = this->dictionary->getBosEosMorpheme();
+  const nori::protos::Morpheme* bosEosMorpheme =
+      this->dictionary->getBosEosMorpheme();
   absl::string_view inputText = lattice.getSentence();
 
   const char* begin = inputText.begin();
@@ -169,7 +170,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
         const auto morpheme = &dictionary->getUserDict()->getMorphemes()->at(
             trieResults[index].value);
 
-        int wordCost = morpheme->wordcost();
+        int wordCost = morpheme->word_cost();
         int spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
         int connectionCost;
         internal::TrieNode* parent = internal::selectParent(
@@ -206,9 +207,9 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     auto charDef = dictionary->getCharDef(current);
     if ((numNodes == 0) || charDef->invoke() == 1) {
       auto category = dictionary->getCharClass(current);
-      const nori::Morpheme* morpheme =
-          &dictionary->getUnkDictionary()->morphememap().at(category);
-      const int wordCost = morpheme->wordcost();
+      const nori::protos::Morpheme* morpheme =
+          &dictionary->getUnkTokens()->morpheme_map().at(category);
+      const int wordCost = morpheme->word_cost();
       auto spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
       int connectionCost;
       auto parent = internal::selectParent(nodesByPos[offset], morpheme,
@@ -244,14 +245,13 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     for (int k = 0; k < numNodes; ++k) {
       auto trieResult = trieResults[k];
       auto morphemeList =
-          &this->dictionary->getTokenDictionary()->morphemeslist(
-              trieResult.value);
+          &this->dictionary->getTokens()->morphemes_list(trieResult.value);
       auto morphemeSize = morphemeList->morphemes_size();
 
       for (int j = 0; j < morphemeSize; j++) {
         const auto* morpheme = &morphemeList->morphemes(j);
 
-        int wordCost = morpheme->wordcost();
+        int wordCost = morpheme->word_cost();
         int spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
         int connectionCost;
         internal::TrieNode* parent = internal::selectParent(

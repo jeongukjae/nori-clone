@@ -11,7 +11,8 @@
 DEFINE_string(mecab_dic, "",
               "Path to mecab dictionary. This cli program reads "
               "{matrix,char,unk}.def and all CSV files");
-DEFINE_string(output, "./dictionary", "output directory for nori dictionary");
+DEFINE_string(output, "./dictionary.nori",
+              "output filename for nori dictionary");
 DEFINE_string(normalization_form, "NFKC",
               "Unicode normalization form for dictionary of MeCab");
 DEFINE_bool(normalize, true, "whether to normalize dictionary of MeCab");
@@ -28,13 +29,12 @@ int main(int argc, char** argv) {
       << "Cannot find directory " << FLAGS_mecab_dic;
   LOG(INFO) << "MeCab dictionary path: " << FLAGS_mecab_dic;
   LOG(INFO) << "Output path: " << FLAGS_output;
-  if (!nori::utils::isDirectory(FLAGS_output)) {
-    mkdir(FLAGS_output.c_str(), 0755);
-  }
 
-  nori::dictionary::builder::MeCabDictionaryBuilder builder(
+  nori::dictionary::builder::DictionaryBuilder builder(
       FLAGS_normalize, FLAGS_normalization_form);
-  auto status = builder.build(FLAGS_mecab_dic, FLAGS_output);
+  auto status = builder.build(FLAGS_mecab_dic);
+  CHECK(status.ok()) << status.message();
+  status = builder.save(FLAGS_output);
   CHECK(status.ok()) << status.message();
 
   google::protobuf::ShutdownProtobufLibrary();

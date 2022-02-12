@@ -15,11 +15,11 @@ namespace py = pybind11;
 
 struct PyToken {
   const std::string surface;
-  const nori::Morpheme *morpheme;
+  const nori::protos::Morpheme *morpheme;
   const size_t offset;
   const size_t length;
 
-  PyToken(const std::string surface, const nori::Morpheme *morpheme,
+  PyToken(const std::string surface, const nori::protos::Morpheme *morpheme,
           const size_t offset, const size_t length)
       : surface(surface), morpheme(morpheme), offset(offset), length(length) {}
 };
@@ -40,14 +40,15 @@ struct PyLattice {
 };
 
 std::string stringifyExpression(
-    const google::protobuf::RepeatedPtrField<nori::Morpheme_ExprToken>
+    const google::protobuf::RepeatedPtrField<nori::protos::Morpheme_ExprToken>
         &expressions) {
   std::vector<std::string> tokens;
   tokens.reserve(expressions.size());
 
   for (const auto &expression : expressions) {
-    tokens.push_back(absl::StrCat(expression.surface(), "/",
-                                  nori::POSTag_Name(expression.postag())));
+    tokens.push_back(
+        absl::StrCat(expression.surface(), "/",
+                     nori::protos::POSTag_Name(expression.pos_tag())));
   }
 
   return absl::StrJoin(tokens, "+");
@@ -60,7 +61,7 @@ std::vector<std::string> getPostags(
   results.reserve(postaglist.size());
   std::transform(postaglist.begin(), postaglist.end(),
                  std::back_inserter(results),
-                 [](int tag) { return nori::POSTag_Name(tag); });
+                 [](int tag) { return nori::protos::POSTag_Name(tag); });
 
   return results;
 }
@@ -74,18 +75,18 @@ PYBIND11_MODULE(bind, m) {
       .def_readonly("length", &PyToken::length)
       .def_property_readonly(
           "leftid",
-          [](const PyToken &token) { return token.morpheme->leftid(); })
+          [](const PyToken &token) { return token.morpheme->left_id(); })
       .def_property_readonly(
           "rightid",
-          [](const PyToken &token) { return token.morpheme->rightid(); })
+          [](const PyToken &token) { return token.morpheme->right_id(); })
       .def_property_readonly("postag",
                              [](const PyToken &token) {
-                               return getPostags(token.morpheme->postag());
+                               return getPostags(token.morpheme->pos_tags());
                              })
       .def_property_readonly(
           "postype",
           [](const PyToken &token) {
-            return nori::POSType_Name(token.morpheme->postype());
+            return nori::protos::POSType_Name(token.morpheme->pos_type());
           })
       .def_property_readonly(
           "expr",
@@ -96,9 +97,9 @@ PYBIND11_MODULE(bind, m) {
             tokens.reserve(exprs.size());
 
             for (const auto &expression : exprs) {
-              tokens.push_back(
-                  std::make_pair(expression.surface(),
-                                 nori::POSTag_Name(expression.postag())));
+              tokens.push_back(std::make_pair(
+                  expression.surface(),
+                  nori::protos::POSTag_Name(expression.pos_tag())));
             }
 
             return tokens;
@@ -106,7 +107,7 @@ PYBIND11_MODULE(bind, m) {
       .def("__repr__", [](const PyToken &token) {
         return absl::StrCat(
             "<Token sruface=\"", token.surface, "\", postag=\"",
-            absl::StrJoin(getPostags(token.morpheme->postag()), "+"),
+            absl::StrJoin(getPostags(token.morpheme->pos_tags()), "+"),
             "\", expr=\"", stringifyExpression(token.morpheme->expression()),
             "\", offset=", token.offset, ", length=", token.length, ">");
       });

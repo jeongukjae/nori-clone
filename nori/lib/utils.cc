@@ -144,29 +144,29 @@ int simpleHexAtoi(absl::string_view input) {
 
 }  // namespace internal
 
-nori::POSType resolvePOSType(absl::string_view name) {
+nori::protos::POSType resolvePOSType(absl::string_view name) {
   if (name == "*") {
-    return nori::POSType::MORPHEME;
+    return nori::protos::POSType::MORPHEME;
   }
 
-  nori::POSType output;
-  CHECK(nori::POSType_Parse(absl::AsciiStrToUpper(name), &output))
+  nori::protos::POSType output;
+  CHECK(nori::protos::POSType_Parse(absl::AsciiStrToUpper(name), &output))
       << "Cannot resolve POS type. name: " << name;
   return output;
 }
 
-nori::POSTag resolvePOSTag(absl::string_view name) {
+nori::protos::POSTag resolvePOSTag(absl::string_view name) {
   const auto tagUpper = absl::AsciiStrToUpper(name);
 
   if (absl::StartsWith(tagUpper, "J")) {
-    return nori::POSTag::J;
+    return nori::protos::POSTag::J;
   }
   if (absl::StartsWith(tagUpper, "E")) {
-    return nori::POSTag::E;
+    return nori::protos::POSTag::E;
   }
 
-  nori::POSTag output;
-  CHECK(nori::POSTag_Parse(tagUpper, &output))
+  nori::protos::POSTag output;
+  CHECK(nori::protos::POSTag_Parse(tagUpper, &output))
       << "Cannot resolve POS tag. name: " << name;
   return output;
 }

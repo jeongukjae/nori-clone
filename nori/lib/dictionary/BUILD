@@ -28,9 +28,13 @@ cc_library(
 cc_test(
     name = "dictionary_test",
     srcs = ["dictionary_test.cc"],
-    data = ["//dictionary"],
+    data = [
+        "//dictionary",
+        "//testdata:dictionaryBuilder",
+    ],
     deps = [
         ":dictionary",
+        ":builder",
         "@com_google_googletest//:gtest_main",
     ],
 )

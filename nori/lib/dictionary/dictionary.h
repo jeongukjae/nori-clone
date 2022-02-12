@@ -29,11 +29,11 @@ class UserDictionary {
   const Darts::DoubleArray* getTrie() const { return &trie; }
 
   // get all morphemes for the trie.
-  const std::vector<nori::Morpheme>* getMorphemes() const { return &morphemes; }
+  const std::vector<nori::protos::Morpheme>* getMorphemes() const { return &morphemes; }
 
  private:
   Darts::DoubleArray trie;
-  std::vector<nori::Morpheme> morphemes;
+  std::vector<nori::protos::Morpheme> morphemes;
 };
 
 // TODO(jeongukjae): change dictionary format.
@@ -59,32 +59,25 @@ class Dictionary {
   const UserDictionary* getUserDict() const { return &userDictionary; }
 
   // return token dictionary
-  const nori::TokenInfoDictionary* getTokenDictionary() const {
-    return &tokenDictionary;
-  }
+  const nori::protos::Tokens* getTokens() const { return &dictionary.tokens(); }
 
   // return unk dictionary
-  const nori::UnknownDictionary* getUnkDictionary() const {
-    return &unkDictionary;
-  }
-
-  // return char dictionary
-  const nori::CharacterClassDictionary* getCharDictionary() const {
-    return &charDictionary;
+  const nori::protos::UnknownTokens* getUnkTokens() const {
+    return &dictionary.unknown_tokens();
   }
 
   // return character calss
-  const nori::CharacterClass getCharClass(const char* text) const;
+  const nori::protos::CharacterClass getCharClass(const char* text) const;
 
-  const nori::CharacterClassDictionary::CategoryDefinition* getCharDef(
+  const nori::protos::UnknownTokens::CategoryDefinition* getCharDef(
       const char* text) const {
     auto cls = this->getCharClass(text);
-    return &charDictionary.invokemap().at(cls);
+    return &dictionary.unknown_tokens().invoke_map().at(cls);
   }
 
   // return conneciton costs
-  const nori::ConnectionCost* getConnectionCosts() const {
-    return &connectionCost;
+  const nori::protos::ConnectionCost* getConnectionCosts() const {
+    return &dictionary.connection_cost();
   }
 
   // return connection costs from right, left ids
@@ -93,7 +86,7 @@ class Dictionary {
     return connectionCostData[backwardSize * rightId + leftId];
   }
 
-  const nori::Morpheme* getBosEosMorpheme() const {
+  const nori::protos::Morpheme* getBosEosMorpheme() const {
     return &this->bosEosMorpheme;
   }
   absl::string_view getBosEosSurface() const { return this->bosEosSurface; }
@@ -103,14 +96,11 @@ class Dictionary {
   bool userInitialized = false;
 
   Darts::DoubleArray trie;
-  nori::TokenInfoDictionary tokenDictionary;
-  nori::UnknownDictionary unkDictionary;
-  nori::CharacterClassDictionary charDictionary;
-  nori::ConnectionCost connectionCost;
+  nori::protos::Dictionary dictionary;
   UserDictionary userDictionary;
 
   // for tokenizer
-  nori::Morpheme bosEosMorpheme;
+  nori::protos::Morpheme bosEosMorpheme;
   std::string bosEosSurface;
 
   // from connectionCost

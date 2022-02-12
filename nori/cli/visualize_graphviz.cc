@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Tokenization Result: ";
   for (const auto& token : *lattice.getTokens()) {
     std::vector<std::string> posTagStr;
-    for (const auto& postag : token.morpheme->postag()) {
-      posTagStr.push_back(nori::POSTag_Name(postag));
+    for (const auto& postag : token.morpheme->pos_tags()) {
+      posTagStr.push_back(nori::protos::POSTag_Name(postag));
     }
 
     LOG(INFO) << token.surface << ", " << absl::StrJoin(posTagStr, "+");

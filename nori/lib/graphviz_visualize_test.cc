@@ -24,7 +24,7 @@ TEST(GraphvizVisualizer, emptyGraph) {
 TEST(GraphVisualizer, addNodeAndAddEos) {
   nori::GraphvizVisualizer visualizer("testGraph", "Helvetica", "BOS", "EOS");
 
-  nori::Morpheme fromMopheme, toMorpheme;
+  nori::protos::Morpheme fromMopheme, toMorpheme;
 
   visualizer.reset();
   visualizer.addNode(0, 1, &fromMopheme, 1, 2, &toMorpheme, "abc", 1000, 100,

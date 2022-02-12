@@ -9,7 +9,6 @@
 
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
-#include "nori/lib/dictionary/dictionary.h"
 #include "nori/lib/protos/dictionary.pb.h"
 #include "nori/lib/utils.h"
 #include "snappy.h"
@@ -21,15 +20,15 @@ namespace builder {
 namespace internal {
 
 absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
-                                  nori::Morpheme* morpheme) {
-  morpheme->set_leftid(utils::internal::simpleAtoi(entry.at(1)));
-  morpheme->set_rightid(utils::internal::simpleAtoi(entry.at(2)));
-  morpheme->set_wordcost(utils::internal::simpleAtoi(entry.at(3)));
+                                  nori::protos::Morpheme* morpheme) {
+  morpheme->set_left_id(utils::internal::simpleAtoi(entry.at(1)));
+  morpheme->set_right_id(utils::internal::simpleAtoi(entry.at(2)));
+  morpheme->set_word_cost(utils::internal::simpleAtoi(entry.at(3)));
 
-  const POSType posType = utils::resolvePOSType(entry.at(8));
-  morpheme->set_postype(posType);
+  const nori::protos::POSType posType = utils::resolvePOSType(entry.at(8));
+  morpheme->set_pos_type(posType);
 
-  auto posTagList = morpheme->mutable_postag();
+  auto posTagList = morpheme->mutable_pos_tags();
   std::string posTags = entry.at(4);
   std::vector<std::string> posTokens = absl::StrSplit(posTags, '+');
   for (const auto& posToken : posTokens) {
@@ -48,7 +47,7 @@ absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
       }
 
       const auto token = morpheme->add_expression();
-      token->set_postag(utils::resolvePOSTag(tokenSplit.at(1)));
+      token->set_pos_tag(utils::resolvePOSTag(tokenSplit.at(1)));
       token->set_surface(tokenSplit.at(0));
     }
   }
@@ -58,7 +57,7 @@ absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
 
 // serialize, compress, and save protobuf message
 template <class T>
-absl::Status serializeCompressedProtobuf(const std::string& path,
+absl::Status serializeCompressedProtobuf(const absl::string_view path,
                                          const T& message) {
   std::string pbData;
   if (!message.SerializeToString(&pbData)) {
@@ -78,32 +77,26 @@ absl::Status serializeCompressedProtobuf(const std::string& path,
 
 }  // namespace internal
 
-// MeCabDictionary class
+// DictionaryBuilder
 
-MeCabDictionaryBuilder::MeCabDictionaryBuilder(
-    bool normalize, const std::string normalizationForm) {
-  builders.emplace_back(
-      new TokenInfoDictionaryBuilder(normalize, normalizationForm));
-  builders.emplace_back(new UnknownDictionaryBuilder());
-  builders.emplace_back(new CharacterClassDictionaryBuilder());
-  builders.emplace_back(new ConnectionCostsBuilder());
-}
+absl::Status DictionaryBuilder::build(absl::string_view inputDirectory) {
+  absl::Status status;
 
-absl::Status MeCabDictionaryBuilder::build(absl::string_view input,
-                                           absl::string_view output) {
-  for (auto& builder : builders) {
-    auto status = builder->parse(input);
-    if (!status.ok()) return status;
+  status = this->buildTokenInfos(inputDirectory);
+  if (!status.ok()) return status;
+  status = this->buildUnknownTokenInfos(inputDirectory);
+  if (!status.ok()) return status;
+  status = this->buildConnectionCost(inputDirectory);
+  if (!status.ok()) return status;
 
-    status = builder->save(output);
-    if (!status.ok()) return status;
-  }
   return absl::OkStatus();
 }
 
-// TokenInfoDictionaryBuilder class
+absl::Status DictionaryBuilder::save(absl::string_view outputFilename) {
+  return internal::serializeCompressedProtobuf(outputFilename, noriDictionary);
+}
 
-absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
+absl::Status DictionaryBuilder::buildTokenInfos(absl::string_view input) {
   // 1. Read all csvs
   std::vector<std::string> paths;
   utils::internal::listDirectory(input, paths, [](absl::string_view path) {
@@ -124,6 +117,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
 
     std::string line;
     while (std::getline(ifs, line)) {
+      // normalize the line if required
       if (normalize) {
         std::string normalized;
         auto status =
@@ -150,7 +144,7 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
     LOG(INFO) << "Read " << path << ". # terms: " << entries.size();
   }
 
-  // 3. prepare building trie dictionary
+  // 3. prepare building trie dictionary and add token infos
   std::stable_sort(
       entries.begin(), entries.end(),
       [](const std::vector<std::string> a, const std::vector<std::string> b) {
@@ -162,14 +156,14 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
 
   std::string lastValue = "";
   int entryValue = -1;
-  nori::MorphemeList* lastMorphemeList;
+  nori::protos::MorphemeList* lastMorphemeList;
 
   for (int i = 0; i < entries.size(); i++) {
     if (entries[i][0] != lastValue) {
       keys.push_back(entries[i][0].c_str());
       lastValue = entries[i][0];
       entryValue++;
-      lastMorphemeList = dictionary.add_morphemeslist();
+      lastMorphemeList = noriDictionary.mutable_tokens()->add_morphemes_list();
     }
 
     auto status = internal::convertMeCabCSVEntry(
@@ -177,8 +171,10 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
     if (!status.ok()) return status;
   }
 
+  // 4. Build tries
   LOG(INFO) << "Build trie. keys[0]: " << keys[0] << ", keys[10]: " << keys[10];
-  trie = std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
+  std::unique_ptr<Darts::DoubleArray> trie =
+      std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
   if (trie->build(keys.size(), const_cast<char**>(&keys[0])) != 0)
     return absl::InternalError("Cannot build trie.");
 
@@ -189,148 +185,126 @@ absl::Status TokenInfoDictionaryBuilder::parse(absl::string_view input) {
       return absl::InternalError("Trie isn't built properly.");
   }
 
-  return absl::OkStatus();
-}
+  noriDictionary.mutable_darts_array()->assign(
+      static_cast<const char*>(trie->array()), trie->size());
 
-absl::Status TokenInfoDictionaryBuilder::save(absl::string_view output) {
-  {
-    LOG(INFO) << "Save token info dictionary.";
-    std::string arrayPath = utils::internal::joinPath(output, NORI_DICT_FILE);
-    trie->save(arrayPath.c_str());
-  }
-
-  {
-    std::string path = utils::internal::joinPath(output, NORI_DICT_META_FILE);
-    LOG(INFO) << "Write dictionary meta " << path;
-    auto status = internal::serializeCompressedProtobuf(path, dictionary);
-    if (!status.ok()) return status;
-  }
   return absl::OkStatus();
 }
 
 // UnknownDictionaryBuilder class
 
-absl::Status UnknownDictionaryBuilder::parse(absl::string_view input) {
-  const auto path = utils::internal::joinPath(input, "unk.def");
-  LOG(INFO) << "Read unk dicitonary " << path;
-  std::ifstream ifs(path);
-  if (ifs.fail())
-    return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+absl::Status DictionaryBuilder::buildUnknownTokenInfos(
+    absl::string_view input) {
+  // Build unk.def
+  {
+    const auto path = utils::internal::joinPath(input, "unk.def");
+    LOG(INFO) << "Read unk dicitonary " << path;
+    std::ifstream ifs(path);
+    if (ifs.fail())
+      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
 
-  auto* morphemeMap = unkDictionary.mutable_morphememap();
-  std::vector<std::vector<std::string>> allLines;
-  const auto append = [&morphemeMap](std::string line) -> absl::Status {
-    std::vector<std::string> entry = utils::internal::parseCSVLine(line);
-    nori::CharacterClass chClass;
-    if (!nori::CharacterClass_Parse(entry[0], &chClass)) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Cannot get character class ", entry[0]));
-    }
-    (*morphemeMap)[chClass].set_leftid(
-        utils::internal::simpleAtoi(entry.at(1)));
-    (*morphemeMap)[chClass].set_rightid(
-        utils::internal::simpleAtoi(entry.at(2)));
-    (*morphemeMap)[chClass].set_wordcost(
-        utils::internal::simpleAtoi(entry.at(3)));
-    (*morphemeMap)[chClass].mutable_postag()->Add(
-        utils::resolvePOSTag(entry.at(4)));
+    auto* morphemeMap =
+        noriDictionary.mutable_unknown_tokens()->mutable_morpheme_map();
+    std::vector<std::vector<std::string>> allLines;
+    const auto append = [&morphemeMap](std::string line) -> absl::Status {
+      std::vector<std::string> entry = utils::internal::parseCSVLine(line);
+      nori::protos::CharacterClass chClass;
+      if (!nori::protos::CharacterClass_Parse(entry[0], &chClass)) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Cannot get character class ", entry[0]));
+      }
+      (*morphemeMap)[chClass].set_left_id(
+          utils::internal::simpleAtoi(entry.at(1)));
+      (*morphemeMap)[chClass].set_right_id(
+          utils::internal::simpleAtoi(entry.at(2)));
+      (*morphemeMap)[chClass].set_word_cost(
+          utils::internal::simpleAtoi(entry.at(3)));
+      (*morphemeMap)[chClass].mutable_pos_tags()->Add(
+          utils::resolvePOSTag(entry.at(4)));
 
-    return absl::OkStatus();
-  };
-
-  // put ngram definition
-  append("NGRAM,1798,3559,3677,SY,*,*,*,*,*,*,*").IgnoreError();
-  std::string line;
-  while (std::getline(ifs, line)) {
-    auto status = append(line);
-    if (!status.ok()) {
-      ifs.close();
-      return status;
+      return absl::OkStatus();
     };
+
+    // put ngram definition
+    append("NGRAM,1798,3559,3677,SY,*,*,*,*,*,*,*").IgnoreError();
+    std::string line;
+    while (std::getline(ifs, line)) {
+      auto status = append(line);
+      if (!status.ok()) {
+        ifs.close();
+        return status;
+      };
+    }
+    ifs.close();
   }
-  ifs.close();
 
-  return absl::OkStatus();
-}
+  // Build char.def
+  {
+    const auto path = utils::internal::joinPath(input, "char.def");
+    LOG(INFO) << "Read char.def " << path;
+    std::ifstream ifs(path);
+    if (ifs.fail())
+      return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
 
-absl::Status UnknownDictionaryBuilder::save(absl::string_view output) {
-  std::string path = utils::internal::joinPath(output, NORI_UNK_FILE);
-  LOG(INFO) << "save unk dictionary file " << path;
-  return internal::serializeCompressedProtobuf(path, unkDictionary);
-}
+    std::string line;
+    std::regex spaceRegex("\\s+");
+    std::regex commentRegex("\\s*#.*");
+    auto* invokeMap =
+        noriDictionary.mutable_unknown_tokens()->mutable_invoke_map();
+    auto* codeToCategoryMap =
+        noriDictionary.mutable_unknown_tokens()->mutable_code_to_category_map();
 
-// CharacterClassDictionaryBuilder class
+    while (std::getline(ifs, line)) {
+      if (absl::StartsWith(line, "#")) continue;  // skip comments
+      utils::internal::trimWhitespaces(line);
+      if (line.length() == 0) continue;  // skip empty line
 
-absl::Status CharacterClassDictionaryBuilder::parse(absl::string_view input) {
-  const auto path = utils::internal::joinPath(input, "char.def");
-  LOG(INFO) << "Read char.def " << path;
-  std::ifstream ifs(path);
-  if (ifs.fail())
-    return absl::InvalidArgumentError(absl::StrCat(path, " is missing"));
+      // remove comments
+      line = std::regex_replace(line, commentRegex, "");
+      line = std::regex_replace(line, spaceRegex, " ");
 
-  std::string line;
-  std::regex spaceRegex("\\s+");
-  std::regex commentRegex("\\s*#.*");
-  auto invokeMap = charDictionary.mutable_invokemap();
-  auto codeToCategoryMap = charDictionary.mutable_codetocategorymap();
-
-  while (std::getline(ifs, line)) {
-    if (absl::StartsWith(line, "#")) continue;  // skip comments
-    utils::internal::trimWhitespaces(line);
-    if (line.length() == 0) continue;  // skip empty line
-
-    // remove comments
-    line = std::regex_replace(line, commentRegex, "");
-    line = std::regex_replace(line, spaceRegex, " ");
-
-    if (!absl::StartsWith(line, "0x")) {
-      // char category definition
-      std::vector<std::string> splits = absl::StrSplit(line, " ");
-      nori::CharacterClass chCls;
-      if (!nori::CharacterClass_Parse(splits[0], &chCls)) {
-        ifs.close();
-        return absl::InvalidArgumentError(
-            absl::StrCat("Cannot read character class ", splits[0]));
-      }
-      (*invokeMap)[chCls].set_invoke(utils::internal::simpleAtoi(splits[1]));
-      (*invokeMap)[chCls].set_group(utils::internal::simpleAtoi(splits[2]));
-      (*invokeMap)[chCls].set_length(utils::internal::simpleAtoi(splits[3]));
-    } else {
-      std::vector<std::string> tokens = absl::StrSplit(line, " ");
-
-      nori::CharacterClass chCls;
-      if (!nori::CharacterClass_Parse(tokens[1], &chCls)) {
-        ifs.close();
-        return absl::InvalidArgumentError(
-            absl::StrCat("Cannot read character class ", tokens[1]));
-      }
-
-      if (absl::StrContains(tokens[0], "..")) {
-        std::vector<std::string> codePoints = absl::StrSplit(tokens[0], "..");
-        int codePointFrom = utils::internal::simpleHexAtoi(codePoints[0]);
-        int codePointTo = utils::internal::simpleHexAtoi(codePoints[1]);
-
-        for (int i = codePointFrom; i <= codePointTo; i++)
-          (*codeToCategoryMap)[i] = chCls;
+      if (!absl::StartsWith(line, "0x")) {
+        // char category definition
+        std::vector<std::string> splits = absl::StrSplit(line, " ");
+        nori::protos::CharacterClass chCls;
+        if (!nori::protos::CharacterClass_Parse(splits[0], &chCls)) {
+          ifs.close();
+          return absl::InvalidArgumentError(
+              absl::StrCat("Cannot read character class ", splits[0]));
+        }
+        (*invokeMap)[chCls].set_invoke(utils::internal::simpleAtoi(splits[1]));
+        (*invokeMap)[chCls].set_group(utils::internal::simpleAtoi(splits[2]));
+        (*invokeMap)[chCls].set_length(utils::internal::simpleAtoi(splits[3]));
       } else {
-        int codePoint = utils::internal::simpleHexAtoi(tokens[0]);
-        (*codeToCategoryMap)[codePoint] = chCls;
+        std::vector<std::string> tokens = absl::StrSplit(line, " ");
+
+        nori::protos::CharacterClass chCls;
+        if (!nori::protos::CharacterClass_Parse(tokens[1], &chCls)) {
+          ifs.close();
+          return absl::InvalidArgumentError(
+              absl::StrCat("Cannot read character class ", tokens[1]));
+        }
+
+        if (absl::StrContains(tokens[0], "..")) {
+          std::vector<std::string> codePoints = absl::StrSplit(tokens[0], "..");
+          int codePointFrom = utils::internal::simpleHexAtoi(codePoints[0]);
+          int codePointTo = utils::internal::simpleHexAtoi(codePoints[1]);
+
+          for (int i = codePointFrom; i <= codePointTo; i++)
+            (*codeToCategoryMap)[i] = chCls;
+        } else {
+          int codePoint = utils::internal::simpleHexAtoi(tokens[0]);
+          (*codeToCategoryMap)[codePoint] = chCls;
+        }
       }
     }
+    ifs.close();
   }
-  ifs.close();
+
   return absl::OkStatus();
 }
 
-absl::Status CharacterClassDictionaryBuilder::save(absl::string_view output) {
-  std::string path = utils::internal::joinPath(output, NORI_CHAR_FILE);
-  LOG(INFO) << "save char dictionary file " << path;
-  return internal::serializeCompressedProtobuf(path, charDictionary);
-}
-
-// ConnectionCostsBuilder class
-
-absl::Status ConnectionCostsBuilder::parse(absl::string_view input) {
+absl::Status DictionaryBuilder::buildConnectionCost(absl::string_view input) {
   const auto path = utils::internal::joinPath(input, "matrix.def");
   LOG(INFO) << "Read connection costs (matrix.def) " << path;
   std::ifstream ifs(path);
@@ -369,19 +343,13 @@ absl::Status ConnectionCostsBuilder::parse(absl::string_view input) {
     int cost = utils::internal::simpleAtoi(splits[2]);
     array[backwardSize * forwardId + backwardId] = cost;
   }
-  connectionCost.mutable_costlists()->Assign(array.begin(), array.end());
-  connectionCost.set_forwardsize(forwardSize);
-  connectionCost.set_backwardsize(backwardSize);
+  noriDictionary.mutable_connection_cost()->mutable_cost_lists()->Assign(
+      array.begin(), array.end());
+  noriDictionary.mutable_connection_cost()->set_forward_size(forwardSize);
+  noriDictionary.mutable_connection_cost()->set_backward_size(backwardSize);
 
   ifs.close();
   return absl::OkStatus();
-}
-
-absl::Status ConnectionCostsBuilder::save(absl::string_view output) {
-  std::string path =
-      utils::internal::joinPath(output, NORI_CONNECTION_COST_FILE);
-  LOG(INFO) << "save connection costs dictionary file " << path;
-  return internal::serializeCompressedProtobuf(path, connectionCost);
 }
 
 }  // namespace builder

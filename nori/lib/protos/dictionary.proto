@@ -1,7 +1,10 @@
 syntax = "proto3";
 
-package nori;
+package nori.protos;
 
+// #### Data and Enums for the dictionary
+
+// Part of Speech Type
 enum POSType {
   // A simple morpheme.
   MORPHEME = 0;
@@ -13,6 +16,7 @@ enum POSType {
   PREANALYSIS = 3;
 }
 
+// Part of Speech Tags
 enum POSTag {
   option allow_alias = true;
 
@@ -91,6 +95,8 @@ enum POSTag {
   XSV = 32;
 }
 
+// Character Classes
+// Similar with unicode character groups
 enum CharacterClass {
   NGRAM = 0;
   DEFAULT = 1;
@@ -110,15 +116,18 @@ enum CharacterClass {
 
 message Morpheme {
   message ExprToken {
-    POSTag posTag = 1;
+    POSTag pos_tag = 1;
     string surface = 2;
   }
 
-  int32 leftId = 1;
-  int32 rightId = 2;
-  int32 wordCost = 3;
-  POSType posType = 4;
-  repeated POSTag posTag = 5;
+  // leftId is for calculating connection cost.
+  int32 left_id = 1;
+  // rightId is for calculating connection cost.
+  int32 right_id = 2;
+  // wordCost means the cost of morpheme itself
+  int32 word_cost = 3;
+  POSType pos_type = 4;
+  repeated POSTag pos_tags = 5;
   repeated ExprToken expression = 6;
 }
 
@@ -126,29 +135,47 @@ message MorphemeList {
   repeated Morpheme morphemes = 1;
 }
 
-message TokenInfoDictionary {
-  repeated MorphemeList morphemesList = 1;
+// #### Dictionary format
+
+// This contains the information of tokens.
+// The index of morphemeList means the value of trie dictionary.
+message Tokens {
+  repeated MorphemeList morphemes_list = 1;
 }
 
-message UnknownDictionary {
-  map<int32, Morpheme> morphemeMap = 1;
-}
+// Token informations for unknown tokens.
+message UnknownTokens {
+  // key is a value of CharacterClass
+  map<int32, Morpheme> morpheme_map = 1;
 
-message CharacterClassDictionary {
   // character code to character class
-  map<int32, CharacterClass> codeToCategoryMap = 1;
+  map<int32, CharacterClass> code_to_category_map = 2;
 
+  // character definition infos (char.def)
+  // The original description in mecab is as follows.
+  //
+  // #   - INVOKE: 1/0:   always invoke unknown word processing, evan when the word can be found in the lexicon
+  // #   - GROUP:  1/0:   make a new word by grouping the same chracter category
+  // #   - LENGTH: n:     1 to n length new words are added
   message CategoryDefinition {
     int32 invoke = 1;
     int32 group = 2;
     int32 length = 3;
   }
-  map<int32, CategoryDefinition> invokeMap = 2;
+  map<int32, CategoryDefinition> invoke_map = 3;
 }
 
 message ConnectionCost {
   // index: backwardIndex * forwardIndex + backwardIndex
-  repeated int32 costLists = 1;
-  int32 forwardSize = 2;
-  int32 backwardSize = 3;
+  repeated int32 cost_lists = 1;
+  int32 forward_size = 2;
+  int32 backward_size = 3;
+}
+
+// Final message to contain all dictionary information
+message Dictionary {
+  bytes darts_array = 1;
+  Tokens tokens = 2;
+  UnknownTokens unknown_tokens = 3;
+  ConnectionCost connection_cost = 4;
 }

@@ -34,80 +34,28 @@ namespace internal {
 //  * 10  - right POS
 //  * 11  - expression
 absl::Status convertMeCabCSVEntry(const std::vector<std::string>& entry,
-                                  nori::Morpheme* morpheme);
+                                  nori::protos::Morpheme* morpheme);
 
 }  // namespace internal
 
-// Abstract class for interfaces that builds each type (unknown, csvs, or costs)
-// of dictionaries in MeCab's.
-class IDictionaryBuilder {
+class DictionaryBuilder {
  public:
-  virtual ~IDictionaryBuilder() = default;
-  virtual absl::Status parse(absl::string_view inputDirectory) = 0;
-  virtual absl::Status save(absl::string_view outputDirectory) = 0;
-};
-
-// Build Nori Dictionary from MeCab Dictionary.
-class MeCabDictionaryBuilder {
- public:
-  // An argument `normalize` means whether to normalize terms in dictionary.
-  MeCabDictionaryBuilder(bool normalize, const std::string normalizationForm);
-
-  // This method builds dictionary from `inputDirectory` and write built
-  // dictionary to `outputDirectory`.
-  absl::Status build(absl::string_view inputDirectory,
-                     absl::string_view outputDirectory);
-
- private:
-  std::vector<std::unique_ptr<IDictionaryBuilder>> builders;
-};
-
-// Read all csv files in MeCab dictionary directory, and convert it to nori's
-// FST dictionary format.
-class TokenInfoDictionaryBuilder : public IDictionaryBuilder {
- public:
-  TokenInfoDictionaryBuilder(const bool normalize,
-                             const std::string normalizationForm)
+  DictionaryBuilder(bool normalize, const std::string normalizationForm)
       : normalize(normalize), normalizationForm(normalizationForm) {}
 
-  absl::Status parse(absl::string_view inputDirectory);
-  absl::Status save(absl::string_view outputDirectory);
+  ~DictionaryBuilder() = default;
+  absl::Status build(absl::string_view inputDirectory);
+  absl::Status save(absl::string_view outputFilename);
 
  private:
+  absl::Status buildTokenInfos(absl::string_view inputDirectory);
+  absl::Status buildUnknownTokenInfos(absl::string_view inputDirectory);
+  absl::Status buildConnectionCost(absl::string_view inputDirectory);
+
+  nori::protos::Dictionary noriDictionary;
+
   bool normalize;
   const std::string normalizationForm;
-  std::unique_ptr<Darts::DoubleArray> trie;
-  nori::TokenInfoDictionary dictionary;
-};
-
-// Read unk.def and convert them to nori's dictionary format.
-class UnknownDictionaryBuilder : public IDictionaryBuilder {
- public:
-  absl::Status parse(absl::string_view inputDirectory);
-  absl::Status save(absl::string_view outputDirectory);
-
- private:
-  nori::UnknownDictionary unkDictionary;
-};
-
-// Read char.def and convert them to nori's dictionary format.
-class CharacterClassDictionaryBuilder : public IDictionaryBuilder {
- public:
-  absl::Status parse(absl::string_view inputDirectory);
-  absl::Status save(absl::string_view outputDirectory);
-
- private:
-  nori::CharacterClassDictionary charDictionary;
-};
-
-// Read matrix.def and convert it to nori's dictionary format.
-class ConnectionCostsBuilder : public IDictionaryBuilder {
- public:
-  absl::Status parse(absl::string_view inputDirectory);
-  absl::Status save(absl::string_view outputDirectory);
-
- private:
-  nori::ConnectionCost connectionCost;
 };
 
 }  // namespace builder

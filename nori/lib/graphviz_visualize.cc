@@ -11,18 +11,20 @@ inline std::string getNodeLabel(size_t position, size_t nodeId) {
   return absl::StrCat(position, ".", nodeId);
 }
 
-std::string getPosTagString(const nori::Morpheme* morpheme) {
+std::string getPosTagString(const nori::protos::Morpheme* morpheme) {
   if (morpheme == nullptr) {
     return "";
   }
 
   std::string result = "";
-  auto size = morpheme->postag_size();
+  auto size = morpheme->pos_tags_size();
   for (int i = 0; i < size; i++) {
     if (i != size - 1)
-      absl::StrAppend(&result, nori::POSTag_Name(morpheme->postag(i)), "+");
+      absl::StrAppend(&result, nori::protos::POSTag_Name(morpheme->pos_tags(i)),
+                      "+");
     else
-      absl::StrAppend(&result, nori::POSTag_Name(morpheme->postag(i)));
+      absl::StrAppend(&result,
+                      nori::protos::POSTag_Name(morpheme->pos_tags(i)));
   }
 
   return result;
@@ -49,9 +51,9 @@ void GraphvizVisualizer::reset() {
 }
 
 void GraphvizVisualizer::addNode(size_t fromIndex, size_t fromNodeId,
-                                 const nori::Morpheme* fromMorpheme,
+                                 const nori::protos::Morpheme* fromMorpheme,
                                  size_t toIndex, size_t toNodeId,
-                                 const nori::Morpheme* toMorpheme,
+                                 const nori::protos::Morpheme* toMorpheme,
                                  const std::string stringForm, int wordCost,
                                  int connectionCost, int cost) {
   auto fromNodeLabel = internal::getNodeLabel(fromIndex, fromNodeId);
@@ -59,7 +61,7 @@ void GraphvizVisualizer::addNode(size_t fromIndex, size_t fromNodeId,
 
   // node ref
   absl::StrAppend(&this->data, "  ", toNodeLabel, " [label=\"",
-                  toMorpheme->leftid(), ":", toMorpheme->rightid(),
+                  toMorpheme->left_id(), ":", toMorpheme->right_id(),
                   ", cost: ", cost, "\"]\n");
   // arc
   absl::StrAppend(&this->data, "  ", fromNodeLabel, " -> ", toNodeLabel,
@@ -68,7 +70,7 @@ void GraphvizVisualizer::addNode(size_t fromIndex, size_t fromNodeId,
 }
 
 void GraphvizVisualizer::addEos(size_t fromIndex, size_t fromNodeId,
-                                const nori::Morpheme* fromMorpheme) {
+                                const nori::protos::Morpheme* fromMorpheme) {
   auto fromNodeLabel = internal::getNodeLabel(fromIndex, fromNodeId);
   auto toNodeLabel = absl::StrCat("eos", fromNodeId);
 

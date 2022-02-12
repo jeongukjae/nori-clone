@@ -10,62 +10,33 @@ TEST(TestInternal, convertMeCabCSVEntry) {
       "은전한닢",    "0",   "0",   "0",
       "NNG+NR+NNG",  "*",   "T",   "은전한닢",
       "Preanalysis", "NNG", "NNG", "은전/NNG/*+한/NR/*+닢/NNG/*"};
-  nori::Morpheme morpheme;
+  nori::protos::Morpheme morpheme;
 
   internal::convertMeCabCSVEntry(entry, &morpheme).IgnoreError();
 
-  ASSERT_EQ(morpheme.postype(), nori::POSType::PREANALYSIS);
+  ASSERT_EQ(morpheme.pos_type(), nori::protos::POSType::PREANALYSIS);
   ASSERT_EQ(morpheme.expression_size(), 3);
   ASSERT_EQ(morpheme.expression(0).surface(), "은전");
-  ASSERT_EQ(morpheme.expression(0).postag(), nori::POSTag::NNG);
+  ASSERT_EQ(morpheme.expression(0).pos_tag(), nori::protos::POSTag::NNG);
   ASSERT_EQ(morpheme.expression(1).surface(), "한");
-  ASSERT_EQ(morpheme.expression(1).postag(), nori::POSTag::NR);
+  ASSERT_EQ(morpheme.expression(1).pos_tag(), nori::protos::POSTag::NR);
   ASSERT_EQ(morpheme.expression(2).surface(), "닢");
-  ASSERT_EQ(morpheme.expression(2).postag(), nori::POSTag::NNG);
+  ASSERT_EQ(morpheme.expression(2).pos_tag(), nori::protos::POSTag::NNG);
 
   entry = {",", "1792", "3558", "788", "SC", "*", "*", "*", "*", "*", "*", "*"};
-  nori::Morpheme morpheme2;
+  nori::protos::Morpheme morpheme2;
 
   internal::convertMeCabCSVEntry(entry, &morpheme2).IgnoreError();
 
-  ASSERT_EQ(morpheme2.postype(), nori::POSType::MORPHEME);
+  ASSERT_EQ(morpheme2.pos_type(), nori::protos::POSType::MORPHEME);
   ASSERT_EQ(morpheme2.expression_size(), 0);
 }
 
 TEST(TestBuilder, DictionaryBuilder) {
-  MeCabDictionaryBuilder builder(true, "NFKC");
-  auto status = builder.build("./testdata/dictionaryBuilder/", ".");
+  DictionaryBuilder builder(true, "NFKC");
+  auto status = builder.build("./testdata/dictionaryBuilder/");
   ASSERT_TRUE(status.ok()) << status.message();
-}
 
-TEST(TestBuilder, TokenInfoDictionaryBuilder) {
-  TokenInfoDictionaryBuilder builder(true, "NFKC");
-  auto status = builder.parse("./testdata/dictionaryBuilder/");
-  ASSERT_TRUE(status.ok()) << status.message();
-  status = builder.save(".");
-  ASSERT_TRUE(status.ok()) << status.message();
-}
-
-TEST(TestBuilder, ConnectionCostsBuilder) {
-  ConnectionCostsBuilder builder;
-  auto status = builder.parse("./testdata/dictionaryBuilder/");
-  ASSERT_TRUE(status.ok()) << status.message();
-  status = builder.save(".");
-  ASSERT_TRUE(status.ok()) << status.message();
-}
-
-TEST(TestBuilder, CharacterClassDictionaryBuilder) {
-  CharacterClassDictionaryBuilder builder;
-  auto status = builder.parse("./testdata/dictionaryBuilder/");
-  ASSERT_TRUE(status.ok()) << status.message();
-  status = builder.save(".");
-  ASSERT_TRUE(status.ok()) << status.message();
-}
-
-TEST(TestBuilder, UnknownDictionaryBuilder) {
-  UnknownDictionaryBuilder builder;
-  auto status = builder.parse("./testdata/dictionaryBuilder/");
-  ASSERT_TRUE(status.ok()) << status.message();
-  status = builder.save(".");
+  status = builder.save("dictionary.nori");
   ASSERT_TRUE(status.ok()) << status.message();
 }

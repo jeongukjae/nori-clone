@@ -28,14 +28,14 @@ class GraphvizVisualizer {
 
   // add node path
   void addNode(size_t fromIndex, size_t fromNodeId,
-               const nori::Morpheme* fromMorpheme, size_t toIndex,
-               size_t toNodeId, const nori::Morpheme* toMorpheme,
+               const nori::protos::Morpheme* fromMorpheme, size_t toIndex,
+               size_t toNodeId, const nori::protos::Morpheme* toMorpheme,
                const std::string stringForm, int wordCost, int connectionCost,
                int cost);
 
   // add final node path
   void addEos(size_t fromIndex, size_t fromNodeId,
-              const nori::Morpheme* fromMorpheme);
+              const nori::protos::Morpheme* fromMorpheme);
 
   // wrap up
   void finish();

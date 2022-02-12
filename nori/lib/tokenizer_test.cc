@@ -21,11 +21,11 @@ TEST(NoriTokenizer, testDefaultSentence) {
       "화학 이외의 것 ",
   };
   std::vector<std::string> expectedTokens = {"화학", "이외", "의", "것"};
-  std::vector<std::vector<nori::POSTag>> expectedPOS = {
-      {nori::POSTag::NNG},
-      {nori::POSTag::NNG},
-      {nori::POSTag::J},
-      {nori::POSTag::NNB},
+  std::vector<std::vector<nori::protos::POSTag>> expectedPOS = {
+      {nori::protos::POSTag::NNG},
+      {nori::protos::POSTag::NNG},
+      {nori::protos::POSTag::J},
+      {nori::protos::POSTag::NNB},
   };
 
   for (const auto& tt : testCases) {
@@ -39,10 +39,10 @@ TEST(NoriTokenizer, testDefaultSentence) {
     for (int i = 0; i < expectedTokens.size(); i++) {
       // +1: BOS token
       ASSERT_EQ(lattice.getTokens()->at(i + 1).surface, expectedTokens[i]);
-      ASSERT_EQ(lattice.getTokens()->at(i + 1).morpheme->postag_size(),
+      ASSERT_EQ(lattice.getTokens()->at(i + 1).morpheme->pos_tags_size(),
                 expectedPOS[i].size());
       for (int j = 0; j < expectedPOS[i].size(); j++) {
-        ASSERT_EQ(lattice.getTokens()->at(i + 1).morpheme->postag(j),
+        ASSERT_EQ(lattice.getTokens()->at(i + 1).morpheme->pos_tags(j),
                   expectedPOS[i][j]);
       }
     }

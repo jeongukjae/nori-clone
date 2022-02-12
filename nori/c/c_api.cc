@@ -55,16 +55,16 @@ int tokenize(const Tokenizer* rawTokenizer, const char* str, int normalize,
     auto& ccToken = lattice.getTokens()->at(i);
     token->offset = ccToken.offset;
     token->length = ccToken.length;
-    token->morpheme.leftId = ccToken.morpheme->leftid();
-    token->morpheme.rightId = ccToken.morpheme->rightid();
-    token->morpheme.wordCost = ccToken.morpheme->wordcost();
-    token->morpheme.posType = ccToken.morpheme->postype();
+    token->morpheme.leftId = ccToken.morpheme->left_id();
+    token->morpheme.rightId = ccToken.morpheme->right_id();
+    token->morpheme.wordCost = ccToken.morpheme->word_cost();
+    token->morpheme.posType = ccToken.morpheme->pos_type();
 
-    int posTagLength = ccToken.morpheme->postag().size();
+    int posTagLength = ccToken.morpheme->pos_tags().size();
     token->morpheme.posTagLength = posTagLength;
     token->morpheme.posTag = new int[posTagLength];
     for (int j = 0; j < posTagLength; j++) {
-      token->morpheme.posTag[j] = ccToken.morpheme->postag(j);
+      token->morpheme.posTag[j] = ccToken.morpheme->pos_tags(j);
     }
 
     int exprLength = ccToken.morpheme->expression_size();
@@ -76,7 +76,7 @@ int tokenize(const Tokenizer* rawTokenizer, const char* str, int normalize,
         token->morpheme.exprSurface[j] =
             ccToken.morpheme->expression(j).surface().data();
         token->morpheme.exprPosTag[j] =
-            ccToken.morpheme->expression(j).postag();
+            ccToken.morpheme->expression(j).pos_tag();
       }
     }
   }

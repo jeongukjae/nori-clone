@@ -22,11 +22,11 @@ namespace nori {
 // nori::Token::morpheme::expression.
 struct Token {
   const absl::string_view surface;
-  const nori::Morpheme* morpheme;
+  const nori::protos::Morpheme* morpheme;
   const size_t offset;
   const size_t length;
 
-  Token(const absl::string_view surface, const nori::Morpheme* morpheme,
+  Token(const absl::string_view surface, const nori::protos::Morpheme* morpheme,
         const size_t offset, const size_t length)
       : surface(surface), morpheme(morpheme), offset(offset), length(length) {}
 };

@@ -46,10 +46,10 @@ absl::Status deserializeProtobuf(const std::string& path, T& message) {
   return absl::OkStatus();
 }
 
-absl::Status exactMatchMorpheme(
-    const Darts::DoubleArray* trie,
-    const nori::TokenInfoDictionary* tokenDictionary, const std::string word,
-    const nori::Morpheme*& outputMorpheme) {
+absl::Status exactMatchMorpheme(const Darts::DoubleArray* trie,
+                                const nori::protos::Tokens* tokens,
+                                const std::string word,
+                                const nori::protos::Morpheme*& outputMorpheme) {
   int searchResult;
   trie->exactMatchSearch(word.data(), searchResult);
 
@@ -58,7 +58,7 @@ absl::Status exactMatchMorpheme(
         absl::StrCat("Cannot exact match morpheme with word ", word));
   }
 
-  auto morphemeList = &tokenDictionary->morphemeslist(searchResult);
+  auto morphemeList = &tokens->morphemes_list(searchResult);
   if (morphemeList->morphemes_size() != 1) {
     return absl::InternalError("Cannot get right id with jongsung");
   }
@@ -73,48 +73,21 @@ absl::Status exactMatchMorpheme(
 
 absl::Status Dictionary::loadPrebuilt(std::string input) {
   this->bosEosSurface = "BOS/EOS";
-  this->bosEosMorpheme.set_leftid(0);
-  this->bosEosMorpheme.set_rightid(0);
-  this->bosEosMorpheme.set_wordcost(0);
+  this->bosEosMorpheme.set_left_id(0);
+  this->bosEosMorpheme.set_right_id(0);
+  this->bosEosMorpheme.set_word_cost(0);
 
-  {
-    std::string path = utils::internal::joinPath(input, NORI_DICT_FILE);
-    if (trie.open(path.c_str()) != 0) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Canont read trie dictionary from ", path));
-    }
-  }
+  auto status = internal::deserializeProtobuf(input, dictionary);
+  if (!status.ok()) return status;
 
-  {
-    std::string path = utils::internal::joinPath(input, NORI_DICT_META_FILE);
-    auto status = internal::deserializeProtobuf(path, tokenDictionary);
-    if (!status.ok()) return status;
-  }
-
-  {
-    std::string path = utils::internal::joinPath(input, NORI_UNK_FILE);
-    auto status = internal::deserializeProtobuf(path, unkDictionary);
-    if (!status.ok()) return status;
-  }
-
-  {
-    std::string path = utils::internal::joinPath(input, NORI_CHAR_FILE);
-    auto status = internal::deserializeProtobuf(path, charDictionary);
-    if (!status.ok()) return status;
-  }
-
-  {
-    std::string path =
-        utils::internal::joinPath(input, NORI_CONNECTION_COST_FILE);
-    auto status = internal::deserializeProtobuf(path, connectionCost);
-    if (!status.ok()) return status;
-  }
+  trie.set_array(dictionary.darts_array().data(),
+                 dictionary.darts_array().size());
 
   // backwardSize
-  backwardSize = connectionCost.backwardsize();
-  forwardSize = connectionCost.forwardsize();
-  connectionCostData = connectionCost.costlists().data();
-  connectionCostMax = connectionCost.costlists_size();
+  backwardSize = dictionary.connection_cost().backward_size();
+  forwardSize = dictionary.connection_cost().forward_size();
+  connectionCostData = dictionary.connection_cost().cost_lists().data();
+  connectionCostMax = dictionary.connection_cost().cost_lists_size();
 
   initialized = true;
 
@@ -122,18 +95,18 @@ absl::Status Dictionary::loadPrebuilt(std::string input) {
 }
 
 absl::Status Dictionary::loadUser(std::string filename) {
-  const nori::Morpheme *morphemeWithJongsung, *morphemeWithHangul;
-  auto status = internal::exactMatchMorpheme(&trie, &tokenDictionary, "놀이방",
-                                             morphemeWithJongsung);
+  const nori::protos::Morpheme *morphemeWithJongsung, *morphemeWithHangul;
+  auto status = internal::exactMatchMorpheme(&trie, &dictionary.tokens(),
+                                             "놀이방", morphemeWithJongsung);
   if (!status.ok()) return status;
 
-  status = internal::exactMatchMorpheme(&trie, &tokenDictionary, "딱지놀이",
+  status = internal::exactMatchMorpheme(&trie, &dictionary.tokens(), "딱지놀이",
                                         morphemeWithHangul);
   if (!status.ok()) return status;
 
-  status = userDictionary.load(filename, morphemeWithJongsung->leftid(),
-                               morphemeWithHangul->rightid(),
-                               morphemeWithJongsung->rightid());
+  status = userDictionary.load(filename, morphemeWithJongsung->left_id(),
+                               morphemeWithHangul->right_id(),
+                               morphemeWithJongsung->right_id());
   if (absl::IsCancelled(status)) {
     LOG(WARNING) << status.message();
     return absl::OkStatus();
@@ -143,18 +116,19 @@ absl::Status Dictionary::loadUser(std::string filename) {
   return status;
 }
 
-const nori::CharacterClass Dictionary::getCharClass(const char* text) const {
+const nori::protos::CharacterClass Dictionary::getCharClass(
+    const char* text) const {
   // Get next utf-8 character using ICU
   UChar32 c;
   int length = 1;
   int i = 0;
   U8_NEXT(text, i, length, c);
 
-  auto it = charDictionary.codetocategorymap().find(c);
-  if (it != charDictionary.codetocategorymap().end()) {
+  auto it = dictionary.unknown_tokens().code_to_category_map().find(c);
+  if (it != dictionary.unknown_tokens().code_to_category_map().end()) {
     return it->second;
   }
-  return nori::CharacterClass::HANGUL;
+  return nori::protos::CharacterClass::HANGUL;
 }
 
 // User Dictionary
@@ -211,24 +185,24 @@ absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
   for (const auto& term : terms) {
     keys.push_back(term[0].data());
 
-    nori::Morpheme morpheme;
+    nori::protos::Morpheme morpheme;
 
-    morpheme.set_leftid(leftId);
+    morpheme.set_left_id(leftId);
     if (utils::internal::hasJongsungAtLast(term[0])) {
-      morpheme.set_rightid(rightIdWithJongsung);
+      morpheme.set_right_id(rightIdWithJongsung);
     } else {
-      morpheme.set_rightid(rightId);
+      morpheme.set_right_id(rightId);
     }
-    morpheme.set_wordcost(-100000);
-    morpheme.set_postype(term.size() == 1 ? nori::POSType::MORPHEME
-                                          : nori::POSType::COMPOUND);
+    morpheme.set_word_cost(-100000);
+    morpheme.set_pos_type(term.size() == 1 ? nori::protos::POSType::MORPHEME
+                                           : nori::protos::POSType::COMPOUND);
 
-    morpheme.add_postag(nori::POSTag::NNG);
+    morpheme.add_pos_tags(nori::protos::POSTag::NNG);
     for (int i = 2; i < term.size(); i++)
-      morpheme.add_postag(nori::POSTag::NNG);
+      morpheme.add_pos_tags(nori::protos::POSTag::NNG);
     for (int i = 1; i < term.size() - 1; i++) {
       auto expr = morpheme.add_expression();
-      expr->set_postag(nori::POSTag::NNG);
+      expr->set_pos_tag(nori::protos::POSTag::NNG);
       expr->set_surface(term[i]);
     }
 

@@ -101,17 +101,17 @@ TEST(TestUtils, simpleHexAtoi) {
 }
 
 TEST(TestUtils, resolvePOSType) {
-  ASSERT_EQ(resolvePOSType("*"), nori::POSType::MORPHEME);
-  ASSERT_EQ(resolvePOSType("Inflect"), nori::POSType::INFLECT);
-  ASSERT_EQ(resolvePOSType("inflect"), nori::POSType::INFLECT);
-  ASSERT_EQ(resolvePOSType("Preanalysis"), nori::POSType::PREANALYSIS);
-  ASSERT_EQ(resolvePOSType("Compound"), nori::POSType::COMPOUND);
+  ASSERT_EQ(resolvePOSType("*"), nori::protos::POSType::MORPHEME);
+  ASSERT_EQ(resolvePOSType("Inflect"), nori::protos::POSType::INFLECT);
+  ASSERT_EQ(resolvePOSType("inflect"), nori::protos::POSType::INFLECT);
+  ASSERT_EQ(resolvePOSType("Preanalysis"), nori::protos::POSType::PREANALYSIS);
+  ASSERT_EQ(resolvePOSType("Compound"), nori::protos::POSType::COMPOUND);
 }
 
 TEST(TestUtils, resolvePOSTag) {
-  ASSERT_EQ(resolvePOSTag("SSC"), nori::POSTag::SSC);
-  ASSERT_EQ(resolvePOSTag("SP"), nori::POSTag::SP);
-  ASSERT_EQ(resolvePOSTag("JX"), nori::POSTag::J);
+  ASSERT_EQ(resolvePOSTag("SSC"), nori::protos::POSTag::SSC);
+  ASSERT_EQ(resolvePOSTag("SP"), nori::protos::POSTag::SP);
+  ASSERT_EQ(resolvePOSTag("JX"), nori::protos::POSTag::J);
 }
 
 TEST(TestUtils, isDirectory) {
