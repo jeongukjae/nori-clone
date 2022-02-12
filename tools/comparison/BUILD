@@ -30,6 +30,6 @@ sh_binary(
         "data.txt",
         ":nori_clone_runner",
         ":nori_runner",
-        "//dictionary/legacy:dictionary",
+        "//dictionary:legacy_dictionary",
     ],
 )

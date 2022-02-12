@@ -5,9 +5,16 @@ package(
 
 filegroup(
     name = "dictionary",
-    srcs = glob([
-        "*.pb",
-        "*.bin",
-        "*.txt",
-    ]),
+    srcs = [
+        "latest-dictionary.nori",
+        "latest-userdict.txt",
+    ],
+)
+
+filegroup(
+    name = "legacy_dictionary",
+    srcs = [
+        "legacy-dictionary.nori",
+        "legacy-userdict.txt",
+    ],
 )
