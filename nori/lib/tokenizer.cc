@@ -135,7 +135,7 @@ int groupingUnknownCharacters(const char* begin, const char* end,
 
     if (isFirstCommonOrInherited && !isCurrentPunctuation) {
       firstUScript = currentUScript;
-      category = dictionary->getCharClass(begin + offset);
+      category = dictionary->getCharClass(begin + offsetToReturn);
     }
   }
 
