@@ -50,6 +50,7 @@ google_java_format(name = "google_java_format")
 google_java_format_test(
     name = "google_java_format_test",
     srcs = [
+        "//tools/benchmark:nori_runner_srcs",
         "//tools/comparison:nori_runner_srcs",
         "//tools/nori_visualizer:nori_visualizer_srcs",
     ],
