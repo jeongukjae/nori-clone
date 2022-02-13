@@ -63,3 +63,10 @@ pkg_tar(
         ":clib",
     ],
 )
+
+# For the internal testing
+cc_import(
+    name = "shared_c_api",
+    hdrs = [":headers"],
+    shared_library = ":libnori_c_api.so",
+)

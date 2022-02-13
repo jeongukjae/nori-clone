@@ -56,6 +56,8 @@ cc_library(
     deps = [
         ":headers",
     ],
+    linkstatic = True,
+    alwayslink = True,
 )
 
 config_setting(
