@@ -1,5 +1,12 @@
 # Development notes for nori-clone
 
+## Build and test all
+
+```sh
+bazel build //...
+bazel test //...
+```
+
 ## Code style check
 
 We use `clang-format` for C/C++, `google-java-format` for Java, and `buildifier` for Starlark. You can run each code style checker as follows.

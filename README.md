@@ -21,12 +21,9 @@ A `dictionary/` directory is for the pre-built dictionary files that is used for
 * `legacy` dictionary does not normalize inputs, and built with `mecab-ko-dic-2.0.3-20170922` that is same with original nori.
 * `latest` dictionary normalizes the inputs with the form NFKC, and built with `mecab-ko-dic-2.1.1-20180720`.
 
-## Build and test
+## For the contributors
 
-```sh
-bazel build //...
-bazel test //...
-```
+Check out [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## References
 
