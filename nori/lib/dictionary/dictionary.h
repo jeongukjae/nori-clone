@@ -90,11 +90,12 @@ class Dictionary {
   }
 
   // return character calss
-  const nori::protos::CharacterClass getCharClass(const char* text) const;
+  const nori::protos::CharacterClass getCharClass(const char* begin,
+                                                  const char* end) const;
 
   const nori::protos::UnknownTokens::CategoryDefinition* getCharDef(
-      const char* text) const {
-    auto cls = this->getCharClass(text);
+      const char* begin, const char* end) const {
+    auto cls = this->getCharClass(begin, end);
     return &dictionary.unknown_tokens().invoke_map().at(cls);
   }
 

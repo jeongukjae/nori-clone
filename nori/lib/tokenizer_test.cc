@@ -66,15 +66,17 @@ TEST(NoriTokenizer, testDefaultSentence) {
     status = tokenizer.tokenize(lattice);
     ASSERT_TRUE(status.ok());
 
+    ASSERT_EQ(lattice.getTokens()->size() - 2, expectedTokens[i].size());
+
     for (int j = 0; j < expectedTokens[i].size(); j++) {
       // +1: BOS token
       ASSERT_EQ(lattice.getTokens()->at(j + 1).surface, expectedTokens[i][j]);
       ASSERT_EQ(lattice.getTokens()->at(j + 1).morpheme->pos_tags_size(),
                 expectedPOS[i][j].size());
 
-      for (int j = 0; j < expectedPOS[i][j].size(); j++) {
-        ASSERT_EQ(lattice.getTokens()->at(j + 1).morpheme->pos_tags(j),
-                  expectedPOS[i][j][j]);
+      for (int k = 0; k < expectedPOS[i][j].size(); k++) {
+        ASSERT_EQ(lattice.getTokens()->at(j + 1).morpheme->pos_tags(k),
+                  expectedPOS[i][j][k]);
       }
     }
   }
@@ -84,10 +86,12 @@ TEST(NoriTokenizer, testLegacyDictionary) {
   std::vector<std::string> testCases = {
       "가락지나물은 한국, 중국, 일본",
       "10.1 인치 모니터",
+      "εἰμί",
   };
   std::vector<std::vector<std::string>> expectedTokens = {
       {"가락지나물", "은", "한국", ",", "중국", ",", "일본"},
       {"10", ".", "1", "인치", "모니터"},
+      {"εἰμί"},
   };
   std::vector<std::vector<std::vector<nori::protos::POSTag>>> expectedPOS = {
       {
@@ -106,6 +110,9 @@ TEST(NoriTokenizer, testLegacyDictionary) {
           {nori::protos::POSTag::NNBC},
           {nori::protos::POSTag::NNG},
       },
+      {
+          {nori::protos::POSTag::SL},
+      },
   };
 
   for (int i = 0; i < testCases.size(); i++) {
@@ -117,15 +124,17 @@ TEST(NoriTokenizer, testLegacyDictionary) {
     status = tokenizer.tokenize(lattice);
     ASSERT_TRUE(status.ok());
 
+    ASSERT_EQ(lattice.getTokens()->size() - 2, expectedTokens[i].size());
+
     for (int j = 0; j < expectedTokens[i].size(); j++) {
       // +1: BOS token
       ASSERT_EQ(lattice.getTokens()->at(j + 1).surface, expectedTokens[i][j]);
       ASSERT_EQ(lattice.getTokens()->at(j + 1).morpheme->pos_tags_size(),
                 expectedPOS[i][j].size());
 
-      for (int j = 0; j < expectedPOS[i][j].size(); j++) {
-        ASSERT_EQ(lattice.getTokens()->at(j + 1).morpheme->pos_tags(j),
-                  expectedPOS[i][j][j]);
+      for (int k = 0; k < expectedPOS[i][j].size(); k++) {
+        ASSERT_EQ(lattice.getTokens()->at(j + 1).morpheme->pos_tags(k),
+                  expectedPOS[i][j][k]);
       }
     }
   }

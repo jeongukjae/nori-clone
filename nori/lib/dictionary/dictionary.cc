@@ -91,12 +91,11 @@ absl::Status Dictionary::loadUser(std::string filename) {
 }
 
 const nori::protos::CharacterClass Dictionary::getCharClass(
-    const char* text) const {
+    const char* begin, const char* end) const {
   // Get next utf-8 character using ICU
   UChar32 c;
-  int length = 1;
   int i = 0;
-  U8_NEXT(text, i, length, c);
+  U8_NEXT(begin, i, end - begin, c);
 
   auto it = dictionary.unknown_tokens().code_to_category_map().find(c);
   if (it != dictionary.unknown_tokens().code_to_category_map().end()) {

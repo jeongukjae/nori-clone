@@ -135,7 +135,7 @@ int groupingUnknownCharacters(const char* begin, const char* end,
 
     if (isFirstCommonOrInherited && !isCurrentPunctuation) {
       firstUScript = currentUScript;
-      category = dictionary->getCharClass(begin + offsetToReturn);
+      category = dictionary->getCharClass(begin + offsetToReturn, end);
     }
   }
 
@@ -271,9 +271,9 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       return absl::InternalError("Cannot search trie");
 
     // handling unknown characters
-    auto charDef = dictionary->getCharDef(current);
+    auto charDef = dictionary->getCharDef(current, end);
     if ((numNodes == 0) || charDef->invoke() == 1) {
-      auto category = dictionary->getCharClass(current);
+      auto category = dictionary->getCharClass(current, end);
       int length = internal::groupingUnknownCharacters(
           current, end, category, dictionary, charDef->group() == 1);
 
