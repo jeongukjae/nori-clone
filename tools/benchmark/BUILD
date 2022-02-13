@@ -30,6 +30,13 @@ py_binary(
     deps = ["//nori/python/nori:nori_py"],
 )
 
+py_binary(
+    name = "pynori_runner",
+    srcs = ["pynori_runner.py"],
+    data = ["data.txt"],
+    main = "pynori_runner.py",
+)
+
 cc_binary(
     name = "nori_clone_runner_cc",
     srcs = ["nori_clone_runner.cc"],
