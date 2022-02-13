@@ -20,30 +20,61 @@ TEST(NoriTokenizer, testDefaultSentence) {
       "화학             이외의              것",
       "화학 이외의 것 ",
   };
-  std::vector<std::string> expectedTokens = {"화학", "이외", "의", "것"};
-  std::vector<std::vector<nori::protos::POSTag>> expectedPOS = {
-      {nori::protos::POSTag::NNG},
-      {nori::protos::POSTag::NNG},
-      {nori::protos::POSTag::J},
-      {nori::protos::POSTag::NNB},
+  std::vector<std::vector<std::string>> expectedTokens = {
+      {"화학", "이외", "의", "것"}, {"화학", "이외", "의", "것"},
+      {"화학", "이외", "의", "것"}, {"화학", "이외", "의", "것"},
+      {"화학", "이외", "의", "것"},
+  };
+  std::vector<std::vector<std::vector<nori::protos::POSTag>>> expectedPOS = {
+      {
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::J},
+          {nori::protos::POSTag::NNB},
+      },
+      {
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::J},
+          {nori::protos::POSTag::NNB},
+      },
+      {
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::J},
+          {nori::protos::POSTag::NNB},
+      },
+      {
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::J},
+          {nori::protos::POSTag::NNB},
+      },
+      {
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::NNG},
+          {nori::protos::POSTag::J},
+          {nori::protos::POSTag::NNB},
+      },
   };
 
-  for (const auto& tt : testCases) {
+  for (int i = 0; i < testCases.size(); i++) {
     nori::NoriTokenizer tokenizer(&dictionary);
     nori::Lattice lattice;
-    auto status = lattice.setSentence(tt, dictionary.getNormalizer());
+    auto status = lattice.setSentence(testCases[i], dictionary.getNormalizer());
     ASSERT_TRUE(status.ok());
     status = tokenizer.tokenize(lattice);
     ASSERT_TRUE(status.ok());
 
-    for (int i = 0; i < expectedTokens.size(); i++) {
+    for (int j = 0; j < expectedTokens[i].size(); j++) {
       // +1: BOS token
-      ASSERT_EQ(lattice.getTokens()->at(i + 1).surface, expectedTokens[i]);
-      ASSERT_EQ(lattice.getTokens()->at(i + 1).morpheme->pos_tags_size(),
-                expectedPOS[i].size());
-      for (int j = 0; j < expectedPOS[i].size(); j++) {
-        ASSERT_EQ(lattice.getTokens()->at(i + 1).morpheme->pos_tags(j),
-                  expectedPOS[i][j]);
+      ASSERT_EQ(lattice.getTokens()->at(j + 1).surface, expectedTokens[i][j]);
+      ASSERT_EQ(lattice.getTokens()->at(j + 1).morpheme->pos_tags_size(),
+                expectedPOS[i][j].size());
+
+      for (int j = 0; j < expectedPOS[i][j].size(); j++) {
+        ASSERT_EQ(lattice.getTokens()->at(j + 1).morpheme->pos_tags(j),
+                  expectedPOS[i][j][j]);
       }
     }
   }
