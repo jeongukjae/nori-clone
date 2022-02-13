@@ -7,6 +7,7 @@ import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.List;
 
 public class NoriRunner {
     public static void main(String[] args) {
@@ -36,7 +37,6 @@ public class NoriRunner {
         }
 
         // read all
-        System.out.println("Read all");
         ArrayList<String> lines = new ArrayList<String>();
         try {
             BufferedReader inFile = new BufferedReader(new FileReader(args[0]));
@@ -47,13 +47,12 @@ public class NoriRunner {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        System.out.println("Done");
+        List<String> cases = lines.subList(0, Integer.parseInt(args[1]));
 
         // tokenize
-        System.out.println("Start tokenize");
         try {
             long start = System.currentTimeMillis();
-            for (String line : lines) {
+            for (String line : cases) {
                 TokenStream tokenStream = analyzer.tokenStream("dummy", line);
                 tokenStream.reset();
                 while (tokenStream.incrementToken())
@@ -61,7 +60,7 @@ public class NoriRunner {
                 tokenStream.close();
             }
             long finish = System.currentTimeMillis();
-            System.out.println("Elapsed time: " + (finish - start) + "ms");
+            System.out.println((finish - start) + "ms");
         } catch (Exception e) {
             e.printStackTrace();
         }

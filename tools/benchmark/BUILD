@@ -10,7 +10,6 @@ filegroup(
 java_binary(
     name = "nori_runner",
     srcs = [":nori_runner_srcs"],
-    args = ["tools/benchmark/data.txt"],
     data = ["data.txt"],
     main_class = "NoriRunner",
     deps = [
@@ -22,7 +21,6 @@ java_binary(
 py_binary(
     name = "nori_clone_runner_py",
     srcs = ["nori_clone_runner.py"],
-    args = ["tools/benchmark/data.txt"],
     data = [
         "data.txt",
         "//dictionary",
@@ -55,4 +53,17 @@ go_binary(
         "//dictionary",
     ],
     deps = ["//nori/go:nori"],
+)
+
+sh_binary(
+    name = "run_all_5_times",
+    srcs = ["run_all_5_times.sh"],
+    data = [
+        "data.txt",
+        ":nori_clone_runner_go",
+        ":nori_clone_runner_cc",
+        ":nori_clone_runner_py",
+        ":nori_runner",
+        "//dictionary",
+    ],
 )
