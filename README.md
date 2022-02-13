@@ -14,6 +14,13 @@ This project is written in C++, but also provides Python and Golang binding.
 * [Python docs](./nori/python/README.md)
 * [Golang docs](./nori/go/README.md)
 
+## Pre-built dictionaries
+
+A `dictionary/` directory is for the pre-built dictionary files that is used for distribtion and test cases. For now, there are two pre-built dictionaries, `lagacy` and `latest`.
+
+* `legacy` dictionary does not normalize inputs, and built with `mecab-ko-dic-2.0.3-20170922` that is same with original nori.
+* `latest` dictionary normalizes the inputs with the form NFKC, and built with `mecab-ko-dic-2.1.1-20180720`.
+
 ## Build and test
 
 ```sh

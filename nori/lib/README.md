@@ -50,9 +50,9 @@ cc_binary(
 #include "nori/lib/dictionary/dictionary.h"
 
 nori::dictionary::Dictionary dictionary;
-auto status = dictionary.loadPrebuilt("./dictionary");
+auto status = dictionary.loadPrebuilt("./dictionary/latest-dictionary.nori");
 CHECK(status.ok()) << status.message();
-status = dictionary.loadUser("./dictionary/userdict.txt");
+status = dictionary.loadUser("./dictionary/latest-userdict.txt");
 CHECK(status.ok()) << status.message();
 
 const nori::NoriTokenizer tokenizer(&dictionary);
