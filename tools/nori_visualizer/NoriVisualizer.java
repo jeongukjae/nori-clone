@@ -22,7 +22,6 @@ public class NoriVisualizer {
                 new Analyzer() {
                     @Override
                     protected TokenStreamComponents createComponents(String fieldName) {
-                        // keep punctuation and compound nouns
                         KoreanTokenizer tokenizer =
                                 new KoreanTokenizer(
                                         TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY,

@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 filegroup(
     name = "nori_visualizer_srcs",
     srcs = ["NoriVisualizer.java"],
