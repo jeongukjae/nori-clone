@@ -9,6 +9,8 @@
 #include <queue>
 #include <vector>
 
+#include "icu4c/source/common/unicode/uchar.h"
+#include "icu4c/source/common/unicode/uscript.h"
 #include "icu4c/source/common/unicode/utf.h"
 #include "nori/lib/protos/dictionary.pb.h"
 #include "nori/lib/utils.h"
@@ -56,20 +58,77 @@ int getSpacePenalty(const nori::protos::Morpheme* morpheme, int numSpaces) {
   }
 }
 
+inline bool isCommonOrInherited(UScriptCode sc) {
+  return sc == USCRIPT_COMMON || sc == USCRIPT_INHERITED;
+}
+
+inline bool isPunctuation(UChar32 ch) {
+  if (ch == 0x318D) {
+    return true;
+  }
+
+  switch (u_charType(ch)) {
+    case UCharCategory::U_SPACE_SEPARATOR:
+    case UCharCategory::U_LINE_SEPARATOR:
+    case UCharCategory::U_PARAGRAPH_SEPARATOR:
+    case UCharCategory::U_CONTROL_CHAR:
+    case UCharCategory::U_FORMAT_CHAR:
+    case UCharCategory::U_DASH_PUNCTUATION:
+    case UCharCategory::U_START_PUNCTUATION:
+    case UCharCategory::U_END_PUNCTUATION:
+    case UCharCategory::U_CONNECTOR_PUNCTUATION:
+    case UCharCategory::U_OTHER_PUNCTUATION:
+    case UCharCategory::U_MATH_SYMBOL:
+    case UCharCategory::U_CURRENCY_SYMBOL:
+    case UCharCategory::U_MODIFIER_SYMBOL:
+    case UCharCategory::U_OTHER_SYMBOL:
+    case UCharCategory::U_INITIAL_PUNCTUATION:
+    case UCharCategory::U_FINAL_PUNCTUATION:
+      return true;
+  }
+  return false;
+}
+
 int groupingUnknownCharacters(const char* current, const char* end,
-                              nori::protos::CharacterClass category,
                               const nori::dictionary::Dictionary* dictionary,
                               const bool doGroup) {
-  int offset = 0;
-  U8_FWD_1_UNSAFE(current, offset);
+  UChar32 currentChar;
+  size_t length = end - current;
+  size_t offset = 0;
+  size_t offsetToReturn;
+  U8_NEXT_UNSAFE(current, offset, currentChar);
+
+  UErrorCode err = U_ZERO_ERROR;
+  auto firstUScript = uscript_getScript(currentChar, &err);
+  bool isFirstPunctuation = isPunctuation(currentChar);
+  bool isFirstDigit = u_isdigit(currentChar);
+  if (U_FAILURE(err)) {
+    return offset;
+  }
 
   if (!doGroup) {
     return offset;
   }
 
-  while ((dictionary->getCharClass(current + offset) == category) &&
-         (current + offset < end)) {
-    U8_FWD_1_UNSAFE(current, offset);
+  while (offset < length) {
+    offsetToReturn = offset;
+    U8_NEXT_UNSAFE(current, offset, currentChar);
+    auto currentUScript = uscript_getScript(currentChar, &err);
+    if (U_FAILURE(err)) {
+      return offsetToReturn;
+    }
+
+    bool isSameScript = ((firstUScript == currentUScript) ||
+                         isCommonOrInherited(firstUScript) ||
+                         isCommonOrInherited(currentUScript)) &&
+                        !u_hasBinaryProperty(currentChar, UCHAR_WHITE_SPACE);
+    bool isCurrentPunctuation = isPunctuation(currentChar);
+    bool isCurrentDigit = u_isdigit(currentChar);
+
+    if (!isSameScript || isFirstPunctuation != isCurrentPunctuation ||
+        isFirstDigit != isCurrentDigit) {
+      return offsetToReturn;
+    }
   }
 
   return offset;
@@ -215,8 +274,8 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       auto parent = internal::selectParent(nodesByPos[offset], morpheme,
                                            this->dictionary, connectionCost);
 
-      int length = internal::groupingUnknownCharacters(
-          current, end, category, dictionary, charDef->group() == 1);
+      int length = internal::groupingUnknownCharacters(current, end, dictionary,
+                                                       charDef->group() == 1);
 
       auto lastPositionIndex = parent->lastPositionIndex + numSpaces + length;
       auto lastNodeId = nodeId;
