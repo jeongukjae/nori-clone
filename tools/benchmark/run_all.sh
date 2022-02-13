@@ -11,6 +11,7 @@ nori_sum=0
 nori_clone_cc_sum=0
 nori_clone_go_sum=0
 nori_clone_py_sum=0
+kiwipiepy_sum=0
 
     for (( c=1; c<=$N_REPEAT; c++ )) do
         num=$(./tools/benchmark/nori_runner $DATA $N_LINES)
@@ -40,11 +41,19 @@ nori_clone_py_sum=0
     done
     nori_clone_go_sum=$((nori_clone_go_sum / 5))
 
+    for (( c=1; c<=$N_REPEAT; c++ )) do
+        num=$(./tools/benchmark/kiwipiepy_runner $DATA $N_LINES;)
+        echo "Kiwipiepy: $num"
+        kiwipiepy_sum=$((kiwipiepy_sum + num))
+    done
+    kiwipiepy_sum=$((kiwipiepy_sum / 5))
+
     echo "=========================="
     echo "N: $N_LINES"
     echo "Nori runner: $nori_sum ms"
     echo "Nori clone runner(C++): $nori_clone_cc_sum ms"
     echo "Nori clone runner(Py): $nori_clone_py_sum ms"
     echo "Nori clone runner(Go): $nori_clone_go_sum ms"
+    echo "Kiwipiepy runner(Py): $kiwipiepy_sum ms"
     echo "=========================="
 done

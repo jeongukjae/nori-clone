@@ -23,7 +23,7 @@ A `dictionary/` directory is for the pre-built dictionary files that is used for
 
 ## Performance
 
-![elapsed time](./tools/benchmark/imgs/with_lucene.png)
+![elapsed time](./tools/benchmark/imgs/elapsed_time.png)
 
 For more details, check out [tools/benchmark](./tools/benchmark/README.md)
 

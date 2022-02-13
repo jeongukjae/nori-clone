@@ -37,6 +37,13 @@ py_binary(
     main = "pynori_runner.py",
 )
 
+py_binary(
+    name = "kiwipiepy_runner",
+    srcs = ["kiwipiepy_runner.py"],
+    data = ["data.txt"],
+    main = "kiwipiepy_runner.py",
+)
+
 cc_binary(
     name = "nori_clone_runner_cc",
     srcs = ["nori_clone_runner.cc"],
@@ -67,8 +74,9 @@ sh_binary(
     srcs = ["run_all.sh"],
     data = [
         "data.txt",
-        ":nori_clone_runner_go",
+        ":kiwipiepy_runner",
         ":nori_clone_runner_cc",
+        ":nori_clone_runner_go",
         ":nori_clone_runner_py",
         ":nori_runner",
         "//dictionary",
