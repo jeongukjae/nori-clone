@@ -63,7 +63,7 @@ inline bool isCommonOrInherited(UScriptCode sc) {
 }
 
 inline bool isPunctuation(UChar32 ch) {
-  if (ch == 0x318D) {
+  if (ch == 4510) {  // Hangul Letter Araea
     return true;
   }
 
