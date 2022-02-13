@@ -17,7 +17,7 @@ with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'README.md'),
 
 setup(
     name="nori-clone",
-    version="0.1.1",
+    version="1.0.0a0",
     python_requires=">=3.7",
     packages=find_packages(),
     url="https://github.com/jeongukjae/nori-clone",
@@ -29,7 +29,7 @@ setup(
     zip_safe=False,
     distclass=BinaryDistribution,
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: C++",
         "Programming Language :: Python :: 3",
