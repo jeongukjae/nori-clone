@@ -56,8 +56,8 @@ go_binary(
 )
 
 sh_binary(
-    name = "run_all_5_times",
-    srcs = ["run_all_5_times.sh"],
+    name = "run_all",
+    srcs = ["run_all.sh"],
     data = [
         "data.txt",
         ":nori_clone_runner_go",

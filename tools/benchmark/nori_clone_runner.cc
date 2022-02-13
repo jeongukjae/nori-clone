@@ -70,6 +70,6 @@ int main(int argc, char** argv) {
       std::chrono::duration_cast<std::chrono::milliseconds>(
           std::chrono::system_clock::now() - start);
 
-  LOG(INFO) << elapsedMs.count() << " milli seconds. ";
+  std::cout << elapsedMs.count() << std::endl;
   google::protobuf::ShutdownProtobufLibrary();
 }

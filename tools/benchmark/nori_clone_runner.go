@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -40,5 +41,5 @@ func main() {
 		tokenizer.Tokenize(line)
 	}
 	elapsed := time.Since(start)
-	log.Printf("Elapsed %s", elapsed)
+	fmt.Printf("%d\n", elapsed.Milliseconds())
 }

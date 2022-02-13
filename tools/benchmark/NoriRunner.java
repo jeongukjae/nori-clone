@@ -60,7 +60,7 @@ public class NoriRunner {
                 tokenStream.close();
             }
             long finish = System.currentTimeMillis();
-            System.out.println((finish - start) + "ms");
+            System.out.println((finish - start));
         } catch (Exception e) {
             e.printStackTrace();
         }

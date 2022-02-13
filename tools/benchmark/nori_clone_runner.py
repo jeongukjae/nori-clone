@@ -26,4 +26,4 @@ else:
 
 end_time = time.time()
 time_diff = (end_time - start_time)
-print("Elapsed time:", time_diff * 1000, "ms")
+print(int(time_diff * 1000))
