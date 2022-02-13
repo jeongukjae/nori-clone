@@ -11,6 +11,8 @@ pip install nori-clone
 Pre-built pip packages are only provided for x86_64 macOS and linux.
 But you can use `nori-clone` in M1 chips if you build this repo from source.
 
+For more details, you can check [`nori-clone` in PyPI](https://pypi.org/project/nori-clone).
+
 ### Build from source
 
 You can build pip package using Bazel.
