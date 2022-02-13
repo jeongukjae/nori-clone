@@ -1,4 +1,4 @@
-# nori
+# nori-clone
 
 Standalone Nori (Korean Morphological Analyzer in Apache Lucene) written in C++.
 
