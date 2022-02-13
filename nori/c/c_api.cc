@@ -51,6 +51,11 @@ int tokenize(const Tokenizer* rawTokenizer, const char* str,
   }
 
   *latticeOut = new Lattice;
+  (*latticeOut)->sentence = new char[lattice.getSentence().size() + 1]{
+      0,
+  };
+  std::memcpy((*latticeOut)->sentence, lattice.getSentence().data(),
+              lattice.getSentence().size());
   int tokenSize = lattice.getTokens()->size();
   (*latticeOut)->tokenLength = tokenSize;
   (*latticeOut)->tokens = new Token[tokenSize];
@@ -100,6 +105,7 @@ void freeLattice(const Lattice* lattice) {
   }
 
   delete[] lattice->tokens;
+  delete[] lattice->sentence;
   delete lattice;
 }
 }

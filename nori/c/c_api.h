@@ -30,6 +30,7 @@ typedef struct {
 } Token;
 
 typedef struct {
+  char* sentence;
   Token* tokens;
   int tokenLength;
 } Lattice;

@@ -58,3 +58,20 @@ func TestTokenizeWithExpr(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+func TestRegression(t *testing.T) {
+	tokenizer, err := New("../../dictionary/latest-dictionary.nori", "")
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+	defer tokenizer.Free()
+
+	// This raises panic
+	// Maybe because of the normalization
+	_, err = tokenizer.Tokenize("㈜《―旅客運輸 株式會社》")
+	if err != nil {
+		t.Log(err)
+		t.FailNow()
+	}
+}

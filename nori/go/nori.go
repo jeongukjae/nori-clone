@@ -72,7 +72,7 @@ func (nt *NoriTokenizer) Tokenize(input string) (*[]Token, error) {
 
 	tokenLength := int(lattice.tokenLength)
 	tokens := make([]Token, tokenLength)
-
+	sentence := C.GoString(lattice.sentence)
 	cTokens := (*[1 << 30]C.Token)(unsafe.Pointer(lattice.tokens))
 
 	tokens[0].Surface = "BOS/EOS"
@@ -83,7 +83,7 @@ func (nt *NoriTokenizer) Tokenize(input string) (*[]Token, error) {
 		start := int(cToken.offset)
 		end := start + int(cToken.length)
 
-		tokens[i].Surface = input[start:end]
+		tokens[i].Surface = sentence[start:end]
 
 		cMorpheme := cToken.morpheme
 		tokens[i].LeftId = int(cMorpheme.leftId)
