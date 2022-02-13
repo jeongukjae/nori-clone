@@ -4,7 +4,7 @@
 
 ### Installation
 
-First, since you need to install `libnori_c` for `nori-clone` to bind golang codes, you can build like below.
+First, to install `libnori_c` for golang binding, you have to build as follows.
 
 ```sh
 $ bazel build //nori/c:libnori_c
