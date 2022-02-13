@@ -33,6 +33,8 @@ type Token struct {
 	Expression []TokenExpression
 }
 
+// Create new nori tokenizer.
+// If you want to create nori tokenizer without user dictionary, just pass empty string to second parameter.
 func New(dicPath string, userDicPath string) (*NoriTokenizer, error) {
 	cDicPath := C.CString(dicPath)
 	defer C.free(unsafe.Pointer(cDicPath))
@@ -57,6 +59,7 @@ func New(dicPath string, userDicPath string) (*NoriTokenizer, error) {
 	return &tokenizer, nil
 }
 
+// Tokenize input string.
 func (nt *NoriTokenizer) Tokenize(input string) (*[]Token, error) {
 	cInput := C.CString(input)
 	defer C.free(unsafe.Pointer(cInput))
