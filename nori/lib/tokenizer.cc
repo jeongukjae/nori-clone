@@ -89,17 +89,19 @@ inline bool isPunctuation(UChar32 ch) {
   return false;
 }
 
-int groupingUnknownCharacters(const char* current, const char* end,
+int groupingUnknownCharacters(const char* begin, const char* end,
+                              nori::protos::CharacterClass& category,
                               const nori::dictionary::Dictionary* dictionary,
                               const bool doGroup) {
   UChar32 currentChar;
-  size_t length = end - current;
+  size_t length = end - begin;
   size_t offset = 0;
   size_t offsetToReturn;
-  U8_NEXT_UNSAFE(current, offset, currentChar);
+  U8_NEXT_UNSAFE(begin, offset, currentChar);
 
   UErrorCode err = U_ZERO_ERROR;
   auto firstUScript = uscript_getScript(currentChar, &err);
+  bool isFirstCommonOrInherited = isCommonOrInherited(firstUScript);
   bool isFirstPunctuation = isPunctuation(currentChar);
   bool isFirstDigit = u_isdigit(currentChar);
   if (U_FAILURE(err)) {
@@ -112,22 +114,28 @@ int groupingUnknownCharacters(const char* current, const char* end,
 
   while (offset < length) {
     offsetToReturn = offset;
-    U8_NEXT_UNSAFE(current, offset, currentChar);
+    U8_NEXT_UNSAFE(begin, offset, currentChar);
     auto currentUScript = uscript_getScript(currentChar, &err);
     if (U_FAILURE(err)) {
       return offsetToReturn;
     }
 
-    bool isSameScript = ((firstUScript == currentUScript) ||
-                         isCommonOrInherited(firstUScript) ||
-                         isCommonOrInherited(currentUScript)) &&
-                        !u_hasBinaryProperty(currentChar, UCHAR_WHITE_SPACE);
+    bool isCurrentCommonOrInherited = isCommonOrInherited(currentUScript);
+    bool isSameScript =
+        ((firstUScript == currentUScript) || isFirstCommonOrInherited ||
+         isCurrentCommonOrInherited) &&
+        !u_hasBinaryProperty(currentChar, UCHAR_WHITE_SPACE);
     bool isCurrentPunctuation = isPunctuation(currentChar);
     bool isCurrentDigit = u_isdigit(currentChar);
 
-    if (!isSameScript || isFirstPunctuation != isCurrentPunctuation ||
-        isFirstDigit != isCurrentDigit) {
+    if (!isSameScript || (isFirstPunctuation != isCurrentPunctuation) ||
+        (isFirstDigit != isCurrentDigit)) {
       return offsetToReturn;
+    }
+
+    if (isFirstCommonOrInherited && !isCurrentPunctuation) {
+      firstUScript = currentUScript;
+      category = dictionary->getCharClass(begin + offset);
     }
   }
 
@@ -266,6 +274,9 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     auto charDef = dictionary->getCharDef(current);
     if ((numNodes == 0) || charDef->invoke() == 1) {
       auto category = dictionary->getCharClass(current);
+      int length = internal::groupingUnknownCharacters(
+          current, end, category, dictionary, charDef->group() == 1);
+
       const nori::protos::Morpheme* morpheme =
           &dictionary->getUnkTokens()->morpheme_map().at(category);
       const int wordCost = morpheme->word_cost();
@@ -273,9 +284,6 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
       int connectionCost;
       auto parent = internal::selectParent(nodesByPos[offset], morpheme,
                                            this->dictionary, connectionCost);
-
-      int length = internal::groupingUnknownCharacters(current, end, dictionary,
-                                                       charDef->group() == 1);
 
       auto lastPositionIndex = parent->lastPositionIndex + numSpaces + length;
       auto lastNodeId = nodeId;
