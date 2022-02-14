@@ -25,7 +25,11 @@ A `dictionary/` directory is for the pre-built dictionary files that is used for
 
 ![elapsed time](./tools/benchmark/imgs/elapsed_time.png)
 
-For more details, check out [tools/benchmark](./tools/benchmark/README.md)
+For more details, check out [tools/benchmark](./tools/benchmark).
+
+## Differences with original nori
+
+Check out [tools/comparison](./tools/comparison).
 
 ## For the contributors
 
