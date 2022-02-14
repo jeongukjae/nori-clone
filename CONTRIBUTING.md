@@ -18,9 +18,9 @@ bazel test //:clang_format_test
 bazel test //:google_java_format_test
 
 # To apply code formatter, you can run as follows
-bazel test //:buildifier
-bazel test //:clang_format
-bazel test //:google_java_format
+bazel run //:buildifier
+bazel run //:clang_format
+bazel run //:google_java_format
 ```
 
 ## Testing
