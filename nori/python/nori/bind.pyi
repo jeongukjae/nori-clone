@@ -6,6 +6,7 @@ class Token:
     length: int
     leftid: int
     rightid: int
+    postag: List[str]
     postype: str
     expr: List[Tuple[str, str]]
     def __repr__(self) -> str: ...
