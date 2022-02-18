@@ -47,3 +47,14 @@ jobs:
       run: |
         bazel build //... --loading_phase_threads 2
         bazel test //...
+
+    - name: Run build pip pkg
+      run: |
+        bazel build //nori/python:build_pip_pkg
+        ./bazel-bin/nori/python/build_pip_pkg dist
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: nori-clone pip package
+        path: dist
