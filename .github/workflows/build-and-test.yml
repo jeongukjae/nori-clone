@@ -53,7 +53,7 @@ jobs:
         bazel build //nori/python:build_pip_pkg
         ./bazel-bin/nori/python/build_pip_pkg dist
 
-    - name: Archive production artifacts
+    - name: Upload pip package artifact
       uses: actions/upload-artifact@v2
       with:
         name: nori-clone pip package
