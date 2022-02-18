@@ -50,6 +50,7 @@ jobs:
 
     - name: Run build pip pkg
       run: |
+        pip install wheel
         bazel build //nori/python:build_pip_pkg
         ./bazel-bin/nori/python/build_pip_pkg dist
 
