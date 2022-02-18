@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -e
-set -x
+set -ex
 
 PLATFORM="$(uname -s | tr 'A-Z' 'a-z')"
 function is_windows() {
@@ -18,24 +17,15 @@ else
 fi
 
 function main() {
-  while [[ ! -z "${1}" ]]; do
-    if [[ ${1} == "make" ]]; then
-      echo "Using Makefile to build pip package."
-      PIP_FILE_PREFIX=""
-    else
-      DEST=${1}
-    fi
-    shift
-  done
+  DEST=${1}
 
+  # Check dest parameter
   if [[ -z ${DEST} ]]; then
     echo "No destination dir provided"
     exit 1
   fi
 
-  # Create the directory, then do dirname on a non-existent file inside it to
-  # give us an absolute paths with tilde characters resolved to the destination
-  # directory.
+  # create if not exist
   mkdir -p ${DEST}
   if [[ ${PLATFORM} == "darwin" ]]; then
     DEST=$(pwd -P)/${DEST}
@@ -44,12 +34,11 @@ function main() {
   fi
   echo "=== destination directory: ${DEST}"
 
+  # Create temp directory and copy all required files
   TMPDIR=$(mktemp -d -t tmp.XXXXXXXXXX)
-
   echo $(date) : "=== Using tmpdir: ${TMPDIR}"
 
   echo "=== Copy Python binding files"
-
   cp "${PIP_FILE_PREFIX}nori/python/setup.py" "${TMPDIR}"
   cp "${PIP_FILE_PREFIX}nori/python/LICENSE" "${TMPDIR}"
   cp "${PIP_FILE_PREFIX}nori/python/README.md" "${TMPDIR}"
@@ -57,14 +46,13 @@ function main() {
   rsync -avm -L --exclude='*_test.py' "${PIP_FILE_PREFIX}nori/python/nori" "${TMPDIR}"
   rsync -avm -L "${PIP_FILE_PREFIX}dictionary" "${TMPDIR}/nori"
 
+  # Build bdist wheel file
   pushd ${TMPDIR}
   echo $(date) : "=== Building wheel"
-
   python setup.py bdist_wheel
-
   cp dist/*.whl "${DEST}"
   popd
-  # rm -rf ${TMPDIR}
+  rm -rf ${TMPDIR}
   echo $(date) : "=== Output wheel file is in: ${DEST}"
 }
 
