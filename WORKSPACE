@@ -108,7 +108,9 @@ http_archive(
 )
 
 load("@emsdk//:deps.bzl", emsdk_deps = "deps")
+
 emsdk_deps()
 
 load("@emsdk//:emscripten_deps.bzl", emsdk_emscripten_deps = "emscripten_deps")
+
 emsdk_emscripten_deps(emscripten_version = "2.0.31")
