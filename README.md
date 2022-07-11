@@ -2,7 +2,7 @@
 
 Standalone Nori (Korean Morphological Analyzer in Apache Lucene) written in C++.
 
-**[blog post (written in Korean)](https://jeongukjae.github.io/posts/develop-nori-clone/)**
+**[blog post (written in Korean)](https://blog.ukjae.io/posts/develop-nori-clone/)**
 
 ## Introduction
 
