@@ -1,4 +1,0 @@
-recursive-include nori *.so
-recursive-include nori *.pyi
-recursive-include nori/dictionary *.txt
-recursive-include nori/dictionary *.nori
