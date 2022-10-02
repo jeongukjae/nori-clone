@@ -175,7 +175,8 @@ impl Morpheme {
             for expr in entry
                 .expression
                 .split("+")
-                .map(|s| s.split("/").collect::<Vec<&str>>()) {
+                .map(|s| s.split("/").collect::<Vec<&str>>())
+            {
                 if expr.len() != 2 {
                     return Err("Invalid expression");
                 }

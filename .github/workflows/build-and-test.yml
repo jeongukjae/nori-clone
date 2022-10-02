@@ -8,14 +8,12 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    env:
-      BAZEL_VERSION: 4.2.2
 
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest]
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        # python-version: ["3.7", "3.8", "3.9", "3.10"]
         include:
           - os: macos-latest
             bazel-target: darwin
@@ -24,38 +22,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }} for Linux
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
 
-    - name: Set up bazel
-      run: |
-        curl -LO https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh
-        chmod +x bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh
-        ./bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh --user
-        export PATH="$PATH:$HOME/bin"
-        rm bazel-${BAZEL_VERSION}-installer-${{ matrix.bazel-target }}-x86_64.sh
+    - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
 
-    - name: (macos) install clang-format
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install clang-format
-        which clang-format
+    - name: Check code style
+      run: cargo fmt --all -- --check
 
-    - name: Build and test all modules
-      run: |
-        bazel build //... --loading_phase_threads 2
-        bazel test //...
+    - name: Test
+      run: cargo test
 
-    - name: Run build pip pkg
-      run: |
-        pip install wheel
-        bazel build //nori/python:build_pip_pkg
-        ./bazel-bin/nori/python/build_pip_pkg dist
-
-    - name: Upload pip package artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: nori-clone pip package
-        path: dist
+    - name: Build
+      run: cargo build --release --all-features

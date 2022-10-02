@@ -2,7 +2,7 @@ use crate::tokenizer::dictionary::model;
 
 use std::{
     fs::{self, File},
-    io::{BufWriter, Write, BufReader, BufRead},
+    io::{BufRead, BufReader, BufWriter, Write},
     path::{Path, PathBuf},
 };
 
