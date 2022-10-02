@@ -17,6 +17,9 @@ serde_repr = "0.1"
 postcard = { version = "1.0.0", features = ["use-std"]}
 fst = "0.4"
 tempfile = "3"
+clap = { version = "4.0.8", features = ["derive"] }
+log = "0.4"
+env_logger = "0.9.1"
 
 [[bin]]
 name = "nori-clone"

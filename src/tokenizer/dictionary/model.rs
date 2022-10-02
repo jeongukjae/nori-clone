@@ -1,3 +1,4 @@
+use crate::error::Error;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
@@ -5,10 +6,14 @@ use serde_repr::*;
 
 pub const MECAB_UNK_FILENAME: &str = "unk.def";
 pub const MECAB_CHAR_FILENAME: &str = "char.def";
+pub const MECAB_CON_COST_FILENAME: &str = "matrix.def";
+pub const MECAB_LEFT_ID_FILENAME: &str = "left-id.def";
+pub const MECAB_RIGHT_ID_FILENAME: &str = "right-id.def";
 
 pub const FST_FILENAME: &str = "fst.bin";
 pub const TOKEN_FILENAME: &str = "token.bin";
 pub const UNK_FILENAME: &str = "unk.bin";
+pub const CON_COST_FILENAME: &str = "matrix.bin";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenDictionary {
@@ -17,17 +22,17 @@ pub struct TokenDictionary {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UnknownTokenDictionary {
-    pub code_to_class_map: HashMap<i16, CharacterClass>,
+    pub code_to_class_map: HashMap<i32, CharacterClass>,
     pub class_morpheme_map: HashMap<CharacterClass, Morpheme>,
     pub invoke_map: HashMap<CharacterClass, CategoryDefinition>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ConnectionCost {
-    // index: backwardIndex * forwardIndex + backwardIndex
-    pub costs: Vec<Vec<i16>>,
-    pub forward_size: u16,
-    pub backward_size: u16,
+    // index: backward_size * forward_index + backward_index
+    pub costs: Vec<i16>,
+    pub forward_size: u32,
+    pub backward_size: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -41,10 +46,10 @@ pub struct Morpheme {
 }
 
 impl Morpheme {
-    pub fn from_csv_record(entry: &MeCabTokenCSVRecord) -> Result<Morpheme, &'static str> {
+    pub fn from_csv_record(entry: &MeCabTokenCSVRecord) -> Result<Morpheme, Error> {
         let pos_type = match POSType::from_name(entry.pos_type.as_str()) {
             Some(ptype) => ptype,
-            None => return Err("Invalid POS type"),
+            None => return Err(Error(format!("Invalid POS type `{}`", entry.pos_type))),
         };
 
         let pos_tags = match entry
@@ -54,7 +59,7 @@ impl Morpheme {
             .collect::<Option<Vec<_>>>()
         {
             Some(ptags) => ptags,
-            None => return Err("Invalid POS tags"),
+            None => return Err(Error(format!("Invalid POS tags `{}`", entry.pos_tags))),
         };
 
         let mut expressions = Vec::<MorphemeExpression>::new();
@@ -64,16 +69,16 @@ impl Morpheme {
                 .split("+")
                 .map(|s| s.split("/").collect::<Vec<&str>>())
             {
-                if expr.len() != 2 {
-                    return Err("Invalid expression");
+                if expr.len() != 3 {
+                    return Err(Error(format!("Invalid expression `{:?}`", expr)));
                 }
 
                 expressions.push(MorphemeExpression {
-                    pos_tag: match POSTag::from_name(expr[0]) {
+                    surface: expr[0].to_string(),
+                    pos_tag: match POSTag::from_name(expr[1]) {
                         Some(ptag) => ptag,
-                        None => return Err("Invalid POS tag"),
+                        None => return Err(Error(format!("Invalid POS tag `{}`", expr[1]))),
                     },
-                    surface: expr[1].to_string(),
                 });
             }
         }
@@ -100,7 +105,8 @@ pub enum POSType {
 
 impl POSType {
     pub fn from_name(s: &str) -> Option<POSType> {
-        match s {
+        let s = s.to_uppercase();
+        match s.as_str() {
             "MORPHEME" | "*" => Some(POSType::MORPHEME),
             "COMPOUND" => Some(POSType::COMPOUND),
             "INFLECT" => Some(POSType::INFLECT),
@@ -156,6 +162,7 @@ impl POSTag {
     pub const VSV: Self = Self::UNKNOWN;
 
     pub fn from_name(s: &str) -> Option<Self> {
+        let s = s.to_uppercase();
         if s.starts_with("J") {
             return Some(Self::J);
         }
@@ -163,7 +170,7 @@ impl POSTag {
             return Some(Self::E);
         }
 
-        Some(match s {
+        Some(match s.as_str() {
             "UNKNOWN" | "UNA" | "NA" | "VSV" => Self::UNKNOWN,
             "E" => Self::E,
             "IC" => Self::IC,
@@ -259,7 +266,7 @@ pub struct CategoryDefinition {
 }
 
 // CSV Record struct to read the MeCab dictionary.
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct MeCabTokenCSVRecord {
     pub surface: String,
     pub left_id: i16,
