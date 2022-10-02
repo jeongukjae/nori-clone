@@ -493,12 +493,25 @@ impl DictionaryBuilder {
             connection_cost_matrix[(forward_id * backward_size + backward_id) as usize] = cost;
         }
 
+        // 4. Find Additional Connection Cost.
+        let additional_metadata = match self.find_ids_for_nng(input_path) {
+            Ok(metadata) => metadata,
+            Err(e) => {
+                return Err(format!(
+                    "Failed to find additional connection cost: {}",
+                    e.description()
+                )
+                .into())
+            }
+        };
+
         // 3. Save conn cost.
         info!("Saving connection cost matrix ...");
         let connection_cost = ConnectionCost {
             costs: connection_cost_matrix,
             forward_size: forward_size,
             backward_size: backward_size,
+            additional: additional_metadata,
         };
         let bin_connection_cost: Vec<u8> = match to_stdvec(&connection_cost) {
             Ok(bytes) => bytes,
@@ -514,6 +527,81 @@ impl DictionaryBuilder {
             Ok(_) => Ok(()),
             Err(_) => return Err("Failed to write connection cost".into()),
         }
+    }
+
+    fn find_ids_for_nng(&self, input_path: &str) -> Result<AdditionalMetadata, Error> {
+        let mut left_id_nng = 0;
+        let mut right_id_nng = 0;
+        let mut right_id_nng_w_coda = 0;
+        let mut right_id_nng_wo_coda = 0;
+
+        info!("Reading left-id.def ...");
+        let left_id_file = match File::open(Path::new(input_path).join(MECAB_LEFT_ID_FILENAME)) {
+            Ok(f) => f,
+            Err(_) => return Err("Failed to open left-id.def file".into()),
+        };
+        let left_id_file_reader = BufReader::new(left_id_file);
+
+        for line in left_id_file_reader.lines() {
+            if line.is_err() {
+                return Err("Failed to read line of left-id.def file".into());
+            }
+            let line = line.unwrap();
+
+            if line.contains("NNG,*,*,*,*,*,*,*") {
+                let splits = line.split(" ").collect::<Vec<_>>();
+                left_id_nng = match splits[0].parse::<u16>() {
+                    Ok(id) => id,
+                    Err(_) => return Err(format!("malformed left id: `{}`", splits[0]).into()),
+                };
+                break;
+            }
+        }
+
+        info!("Reading right-id.def ...");
+        let right_id_file = match File::open(Path::new(input_path).join(MECAB_RIGHT_ID_FILENAME)) {
+            Ok(f) => f,
+            Err(_) => return Err("Failed to open right-id.def file".into()),
+        };
+        let right_id_file_reader = BufReader::new(right_id_file);
+        for line in right_id_file_reader.lines() {
+            if line.is_err() {
+                return Err("Failed to read line of right-id.def file".into());
+            }
+            let line = line.unwrap();
+
+            if line.contains("NNG,*,*,*,*,*,*,*") {
+                let splits = line.split(" ").collect::<Vec<_>>();
+                right_id_nng = match splits[0].parse::<u16>() {
+                    Ok(id) => id,
+                    Err(_) => return Err(format!("malformed right id: `{}`", splits[0]).into()),
+                };
+            } else if line.contains("NNG,*,T,*,*,*,*,*") {
+                let splits = line.split(" ").collect::<Vec<_>>();
+                right_id_nng_w_coda = match splits[0].parse::<u16>() {
+                    Ok(id) => id,
+                    Err(_) => return Err(format!("malformed right id: `{}`", splits[0]).into()),
+                };
+            } else if line.contains("NNG,*,F,*,*,*,*,*") {
+                let splits = line.split(" ").collect::<Vec<_>>();
+                right_id_nng_wo_coda = match splits[0].parse::<u16>() {
+                    Ok(id) => id,
+                    Err(_) => return Err(format!("malformed right id: `{}`", splits[0]).into()),
+                };
+            }
+        }
+
+        info!(
+            "left id: {}, right id: {}, right id w/ coda: {}, right id w/o coda: {}",
+            left_id_nng, right_id_nng, right_id_nng_w_coda, right_id_nng_wo_coda
+        );
+
+        Ok(AdditionalMetadata {
+            left_id_nng: left_id_nng,
+            right_id_nng: right_id_nng,
+            right_id_nng_w_coda: right_id_nng_w_coda,
+            right_id_nng_wo_coda: right_id_nng_wo_coda,
+        })
     }
 }
 

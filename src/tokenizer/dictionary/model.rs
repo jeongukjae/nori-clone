@@ -33,6 +33,9 @@ pub struct ConnectionCost {
     pub costs: Vec<i16>,
     pub forward_size: u32,
     pub backward_size: u32,
+
+    // Additional information for user dictionary
+    pub additional: AdditionalMetadata,
 }
 
 impl ConnectionCost {
@@ -269,6 +272,15 @@ pub struct CategoryDefinition {
     pub invoke: u8,
     pub group: u8,
     pub length: u8,
+}
+
+// Additional information for the user dictionary.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AdditionalMetadata {
+    pub left_id_nng: u16,
+    pub right_id_nng: u16,
+    pub right_id_nng_w_coda: u16,
+    pub right_id_nng_wo_coda: u16,
 }
 
 // CSV Record struct to read the MeCab dictionary.
