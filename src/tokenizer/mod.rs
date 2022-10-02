@@ -1,6 +1,7 @@
 pub mod automaton;
 pub mod dictionary;
 pub mod tokenizer;
+pub mod utils;
 
 pub use automaton::CommonPrefix;
 pub use dictionary::DictionaryBuilder;

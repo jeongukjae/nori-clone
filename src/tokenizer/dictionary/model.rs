@@ -27,6 +27,12 @@ pub struct UnknownTokenDictionary {
     pub invoke_map: HashMap<CharacterClass, CategoryDefinition>,
 }
 
+impl UnknownTokenDictionary {
+    // pub fn get_character_class(bytes: &[u8], offset: usize) -> CharacterClass {
+
+    // }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ConnectionCost {
     // index: backward_size * forward_index + backward_index

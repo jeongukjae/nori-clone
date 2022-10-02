@@ -1,6 +1,6 @@
 use crate::dictionary::{Morpheme, POSTag};
-use crate::CommonPrefix;
 use crate::{error::Error, SystemDictionary, UserDictionary};
+use crate::{utils, CommonPrefix};
 use fst::IntoStreamer;
 use fst::Streamer;
 use log::error;
@@ -93,22 +93,10 @@ impl NoriTokenizer {
             }
 
             offset += num_spaces as usize;
-            offset += Self::get_next_unicode_char_length(input_bytes[current]);
+            offset += utils::uchar::get_next_length(input_bytes[current]);
         }
 
         Ok(lattice)
-    }
-
-    fn get_next_unicode_char_length(c: u8) -> usize {
-        if c < 0x80 {
-            1
-        } else if c < 0xE0 {
-            2
-        } else if c < 0xF0 {
-            3
-        } else {
-            4
-        }
     }
 
     fn get_space_penalty(morpheme: &Morpheme, num_spaces: i32) -> i32 {
@@ -185,37 +173,4 @@ pub struct FSTNode {
     last_position_index: i32,
 
     morpheme: Morpheme,
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_get_next_unicode_char_length() {
-        assert_eq!(
-            NoriTokenizer::get_next_unicode_char_length("$".as_bytes()[0]),
-            1
-        );
-        assert_eq!(
-            NoriTokenizer::get_next_unicode_char_length("£".as_bytes()[0]),
-            2
-        );
-        assert_eq!(
-            NoriTokenizer::get_next_unicode_char_length("ह".as_bytes()[0]),
-            3
-        );
-        assert_eq!(
-            NoriTokenizer::get_next_unicode_char_length("€".as_bytes()[0]),
-            3
-        );
-        assert_eq!(
-            NoriTokenizer::get_next_unicode_char_length("한".as_bytes()[0]),
-            3
-        );
-        assert_eq!(
-            NoriTokenizer::get_next_unicode_char_length("𐍈".as_bytes()[0]),
-            4
-        );
-    }
 }
