@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
 
@@ -6,22 +8,77 @@ pub const MECAB_CHAR_FILENAME: &str = "char.def";
 
 pub const FST_FILENAME: &str = "fst.bin";
 pub const TOKEN_FILENAME: &str = "token.bin";
+pub const UNK_FILENAME: &str = "unk.bin";
 
-// CSV Record struct to read the MeCab dictionary.
-#[derive(Deserialize)]
-pub struct MeCabCSVRecord {
-    pub surface: String,
-    pub left_id: u16,
-    pub right_id: u16,
-    pub word_cost: u16,
-    pub pos_tags: String,
-    pub semantic_class: String,
-    pub is_coda: String,
-    pub reading_form: String,
-    pub pos_type: String,
-    pub left_pos: String,
-    pub right_pos: String,
-    pub expression: String,
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TokenDictionary {
+    pub morphemes: Vec<Vec<Morpheme>>, // the morphemes those have the same surfaces are grouped.
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UnknownTokenDictionary {
+    pub code_to_class_map: HashMap<i32, CharacterClass>,
+    pub class_morpheme_map: HashMap<CharacterClass, Morpheme>,
+    pub invoke_map: HashMap<CharacterClass, CategoryDefinition>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Morpheme {
+    pub left_id: i16,
+    pub right_id: i16,
+    pub word_cost: i16,
+    pub pos_type: POSType,
+    pub pos_tags: Vec<POSTag>,
+    pub expressions: Vec<MorphemeExpression>,
+}
+
+impl Morpheme {
+    pub fn from_csv_record(entry: &MeCabTokenCSVRecord) -> Result<Morpheme, &'static str> {
+        let pos_type = match POSType::from_name(entry.pos_type.as_str()) {
+            Some(ptype) => ptype,
+            None => return Err("Invalid POS type"),
+        };
+
+        let pos_tags = match entry
+            .pos_tags
+            .split("+")
+            .map(|p| POSTag::from_name(p))
+            .collect::<Option<Vec<_>>>()
+        {
+            Some(ptags) => ptags,
+            None => return Err("Invalid POS tags"),
+        };
+
+        let mut expressions = Vec::<MorphemeExpression>::new();
+        if entry.expression != "*" {
+            for expr in entry
+                .expression
+                .split("+")
+                .map(|s| s.split("/").collect::<Vec<&str>>())
+            {
+                if expr.len() != 2 {
+                    return Err("Invalid expression");
+                }
+
+                expressions.push(MorphemeExpression {
+                    pos_tag: match POSTag::from_name(expr[0]) {
+                        Some(ptag) => ptag,
+                        None => return Err("Invalid POS tag"),
+                    },
+                    surface: expr[1].to_string(),
+                });
+            }
+        }
+
+        Ok(Morpheme {
+            left_id: entry.left_id,
+            right_id: entry.right_id,
+            word_cost: entry.word_cost,
+            pos_type: pos_type,
+            pos_tags: pos_tags,
+            expressions: expressions,
+        })
+    }
 }
 
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]
@@ -143,68 +200,80 @@ pub struct MorphemeExpression {
     pub surface: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Morpheme {
-    pub left_id: u16,
-    pub right_id: u16,
-    pub word_cost: u16,
-    pub pos_type: POSType,
-    pub pos_tags: Vec<POSTag>,
-    pub expressions: Vec<MorphemeExpression>,
+// Character Classes.
+// Similar with unicode character groups.
+#[derive(Serialize_repr, Deserialize_repr, PartialEq, Hash, Eq, Debug, Clone, Copy)]
+#[repr(u8)]
+pub enum CharacterClass {
+    NGRAM = 0,
+    DEFAULT = 1,
+    SPACE = 2,
+    SYMBOL = 3,
+    NUMERIC = 4,
+    ALPHA = 5,
+    CYRILLIC = 6,
+    GREEK = 7,
+    HIRAGANA = 8,
+    KATAKANA = 9,
+    KANJI = 10,
+    HANGUL = 11,
+    HANJA = 12,
+    HANJANUMERIC = 13,
 }
 
-impl Morpheme {
-    pub fn from_csv_record(entry: &MeCabCSVRecord) -> Result<Morpheme, &'static str> {
-        let pos_type = match POSType::from_name(entry.pos_type.as_str()) {
-            Some(ptype) => ptype,
-            None => return Err("Invalid POS type"),
-        };
-
-        let pos_tags = match entry
-            .pos_tags
-            .split("+")
-            .map(|p| POSTag::from_name(p))
-            .collect::<Option<Vec<_>>>()
-        {
-            Some(ptags) => ptags,
-            None => return Err("Invalid POS tags"),
-        };
-
-        let mut expressions = Vec::<MorphemeExpression>::new();
-        if entry.expression != "*" {
-            for expr in entry
-                .expression
-                .split("+")
-                .map(|s| s.split("/").collect::<Vec<&str>>())
-            {
-                if expr.len() != 2 {
-                    return Err("Invalid expression");
-                }
-
-                expressions.push(MorphemeExpression {
-                    pos_tag: match POSTag::from_name(expr[0]) {
-                        Some(ptag) => ptag,
-                        None => return Err("Invalid POS tag"),
-                    },
-                    surface: expr[1].to_string(),
-                });
-            }
-        }
-
-        Ok(Morpheme {
-            left_id: entry.left_id,
-            right_id: entry.right_id,
-            word_cost: entry.word_cost,
-            pos_type: pos_type,
-            pos_tags: pos_tags,
-            expressions: expressions,
+impl CharacterClass {
+    pub fn from_name(s: &str) -> Option<Self> {
+        Some(match s {
+            "NGRAM" => Self::NGRAM,
+            "DEFAULT" => Self::DEFAULT,
+            "SPACE" => Self::SPACE,
+            "SYMBOL" => Self::SYMBOL,
+            "NUMERIC" => Self::NUMERIC,
+            "ALPHA" => Self::ALPHA,
+            "CYRILLIC" => Self::CYRILLIC,
+            "GREEK" => Self::GREEK,
+            "HIRAGANA" => Self::HIRAGANA,
+            "KATAKANA" => Self::KATAKANA,
+            "KANJI" => Self::KANJI,
+            "HANGUL" => Self::HANGUL,
+            "HANJA" => Self::HANJA,
+            "HANJANUMERIC" => Self::HANJANUMERIC,
+            _ => return None,
         })
     }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TokenDictionary {
-    pub morphemes: Vec<Vec<Morpheme>>, // the morphemes those have the same surfaces are grouped.
+pub struct CategoryDefinition {
+    pub invoke: u8,
+    pub group: u8,
+    pub length: u8,
+}
+
+// CSV Record struct to read the MeCab dictionary.
+#[derive(Deserialize)]
+pub struct MeCabTokenCSVRecord {
+    pub surface: String,
+    pub left_id: i16,
+    pub right_id: i16,
+    pub word_cost: i16,
+    pub pos_tags: String,
+    pub semantic_class: String,
+    pub is_coda: String,
+    pub reading_form: String,
+    pub pos_type: String,
+    pub left_pos: String,
+    pub right_pos: String,
+    pub expression: String,
+}
+
+#[derive(Deserialize)]
+pub struct MeCabUnkCSVRecord {
+    pub category: String,
+    pub left_id: i16,
+    pub right_id: i16,
+    pub word_cost: i16,
+    pub pos_tags: String,
 }
 
 #[cfg(test)]
@@ -228,7 +297,7 @@ mod tests {
 
     #[test]
     fn test_morpheme_from_csv_record() {
-        let entry = MeCabCSVRecord {
+        let entry = MeCabTokenCSVRecord {
             surface: "아버지".to_string(),
             left_id: 0,
             right_id: 1,

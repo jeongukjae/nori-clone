@@ -1,12 +1,15 @@
 use crate::tokenizer::dictionary::model;
 
 use std::{
+    borrow::Borrow,
+    collections::HashMap,
     fs::{self, File},
     io::{BufRead, BufReader, BufWriter, Write},
     path::{Path, PathBuf},
 };
 
 use postcard::to_stdvec;
+use regex::Regex;
 use unicode_normalization::UnicodeNormalization;
 
 use fst::MapBuilder;
@@ -14,27 +17,17 @@ use model::*;
 
 use super::TokenDictionary;
 
-// Supported normalization form to build dictionary.
-pub enum NormalizationForm {
-    NFKC,
-}
-
 pub struct DictionaryBuilder {
+    // Whether to normalize token surface or not in NFKC form.
     normalize: bool,
-    normalization_form: NormalizationForm,
 }
 
 impl DictionaryBuilder {
-    pub fn new(
-        normalize: Option<bool>,
-        normalization_form: Option<NormalizationForm>,
-    ) -> DictionaryBuilder {
+    pub fn new(normalize: Option<bool>) -> DictionaryBuilder {
         let normalize_ = normalize.unwrap_or(false);
-        let normalization_form_ = normalization_form.unwrap_or(NormalizationForm::NFKC);
 
         DictionaryBuilder {
             normalize: normalize_,
-            normalization_form: normalization_form_,
         }
     }
 
@@ -85,7 +78,7 @@ impl DictionaryBuilder {
             Err(_) => return Err("Failed to create fst builder"),
         };
 
-        let mut records: Vec<MeCabCSVRecord> = Vec::new();
+        let mut records: Vec<MeCabTokenCSVRecord> = Vec::new();
 
         for file in files {
             let mut contents = match fs::read_to_string(file) {
@@ -93,13 +86,13 @@ impl DictionaryBuilder {
                 Err(_) => return Err("Failed to read csv file"),
             };
             if self.normalize {
-                contents = normalize_unicode(contents, &self.normalization_form)
+                contents = contents.nfkc().collect()
             }
             let mut csv_reader = csv::ReaderBuilder::new()
                 .has_headers(false)
                 .from_reader(contents.as_bytes());
-            let mut records_for_file: Vec<MeCabCSVRecord> = csv_reader
-                .deserialize::<MeCabCSVRecord>()
+            let mut records_for_file: Vec<MeCabTokenCSVRecord> = csv_reader
+                .deserialize::<MeCabTokenCSVRecord>()
                 .filter(|r| r.is_ok())
                 .map(|r| r.unwrap())
                 .collect();
@@ -169,16 +162,180 @@ impl DictionaryBuilder {
             Err(_) => return Err("Failed to open unk.def file"),
         };
         let unk_reader = BufReader::new(unk_file);
-        unk_reader.lines().filter(|r| r.is_ok()).map(|r| r.unwrap());
-        // XXX: implment this.
 
-        Ok(())
-    }
-}
+        let mut unk_csv_reader = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .from_reader(unk_reader);
+        let mut unk_class_morpheme_map: HashMap<CharacterClass, Morpheme> = HashMap::new();
+        unk_class_morpheme_map.insert(
+            CharacterClass::NGRAM,
+            Morpheme {
+                left_id: 1798,
+                right_id: 3559,
+                word_cost: 3677,
+                expressions: Vec::new(),
+                pos_tags: vec![POSTag::SY],
+                pos_type: POSType::MORPHEME,
+            },
+        );
 
-fn normalize_unicode(input: String, form: &NormalizationForm) -> String {
-    match form {
-        NormalizationForm::NFKC => input.nfkc().collect(),
+        for record in unk_csv_reader.deserialize::<MeCabUnkCSVRecord>() {
+            let record = match record {
+                Ok(record) => record,
+                Err(_) => return Err("Failed to parse unk.def file, reading records"),
+            };
+
+            let category = match CharacterClass::from_name(record.category.as_str()) {
+                Some(ptags) => ptags,
+                None => return Err("Failed to parse unk.def file, reading reading category"),
+            };
+
+            let pos_tag = match POSTag::from_name(record.pos_tags.as_str()) {
+                Some(ptags) => ptags,
+                None => return Err("Failed to parse unk.def file, reading reading pos tags"),
+            };
+            unk_class_morpheme_map.insert(
+                category,
+                Morpheme {
+                    left_id: record.left_id,
+                    right_id: record.right_id,
+                    word_cost: record.word_cost,
+                    expressions: Vec::new(),
+                    pos_tags: vec![pos_tag],
+                    pos_type: POSType::MORPHEME,
+                },
+            );
+        }
+
+        // 2. Build character class infos.
+        let mut invoke_map: HashMap<CharacterClass, CategoryDefinition> = HashMap::new();
+        let mut code_to_category_map: HashMap<i32, CharacterClass> = HashMap::new();
+
+        let char_file = match File::open(Path::new(input_path).join(MECAB_CHAR_FILENAME)) {
+            Ok(f) => f,
+            Err(_) => return Err("Failed to open char.def file"),
+        };
+        let char_reader = BufReader::new(char_file);
+
+        let pat_for_remove_space = Regex::new(r"\s+").unwrap();
+        let pat_for_remove_comment = Regex::new(r"\s*#.*").unwrap();
+        for line in char_reader.lines() {
+            let line = match line {
+                Ok(line) => line,
+                Err(_) => return Err("Failed to read char.def file"),
+            };
+
+            let line = pat_for_remove_space.replace_all(line.as_str(), " ");
+            let line = pat_for_remove_comment.replace_all(line.borrow(), "");
+            let line = line.trim();
+
+            if line.starts_with("#") || line.len() == 0 {
+                continue;
+            }
+
+            println!("{}", line);
+
+            if line.starts_with("0x") {
+                // char code definition
+                let splits = line.split(" ").collect::<Vec<&str>>();
+                if splits.len() != 2 {
+                    return Err("Failed to parse char.def file, reading char code definition");
+                }
+                let char_cls = match CharacterClass::from_name(splits[1]) {
+                    Some(cls) => cls,
+                    None => return Err("Cannot read char class while reading char.def"),
+                };
+
+                if splits[0].contains("..") {
+                    // range
+                    let range_splits = splits[0]
+                        .split("..")
+                        .map(|x| x.trim_start_matches("0x"))
+                        .collect::<Vec<&str>>();
+                    if range_splits.len() != 2 {
+                        return Err("Failed to parse char.def file, reading char code range");
+                    }
+
+                    let start = match i32::from_str_radix(range_splits[0], 16) {
+                        Ok(start) => start,
+                        Err(_) => return Err("Cannot read char code while reading char.def"),
+                    };
+
+                    let end = match i32::from_str_radix(range_splits[1], 16) {
+                        Ok(end) => end,
+                        Err(_) => return Err("Cannot read char code while reading char.def"),
+                    };
+
+                    for code in start..end + 1 {
+                        code_to_category_map.insert(code, char_cls);
+                    }
+                } else {
+                    // single point
+                    let code = match i32::from_str_radix(splits[0], 16) {
+                        Ok(code) => code,
+                        Err(_) => return Err("Cannot read char code while reading char.def"),
+                    };
+
+                    code_to_category_map.insert(code, char_cls);
+                }
+            } else {
+                // char category definition
+                let splits = line.split(" ").collect::<Vec<&str>>();
+                if splits.len() < 4 {
+                    return Err("Failed to parse char.def file, reading char category definition");
+                }
+
+                let char_cls = match CharacterClass::from_name(splits[0]) {
+                    Some(cls) => cls,
+                    None => return Err("Cannot read char class while reading char.def"),
+                };
+
+                let invoke = match splits[1].parse::<u8>() {
+                    Ok(invoke) => invoke,
+                    Err(_) => return Err("Cannot read invoke while reading char.def"),
+                };
+
+                let group = match splits[2].parse::<u8>() {
+                    Ok(group) => group,
+                    Err(_) => return Err("Cannot read group while reading char.def"),
+                };
+
+                let length = match splits[3].parse::<u8>() {
+                    Ok(length) => length,
+                    Err(_) => return Err("Cannot read char length while reading char.def"),
+                };
+
+                invoke_map.insert(
+                    char_cls,
+                    CategoryDefinition {
+                        invoke: invoke,
+                        group: group,
+                        length: length,
+                    },
+                );
+            }
+        }
+
+        // 3. Save unknown token infos.
+        let unk_dictionary = UnknownTokenDictionary {
+            class_morpheme_map: unk_class_morpheme_map,
+            invoke_map: invoke_map,
+            code_to_class_map: code_to_category_map,
+        };
+        let bin_unk_dictionary: Vec<u8> = match to_stdvec(&unk_dictionary) {
+            Ok(bytes) => bytes,
+            Err(_) => return Err("Failed to serialize unk dictionary"),
+        };
+
+        let mut file = match File::create(Path::new(output_path).join(UNK_FILENAME)) {
+            Ok(f) => f,
+            Err(_) => return Err("Failed to create output file"),
+        };
+
+        match file.write_all(bin_unk_dictionary.as_slice()) {
+            Ok(_) => Ok(()),
+            Err(_) => return Err("Failed to write unk dictionary"),
+        }
     }
 }
 
@@ -190,7 +347,7 @@ mod tests {
     fn test_build_token_infos() {
         let tmpdir = tempfile::tempdir().unwrap();
 
-        let builder = DictionaryBuilder::new(None, None);
+        let builder = DictionaryBuilder::new(None);
         let input_path = "testdata/tokenizer/dictionary/builder";
         let result =
             builder.build_token_infos(input_path, tmpdir.path().display().to_string().as_str());
@@ -203,6 +360,22 @@ mod tests {
         assert!(
             tmpdir.path().join(TOKEN_FILENAME).is_file(),
             "Cannot find output: TOKEN file"
+        );
+    }
+
+    #[test]
+    fn test_build_unk_dictionary() {
+        let tmpdir = tempfile::tempdir().unwrap();
+
+        let builder = DictionaryBuilder::new(None);
+        let input_path = "testdata/tokenizer/dictionary/builder";
+        let result =
+            builder.build_unk_dictionary(input_path, tmpdir.path().display().to_string().as_str());
+
+        assert!(result.is_ok(), "{}", result.err().unwrap());
+        assert!(
+            tmpdir.path().join(UNK_FILENAME).is_file(),
+            "Cannot find output: UNK file"
         );
     }
 }
