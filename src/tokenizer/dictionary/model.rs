@@ -17,9 +17,17 @@ pub struct TokenDictionary {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UnknownTokenDictionary {
-    pub code_to_class_map: HashMap<i32, CharacterClass>,
+    pub code_to_class_map: HashMap<i16, CharacterClass>,
     pub class_morpheme_map: HashMap<CharacterClass, Morpheme>,
     pub invoke_map: HashMap<CharacterClass, CategoryDefinition>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ConnectionCost {
+    // index: backwardIndex * forwardIndex + backwardIndex
+    pub costs: Vec<Vec<i16>>,
+    pub forward_size: u16,
+    pub backward_size: u16,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

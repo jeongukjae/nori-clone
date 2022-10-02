@@ -209,7 +209,7 @@ impl DictionaryBuilder {
 
         // 2. Build character class infos.
         let mut invoke_map: HashMap<CharacterClass, CategoryDefinition> = HashMap::new();
-        let mut code_to_category_map: HashMap<i32, CharacterClass> = HashMap::new();
+        let mut code_to_category_map: HashMap<i16, CharacterClass> = HashMap::new();
 
         let char_file = match File::open(Path::new(input_path).join(MECAB_CHAR_FILENAME)) {
             Ok(f) => f,
@@ -256,12 +256,12 @@ impl DictionaryBuilder {
                         return Err("Failed to parse char.def file, reading char code range");
                     }
 
-                    let start = match i32::from_str_radix(range_splits[0], 16) {
+                    let start = match i16::from_str_radix(range_splits[0], 16) {
                         Ok(start) => start,
                         Err(_) => return Err("Cannot read char code while reading char.def"),
                     };
 
-                    let end = match i32::from_str_radix(range_splits[1], 16) {
+                    let end = match i16::from_str_radix(range_splits[1], 16) {
                         Ok(end) => end,
                         Err(_) => return Err("Cannot read char code while reading char.def"),
                     };
@@ -271,7 +271,7 @@ impl DictionaryBuilder {
                     }
                 } else {
                     // single point
-                    let code = match i32::from_str_radix(splits[0], 16) {
+                    let code = match i16::from_str_radix(splits[0], 16) {
                         Ok(code) => code,
                         Err(_) => return Err("Cannot read char code while reading char.def"),
                     };
