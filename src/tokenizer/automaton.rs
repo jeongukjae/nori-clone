@@ -62,7 +62,7 @@ mod tests {
         let set = Set::from_iter(paths).unwrap();
 
         // Build our fuzzy query.
-        let pref = CommonPrefix::new("hello world");
+        let pref = CommonPrefix::new("hello world", 0);
 
         // Apply our fuzzy query to the set we built.
         let stream = set.search(pref).into_stream();

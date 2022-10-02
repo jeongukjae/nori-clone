@@ -35,10 +35,16 @@ pub struct ConnectionCost {
     pub backward_size: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+impl ConnectionCost {
+    pub fn get_cost(&self, right_id: u16, left_id: u16) -> i16 {
+        self.costs[(self.backward_size * (right_id as u32) + (left_id as u32)) as usize]
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Morpheme {
-    pub left_id: i16,
-    pub right_id: i16,
+    pub left_id: u16,
+    pub right_id: u16,
     pub word_cost: i16,
     pub pos_type: POSType,
     pub pos_tags: Vec<POSTag>,
@@ -94,7 +100,7 @@ impl Morpheme {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]
+#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum POSType {
     MORPHEME = 0,    // A simple morpheme.
@@ -116,7 +122,7 @@ impl POSType {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug)]
+#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum POSTag {
     UNKNOWN = 0, // Unknown
@@ -209,7 +215,7 @@ impl POSTag {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MorphemeExpression {
     pub pos_tag: POSTag,
     pub surface: String,
@@ -269,8 +275,8 @@ pub struct CategoryDefinition {
 #[derive(Deserialize, Debug)]
 pub struct MeCabTokenCSVRecord {
     pub surface: String,
-    pub left_id: i16,
-    pub right_id: i16,
+    pub left_id: u16,
+    pub right_id: u16,
     pub word_cost: i16,
     pub pos_tags: String,
     pub semantic_class: String,
@@ -285,8 +291,8 @@ pub struct MeCabTokenCSVRecord {
 #[derive(Deserialize)]
 pub struct MeCabUnkCSVRecord {
     pub category: String,
-    pub left_id: i16,
-    pub right_id: i16,
+    pub left_id: u16,
+    pub right_id: u16,
     pub word_cost: i16,
     pub pos_tags: String,
 }

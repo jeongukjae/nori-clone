@@ -13,6 +13,8 @@ pub struct SystemDictionary {
     pub token_dictionary: TokenDictionary,
     pub unk_dictionary: UnknownTokenDictionary,
     pub connection_cost: ConnectionCost,
+
+    pub bos_eos_morpheme: Morpheme,
 }
 
 impl SystemDictionary {
@@ -47,6 +49,15 @@ impl SystemDictionary {
             token_dictionary: token_dict,
             unk_dictionary: unk_dict,
             connection_cost: connection_cost,
+
+            bos_eos_morpheme: Morpheme {
+                left_id: 0,
+                right_id: 0,
+                word_cost: 0,
+                pos_type: POSType::MORPHEME,
+                pos_tags: vec![POSTag::UNKNOWN],
+                expressions: vec![],
+            },
         })
     }
 
