@@ -22,6 +22,26 @@ pub mod uchar {
 
         Ok(chstr.chars().nth(0).unwrap())
     }
+
+    // returns (is_hangul, has_coda)
+    pub fn check_coda(c: &str) -> (bool, bool) {
+        let chars: Vec<char> = c.chars().collect();
+        if chars.len() == 0 {
+            return (false, false);
+        }
+
+        let last_ch = chars.last().unwrap();
+        let last_ch_code = *last_ch as u32;
+        if last_ch_code < 0xAC00 || last_ch_code > 0xD7A3 {
+            return (false, false);
+        }
+
+        if ((last_ch_code - 0xAC00) % 28) == 0 {
+            (true, false)
+        } else {
+            (true, true)
+        }
+    }
 }
 
 #[cfg(test)]

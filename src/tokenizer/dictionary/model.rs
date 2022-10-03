@@ -76,7 +76,7 @@ impl ConnectionCost {
 pub struct Morpheme {
     pub left_id: u16,
     pub right_id: u16,
-    pub word_cost: i16,
+    pub word_cost: i32,
     pub pos_type: POSType,
     pub pos_tags: Vec<POSTag>,
     pub expressions: Vec<MorphemeExpression>,
@@ -317,7 +317,7 @@ pub struct MeCabTokenCSVRecord {
     pub surface: String,
     pub left_id: u16,
     pub right_id: u16,
-    pub word_cost: i16,
+    pub word_cost: i32,
     pub pos_tags: String,
     pub semantic_class: String,
     pub is_coda: String,
@@ -333,7 +333,7 @@ pub struct MeCabUnkCSVRecord {
     pub category: String,
     pub left_id: u16,
     pub right_id: u16,
-    pub word_cost: i16,
+    pub word_cost: i32,
     pub pos_tags: String,
 }
 

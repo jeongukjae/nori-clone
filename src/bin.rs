@@ -75,7 +75,14 @@ fn main() {
                     }
                 };
 
-            let user_dictionary = UserDictionary {};
+            let user_dictionary =
+                match UserDictionary::load(vec![], &system_dictionary.connection_cost.additional) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        error!("Failed to load dictionary: {}", e.description());
+                        panic!();
+                    }
+                };
 
             info!("Constructing tokenizer...");
             let tokenizer = NoriTokenizer::new(system_dictionary, user_dictionary);

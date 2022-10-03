@@ -61,7 +61,8 @@ impl NoriTokenizer {
 
             let query = CommonPrefix::new(input_text, current);
 
-            // TODO: find user dictionary
+            // Find user dictionary first.
+            self.find_user_dictionary(&query, offset, num_spaces, &mut nodes_by_position);
 
             let current_ch_cls = match self
                 .system_dictionary
@@ -130,6 +131,47 @@ impl NoriTokenizer {
         nodes.reverse();
 
         Ok(Lattice { nodes: nodes })
+    }
+
+    fn find_user_dictionary(
+        &self,
+        query: &CommonPrefix,
+        offset: usize,
+        num_spaces: i32,
+        nodes_by_position: &mut Vec<Vec<FSTNode>>,
+    ) {
+        let mut stream = self.user_dictionary.fst.search(query).into_stream();
+        let mut results = Vec::new();
+
+        while let Some((k, v)) = stream.next() {
+            results.push((k.to_owned(), v));
+        }
+
+        let longest = match results.iter().max_by_key(|(k, _)| k.len()) {
+            Some((k, v)) => (k, v.to_owned()),
+            None => return,
+        };
+
+        let morpheme = &self.user_dictionary.morphemes[longest.1 as usize];
+        let (parent_index, connection_cost) =
+            self.select_parent_node(&nodes_by_position[offset], morpheme);
+        let parent = &nodes_by_position[offset][parent_index];
+
+        let space_cost = Self::get_space_penalty(morpheme, num_spaces);
+        let word_cost = morpheme.word_cost as i32;
+        let cost = parent.cost + word_cost + connection_cost + space_cost;
+        let word_length = longest.0.len() as i32;
+
+        let last_position_index = parent.last_position_index + num_spaces + word_length;
+
+        nodes_by_position[last_position_index as usize].push(FSTNode {
+            cost: cost,
+            num_space_before_node: num_spaces,
+            last_position_index: last_position_index,
+            word_length: word_length,
+            morpheme: morpheme.clone(),
+            parent_node_index: parent_index,
+        });
     }
 
     fn find_system_dictionary(
@@ -492,13 +534,18 @@ mod test {
         }
     }
 
+    fn create_legacy_dictionary() -> SystemDictionary {
+        match SystemDictionary::load_from_input_directory("./dictionary/legacy") {
+            Ok(d) => d,
+            Err(e) => panic!("Failed to load system dictionary: {:?}", e),
+        }
+    }
+
     fn create_legacy_dictionary_tokenizer() -> NoriTokenizer {
-        let system_dictionary =
-            match SystemDictionary::load_from_input_directory("./dictionary/legacy") {
-                Ok(d) => d,
-                Err(e) => panic!("Failed to load system dictionary: {:?}", e),
-            };
-        let user_dictionary = UserDictionary {};
+        let system_dictionary = create_legacy_dictionary();
+        let user_dictionary =
+            UserDictionary::load(vec![], &system_dictionary.connection_cost.additional).unwrap();
+
         NoriTokenizer::new(system_dictionary, user_dictionary)
     }
 }
