@@ -127,6 +127,38 @@ impl UserDictionary {
         };
         Self::load_from_bytes(b, additional_metadata)
     }
+
+    // Read all *.txt files from input_dir and concat all file contents.
+    pub fn load_from_input_directory(
+        input_dir: &str,
+        additional_metadata: &AdditionalMetadata,
+    ) -> Result<Self, Error> {
+        let mut all_buffers: Vec<u8> = Vec::new();
+        for entry in std::fs::read_dir(input_dir)? {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(e) => return Err(format!("failed to read directory: {}", e).into()),
+            };
+            let path = entry.path();
+            if path.extension().unwrap() != "txt" {
+                continue;
+            }
+
+            let mut f = match std::fs::File::open(path) {
+                Ok(f) => f,
+                Err(e) => return Err(format!("failed to open file: {}", e).into()),
+            };
+            let mut b = Vec::new();
+            match f.read_to_end(&mut b) {
+                Ok(_) => (),
+                Err(e) => return Err(format!("failed to read file: {}", e).into()),
+            };
+            all_buffers.append(&mut b);
+            all_buffers.append(&mut "\n".as_bytes().to_vec())
+        }
+
+        Self::load_from_bytes(all_buffers, additional_metadata)
+    }
 }
 
 #[cfg(test)]

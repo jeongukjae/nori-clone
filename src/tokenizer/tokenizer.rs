@@ -41,17 +41,19 @@ impl NoriTokenizer {
 
         // Search over input text.
         while offset < end {
-            let mut current = offset;
-            let mut num_spaces = 0;
+            let mut current: usize = offset;
+            let mut num_spaces: i32 = 0;
 
             if nodes_by_position[current].is_empty() {
                 offset += utils::uchar::get_next_length(input_bytes[current]);
                 continue;
             }
 
-            while current < end && input_bytes[current].is_ascii_whitespace() {
-                current += 1;
-                num_spaces += 1;
+            while current < end && Self::is_whitespace(input_bytes, current) {
+                let char_length = utils::uchar::get_next_length(input_bytes[current]);
+
+                current += char_length;
+                num_spaces += char_length as i32;
             }
 
             if current == end {
@@ -219,17 +221,18 @@ impl NoriTokenizer {
         num_spaces: i32,
         nodes_by_position: &mut Vec<Vec<FSTNode>>,
     ) -> Result<(), Error> {
+        let current = offset + num_spaces as usize;
         let char_def = match self
             .system_dictionary
             .unk_dictionary
-            .get_char_def(input_text.as_bytes(), offset)
+            .get_char_def(input_text.as_bytes(), current)
         {
             Ok(char_def) => char_def,
             Err(e) => return Err(format!("Unknown character def: {}", e.description()).into()),
         };
 
         let (unk_length, ch_cls) =
-            self.group_unknown_chars(&input_text[offset..], char_def.group == 1);
+            self.group_unknown_chars(&input_text[current..], char_def.group == 1);
         let morpheme = &self.system_dictionary.unk_dictionary.class_morpheme_map[&ch_cls];
         let (parent_index, connection_cost) =
             self.select_parent_node(&nodes_by_position[offset], morpheme);
@@ -304,14 +307,18 @@ impl NoriTokenizer {
     }
 
     fn group_unknown_chars(&self, x: &str, do_group: bool) -> (i32, CharacterClass) {
-        if !do_group {
-            return (0, CharacterClass::DEFAULT);
-        }
-
         let chars = x.chars().collect::<Vec<char>>();
         let char_len = chars.len();
         if char_len == 0 {
             return (0, CharacterClass::DEFAULT);
+        }
+
+        let mut result_class = self.system_dictionary.unk_dictionary.get_ch_cls(chars[0]);
+        let mut result_offset = chars[0].len_utf8() as i32;
+        let mut char_offset = 1;
+
+        if !do_group {
+            return (result_offset, result_class);
         }
 
         let mut first_script = chars[0].script();
@@ -319,10 +326,6 @@ impl NoriTokenizer {
             first_script == Script::Common || first_script == Script::Inherited;
         let is_first_punctuation = Self::is_punctuation(chars[0]);
         let is_first_digit = chars[0].is_digit(10);
-
-        let mut result_class = self.system_dictionary.unk_dictionary.get_ch_cls(chars[0]);
-        let mut result_offset = chars[0].len_utf8() as i32;
-        let mut char_offset = 1;
 
         while char_offset < char_len {
             let current_script = chars[char_offset].script();
@@ -385,6 +388,14 @@ impl NoriTokenizer {
             _ => false,
         }
     }
+
+    #[inline]
+    fn is_whitespace(buf: &[u8], offset: usize) -> bool {
+        match utils::uchar::get_next_char(buf, offset) {
+            Ok(c) => c.is_whitespace(),
+            Err(_) => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -438,6 +449,9 @@ mod test {
             ("", true, (0, CharacterClass::DEFAULT)),
             ("abcd efjk", true, (4, CharacterClass::ALPHA)),
             ("가나다라 마바", true, (12, CharacterClass::HANGUL)),
+            ("가나다라 마바", true, (12, CharacterClass::HANGUL)),
+            ("'가나다' 마바", true, (1, CharacterClass::SYMBOL)),
+            ("淚,", true, (3, CharacterClass::HANJA)),
         ];
 
         let tokenizer = create_legacy_dictionary_tokenizer();
@@ -499,6 +513,20 @@ mod test {
             //     ],
             // ),
             ("εἰμί", vec!["εἰμί"], vec![vec![POSTag::SL]]),
+            ("", vec![], vec![]),
+            (
+                "ABC '텍스트'텍스트 텍스트.",
+                vec!["ABC", "'", "텍스트", "'", "텍스트", "텍스트", "."],
+                vec![
+                    vec![POSTag::SL],
+                    vec![POSTag::SY],
+                    vec![POSTag::NNG],
+                    vec![POSTag::SY],
+                    vec![POSTag::NNG],
+                    vec![POSTag::NNG],
+                    vec![POSTag::SF],
+                ],
+            ),
         ];
 
         let tokenizer = create_legacy_dictionary_tokenizer();
