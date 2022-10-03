@@ -4,7 +4,8 @@ use crate::{utils, CommonPrefix};
 use fst::IntoStreamer;
 use fst::Streamer;
 use log::error;
-use unicode_script::ScriptExtension;
+use unicode_general_category::{get_general_category, GeneralCategory};
+use unicode_script::{Script, UnicodeScript};
 
 pub struct NoriTokenizer {
     system_dictionary: SystemDictionary,
@@ -143,7 +144,6 @@ impl NoriTokenizer {
         current_ch_def: CategoryDefinition,
     ) {
         let text = &input_text[offset..];
-        let ext = ScriptExtension::for_str(text);
         //   int length = internal::groupingUnknownCharacters(
         //       current, end, category, dictionary, charDef->group() == 1);
 
@@ -213,7 +213,45 @@ impl NoriTokenizer {
         (result_index, min_cost)
     }
 
-    fn group_unknown_chars(&self, x: &str) {}
+    fn group_unknown_chars(&self, x: &str) {
+        let chars = x.chars().collect::<Vec<char>>();
+        if chars.len() == 0 {
+            return;
+        }
+
+        let current_script = chars[0].script();
+        let is_first_common_or_inherited =
+            current_script == Script::Common || current_script == Script::Inherited;
+    }
+
+    #[inline]
+    fn is_punctuation(c: char) -> bool {
+        if c as u32 == 4510 { // Hangul Letter Araea
+            return true;
+        }
+
+        match get_general_category(c) {
+            GeneralCategory::SpaceSeparator
+            | GeneralCategory::LineSeparator
+            | GeneralCategory::ParagraphSeparator
+            | GeneralCategory::Control
+            | GeneralCategory::Format
+            | GeneralCategory::DashPunctuation
+            // TODO: find below category
+            //
+            // | U_START_PUNCTUATION
+            // | U_END_PUNCTUATION
+            | GeneralCategory::ConnectorPunctuation
+            | GeneralCategory::OtherPunctuation
+            | GeneralCategory::MathSymbol
+            | GeneralCategory::CurrencySymbol
+            | GeneralCategory::ModifierSymbol
+            | GeneralCategory::OtherSymbol
+            | GeneralCategory::InitialPunctuation
+            | GeneralCategory::FinalPunctuation => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug)]
