@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::{error::Error, utils};
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
@@ -22,15 +22,33 @@ pub struct TokenDictionary {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UnknownTokenDictionary {
-    pub code_to_class_map: HashMap<i32, CharacterClass>,
+    pub code_to_class_map: HashMap<u32, CharacterClass>,
     pub class_morpheme_map: HashMap<CharacterClass, Morpheme>,
     pub invoke_map: HashMap<CharacterClass, CategoryDefinition>,
 }
 
 impl UnknownTokenDictionary {
-    // pub fn get_character_class(bytes: &[u8], offset: usize) -> CharacterClass {
+    pub fn get_character_class(
+        &self,
+        bytes: &[u8],
+        offset: usize,
+    ) -> Result<CharacterClass, Error> {
+        let ch = match utils::uchar::get_next_char(bytes, offset) {
+            Ok(ch) => ch,
+            Err(e) => return Err(e),
+        };
 
-    // }
+        Ok(self.code_to_class_map[&(ch as u32)])
+    }
+
+    pub fn get_char_def(&self, bytes: &[u8], offset: usize) -> Result<CategoryDefinition, Error> {
+        let ch = match self.get_character_class(bytes, offset) {
+            Ok(ch) => ch,
+            Err(e) => return Err(e),
+        };
+
+        Ok(self.invoke_map[&ch])
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -273,7 +291,7 @@ impl CharacterClass {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct CategoryDefinition {
     pub invoke: u8,
     pub group: u8,

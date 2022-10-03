@@ -246,7 +246,7 @@ impl DictionaryBuilder {
         // 2. Build character class infos.
         info!("Building character class infos ...");
         let mut invoke_map: HashMap<CharacterClass, CategoryDefinition> = HashMap::new();
-        let mut code_to_category_map: HashMap<i32, CharacterClass> = HashMap::new();
+        let mut code_to_category_map: HashMap<u32, CharacterClass> = HashMap::new();
 
         let char_file = match File::open(Path::new(input_path).join(MECAB_CHAR_FILENAME)) {
             Ok(f) => f,
@@ -305,7 +305,7 @@ impl DictionaryBuilder {
                         .into());
                     }
 
-                    let start = match i32::from_str_radix(range_splits[0], 16) {
+                    let start = match u32::from_str_radix(range_splits[0], 16) {
                         Ok(start) => start,
                         Err(e) => {
                             return Err(format!(
@@ -316,7 +316,7 @@ impl DictionaryBuilder {
                         }
                     };
 
-                    let end = match i32::from_str_radix(range_splits[1], 16) {
+                    let end = match u32::from_str_radix(range_splits[1], 16) {
                         Ok(end) => end,
                         Err(e) => {
                             return Err(format!(
@@ -332,7 +332,7 @@ impl DictionaryBuilder {
                     }
                 } else {
                     // single point
-                    let code = match i32::from_str_radix(splits[0].trim_start_matches("0x"), 16) {
+                    let code = match u32::from_str_radix(splits[0].trim_start_matches("0x"), 16) {
                         Ok(code) => code,
                         Err(e) => {
                             return Err(format!(
