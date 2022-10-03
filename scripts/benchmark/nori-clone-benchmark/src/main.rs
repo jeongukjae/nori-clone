@@ -11,7 +11,7 @@ struct Args {
     dict: String,
 
     /// data path
-    #[arg(short, long)]
+    #[arg(long)]
     data: String,
 
     /// n lines
