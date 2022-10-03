@@ -15,8 +15,8 @@ pub struct NoriTokenizer {
 impl NoriTokenizer {
     pub fn new(system_dictionary: SystemDictionary, user_dictionary: UserDictionary) -> Self {
         NoriTokenizer {
-            system_dictionary: system_dictionary,
-            user_dictionary: user_dictionary,
+            system_dictionary,
+            user_dictionary,
         }
     }
 
@@ -101,7 +101,7 @@ impl NoriTokenizer {
         let (eos_parent_index, _) =
             self.select_parent_node(&nodes_by_position[end], &eos_morpeheme);
 
-        let mut nodes: Vec<Node> = Vec::new();
+        let mut nodes: Vec<Node> = Vec::with_capacity(10);
         nodes.push(Node {
             surface: "EOS".to_string(),
             morpheme: eos_morpeheme,
@@ -132,7 +132,7 @@ impl NoriTokenizer {
         });
         nodes.reverse();
 
-        Ok(Lattice { nodes: nodes })
+        Ok(Lattice { nodes })
     }
 
     fn find_user_dictionary(
@@ -140,7 +140,7 @@ impl NoriTokenizer {
         query: &CommonPrefix,
         offset: usize,
         num_spaces: i32,
-        nodes_by_position: &mut Vec<Vec<FSTNode>>,
+        nodes_by_position: &mut [Vec<FSTNode>],
     ) {
         let mut stream = self.user_dictionary.fst.search(query).into_stream();
         let mut results = Vec::new();
@@ -167,10 +167,10 @@ impl NoriTokenizer {
         let last_position_index = parent.last_position_index + num_spaces + word_length;
 
         nodes_by_position[last_position_index as usize].push(FSTNode {
-            cost: cost,
+            cost,
             num_space_before_node: num_spaces,
-            last_position_index: last_position_index,
-            word_length: word_length,
+            last_position_index,
+            word_length,
             morpheme: morpheme.clone(),
             parent_node_index: parent_index,
         });
@@ -181,7 +181,7 @@ impl NoriTokenizer {
         query: &CommonPrefix,
         offset: usize,
         num_spaces: i32,
-        nodes_by_position: &mut Vec<Vec<FSTNode>>,
+        nodes_by_position: &mut [Vec<FSTNode>],
     ) -> bool {
         let mut system_stream = self.system_dictionary.fst.search(query).into_stream();
         let mut is_found = false;
@@ -201,10 +201,10 @@ impl NoriTokenizer {
                 let last_position_index = parent.last_position_index + num_spaces + word_length;
 
                 nodes_by_position[last_position_index as usize].push(FSTNode {
-                    cost: cost,
+                    cost,
                     num_space_before_node: num_spaces,
-                    last_position_index: last_position_index,
-                    word_length: word_length,
+                    last_position_index,
+                    word_length,
                     morpheme: morpheme.clone(),
                     parent_node_index: parent_index,
                 });
@@ -219,7 +219,7 @@ impl NoriTokenizer {
         input_text: &str,
         offset: usize,
         num_spaces: i32,
-        nodes_by_position: &mut Vec<Vec<FSTNode>>,
+        nodes_by_position: &mut [Vec<FSTNode>],
     ) -> Result<(), Error> {
         let current = offset + num_spaces as usize;
         let char_def = match self
@@ -245,9 +245,9 @@ impl NoriTokenizer {
         let cost = parent.cost + word_cost + connection_cost + space_cost;
 
         nodes_by_position[last_position_index as usize].push(FSTNode {
-            cost: cost,
+            cost,
             num_space_before_node: num_spaces,
-            last_position_index: last_position_index,
+            last_position_index,
             word_length: unk_length,
             morpheme: morpheme.clone(),
             parent_node_index: parent_index,
@@ -261,7 +261,7 @@ impl NoriTokenizer {
             return 0;
         }
 
-        if morpheme.pos_tags.len() == 0 {
+        if morpheme.pos_tags.is_empty() {
             error!("Morpheme has no pos tags");
             return 0;
         }
@@ -273,7 +273,7 @@ impl NoriTokenizer {
     }
 
     fn select_parent_node(&self, candidates: &Vec<FSTNode>, morpheme: &Morpheme) -> (usize, i32) {
-        if candidates.len() == 0 {
+        if candidates.is_empty() {
             return (0, 0);
         }
 
@@ -288,13 +288,12 @@ impl NoriTokenizer {
         let mut result_index = 0;
         let mut min_cost = candidates[0].cost + min_connection_cost;
 
-        for i in 1..candidates.len() {
-            let current_connection_cost = self
-                    .system_dictionary
+        for (i, candidate) in candidates.iter().enumerate().skip(1) {
+            let current_connection_cost =
+                self.system_dictionary
                     .connection_cost
-                    .get_cost(candidates[i].morpheme.right_id, morpheme.left_id)
-                    as i32;
-            let current_cost = candidates[i].cost + current_connection_cost;
+                    .get_cost(candidate.morpheme.right_id, morpheme.left_id) as i32;
+            let current_cost = candidate.cost + current_connection_cost;
             if current_cost < min_cost {
                 min_cost = current_cost;
                 min_connection_cost = current_connection_cost;
@@ -324,7 +323,7 @@ impl NoriTokenizer {
         let is_first_common_or_inherited =
             first_script == Script::Common || first_script == Script::Inherited;
         let is_first_punctuation = Self::is_punctuation(chars[0]);
-        let is_first_digit = chars[0].is_digit(10);
+        let is_first_digit = chars[0].is_ascii_digit();
 
         while char_offset < char_len {
             let current_script = chars[char_offset].script();
@@ -336,7 +335,7 @@ impl NoriTokenizer {
                 || is_common_or_inherited)
                 && !chars[char_offset].is_whitespace();
             let is_punctuation = Self::is_punctuation(chars[char_offset]);
-            let is_digit = chars[0].is_digit(10);
+            let is_digit = chars[0].is_ascii_digit();
 
             if !is_same_script
                 || (is_first_punctuation != is_punctuation)
@@ -367,25 +366,25 @@ impl NoriTokenizer {
             return true;
         }
 
-        match get_general_category(c) {
+        matches!(
+            get_general_category(c),
             GeneralCategory::SpaceSeparator
-            | GeneralCategory::LineSeparator
-            | GeneralCategory::ParagraphSeparator
-            | GeneralCategory::Control
-            | GeneralCategory::Format
-            | GeneralCategory::DashPunctuation
-            | GeneralCategory::OpenPunctuation
-            | GeneralCategory::ClosePunctuation
-            | GeneralCategory::ConnectorPunctuation
-            | GeneralCategory::OtherPunctuation
-            | GeneralCategory::MathSymbol
-            | GeneralCategory::CurrencySymbol
-            | GeneralCategory::ModifierSymbol
-            | GeneralCategory::OtherSymbol
-            | GeneralCategory::InitialPunctuation
-            | GeneralCategory::FinalPunctuation => true,
-            _ => false,
-        }
+                | GeneralCategory::LineSeparator
+                | GeneralCategory::ParagraphSeparator
+                | GeneralCategory::Control
+                | GeneralCategory::Format
+                | GeneralCategory::DashPunctuation
+                | GeneralCategory::OpenPunctuation
+                | GeneralCategory::ClosePunctuation
+                | GeneralCategory::ConnectorPunctuation
+                | GeneralCategory::OtherPunctuation
+                | GeneralCategory::MathSymbol
+                | GeneralCategory::CurrencySymbol
+                | GeneralCategory::ModifierSymbol
+                | GeneralCategory::OtherSymbol
+                | GeneralCategory::InitialPunctuation
+                | GeneralCategory::FinalPunctuation
+        )
     }
 
     #[inline]

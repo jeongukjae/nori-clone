@@ -94,8 +94,8 @@ impl Morpheme {
 
         let pos_tags = match entry
             .pos_tags
-            .split("+")
-            .map(|p| POSTag::from_name(p))
+            .split('+')
+            .map(POSTag::from_name)
             .collect::<Option<Vec<_>>>()
         {
             Some(ptags) => ptags,
@@ -106,8 +106,8 @@ impl Morpheme {
         if entry.expression != "*" {
             for expr in entry
                 .expression
-                .split("+")
-                .map(|s| s.split("/").collect::<Vec<&str>>())
+                .split('+')
+                .map(|s| s.split('/').collect::<Vec<&str>>())
             {
                 if expr.len() != 3 {
                     return Err(Error(format!("Invalid expression `{:?}`", expr)));
@@ -127,14 +127,14 @@ impl Morpheme {
             left_id: entry.left_id,
             right_id: entry.right_id,
             word_cost: entry.word_cost,
-            pos_type: pos_type,
-            pos_tags: pos_tags,
-            expressions: expressions,
+            pos_type,
+            pos_tags,
+            expressions,
         })
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize_repr, Deserialize_repr, PartialEq, Eq, Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum POSType {
     MORPHEME = 0,    // A simple morpheme.
@@ -156,7 +156,7 @@ impl POSType {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize_repr, Deserialize_repr, PartialEq, Eq, Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum POSTag {
     UNKNOWN = 0, // Unknown
@@ -203,10 +203,10 @@ impl POSTag {
 
     pub fn from_name(s: &str) -> Option<Self> {
         let s = s.to_uppercase();
-        if s.starts_with("J") {
+        if s.starts_with('J') {
             return Some(Self::J);
         }
-        if s.starts_with("E") {
+        if s.starts_with('E') {
             return Some(Self::E);
         }
 

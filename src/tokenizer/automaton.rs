@@ -12,7 +12,7 @@ impl<'a> CommonPrefix<'a> {
     pub fn new(input: &'a str, offset: usize) -> CommonPrefix<'a> {
         CommonPrefix {
             string: input.as_bytes(),
-            offset: offset,
+            offset,
         }
     }
 }

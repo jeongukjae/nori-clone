@@ -20,7 +20,7 @@ impl UserDictionary {
         terms: Vec<(String, Vec<String>)>,
         additional_metadata: &AdditionalMetadata,
     ) -> Result<Self, Error> {
-        let mut terms = terms.clone();
+        let mut terms = terms;
         terms.sort_by_key(|k| k.0.clone());
 
         let mut builder = MapBuilder::memory();
@@ -37,7 +37,7 @@ impl UserDictionary {
                     pos_tag: POSTag::NNG,
                 })
                 .collect();
-            let pos_tags = if terms.1.len() == 0 {
+            let pos_tags = if terms.1.is_empty() {
                 vec![POSTag::NNG]
             } else {
                 (0..terms.1.len() - 1).map(|_| POSTag::NNG).collect()
@@ -61,9 +61,9 @@ impl UserDictionary {
             morphemes.push(Morpheme {
                 word_cost: -100000,
                 left_id: additional_metadata.left_id_nng,
-                right_id: right_id,
-                pos_type: pos_type,
-                pos_tags: pos_tags,
+                right_id,
+                pos_type,
+                pos_tags,
                 expressions: expression,
             })
         }
@@ -73,15 +73,12 @@ impl UserDictionary {
             Err(e) => return Err(format!("failed to build user dictionary: {:?}", e).into()),
         };
 
-        let map = match Map::new(data) {
+        let fst = match Map::new(data) {
             Ok(map) => map,
             Err(e) => return Err(format!("failed to build user dictionary: {:?}", e).into()),
         };
 
-        Ok(UserDictionary {
-            fst: map,
-            morphemes: morphemes,
-        })
+        Ok(UserDictionary { fst, morphemes })
     }
 
     pub fn load_from_bytes(
@@ -105,7 +102,7 @@ impl UserDictionary {
                 continue;
             }
 
-            let splits: Vec<String> = line.split(" ").map(|k| k.to_owned()).collect();
+            let splits: Vec<String> = line.split(' ').map(|k| k.to_owned()).collect();
             terms.push((splits[0].clone(), splits[1..].to_vec()));
         }
 

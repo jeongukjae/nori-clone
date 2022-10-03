@@ -34,19 +34,19 @@ impl DictionaryBuilder {
 
     pub fn build(&self, input_path: &str, output_path: &str) -> Result<(), Error> {
         info!("Building token info dictionary...");
-        _ = match self.build_token_infos(input_path, output_path) {
+        match self.build_token_infos(input_path, output_path) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
 
         info!("Building unknown dictionary...");
-        _ = match self.build_unk_dictionary(input_path, output_path) {
+        match self.build_unk_dictionary(input_path, output_path) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
 
         info!("Building connection cost matrix...");
-        _ = match self.build_connection_cost(input_path, output_path) {
+        match self.build_connection_cost(input_path, output_path) {
             Ok(_) => (),
             Err(e) => return Err(e),
         };
@@ -72,7 +72,7 @@ impl DictionaryBuilder {
             .map(|r| r.unwrap())
             .collect();
 
-        if files.len() == 0 {
+        if files.is_empty() {
             return Err("No csv files found".into());
         }
 
@@ -108,8 +108,7 @@ impl DictionaryBuilder {
                 .from_reader(contents.as_bytes());
             let mut records_for_file: Vec<MeCabTokenCSVRecord> = csv_reader
                 .deserialize::<MeCabTokenCSVRecord>()
-                .filter(|r| r.is_ok())
-                .map(|r| r.unwrap())
+                .filter_map(|r| r.ok())
                 .collect();
             records.append(&mut records_for_file);
         }
@@ -173,7 +172,7 @@ impl DictionaryBuilder {
 
         match file.write_all(bin_token_dictionary.as_slice()) {
             Ok(_) => Ok(()),
-            Err(_) => return Err("Failed to write token dictionary".into()),
+            Err(_) => Err("Failed to write token dictionary".into()),
         }
     }
 
@@ -266,13 +265,13 @@ impl DictionaryBuilder {
             let line = pat_for_remove_comment.replace_all(line.borrow(), "");
             let line = line.trim();
 
-            if line.starts_with("#") || line.len() == 0 {
+            if line.starts_with('#') || line.is_empty() {
                 continue;
             }
 
             if line.starts_with("0x") {
                 // char code definition
-                let splits = line.split(" ").collect::<Vec<&str>>();
+                let splits = line.split(' ').collect::<Vec<&str>>();
                 if splits.len() < 2 {
                     return Err(format!(
                         "malformed char.def file, line: `{}`, splits: `{:?}`",
@@ -347,7 +346,7 @@ impl DictionaryBuilder {
                 }
             } else {
                 // char category definition
-                let splits = line.split(" ").collect::<Vec<&str>>();
+                let splits = line.split(' ').collect::<Vec<&str>>();
                 if splits.len() < 4 {
                     return Err(format!("malformed char.def file, line: `{}`", line).into());
                 }
@@ -399,9 +398,9 @@ impl DictionaryBuilder {
                 invoke_map.insert(
                     char_cls,
                     CategoryDefinition {
-                        invoke: invoke,
-                        group: group,
-                        length: length,
+                        invoke,
+                        group,
+                        length,
                     },
                 );
             }
@@ -411,7 +410,7 @@ impl DictionaryBuilder {
         info!("Saving unknown token infos ...");
         let unk_dictionary = UnknownTokenDictionary {
             class_morpheme_map: unk_class_morpheme_map,
-            invoke_map: invoke_map,
+            invoke_map,
             code_to_class_map: code_to_category_map,
         };
         let bin_unk_dictionary: Vec<u8> = match to_stdvec(&unk_dictionary) {
@@ -426,7 +425,7 @@ impl DictionaryBuilder {
 
         match file.write_all(bin_unk_dictionary.as_slice()) {
             Ok(_) => Ok(()),
-            Err(_) => return Err("Failed to write unk dictionary".into()),
+            Err(_) => Err("Failed to write unk dictionary".into()),
         }
     }
 
@@ -445,7 +444,7 @@ impl DictionaryBuilder {
             Ok(_) => (),
             Err(_) => return Err("Failed to read first line of matrix.def file".into()),
         };
-        let dimensions = first_def_line.trim().split(" ").collect::<Vec<_>>();
+        let dimensions = first_def_line.trim().split(' ').collect::<Vec<_>>();
         if dimensions.len() != 2 {
             return Err(format!("Malformed matrix.def file, line: `{}`", first_def_line).into());
         }
@@ -458,7 +457,7 @@ impl DictionaryBuilder {
             Ok(size) => size,
             Err(_) => return Err(format!("malformed backward size: `{}`", dimensions[1]).into()),
         };
-        if forward_size <= 0 || backward_size <= 0 {
+        if forward_size == 0 || backward_size == 0 {
             return Err("Failed to parse matrix.def file, malformed matrix.def, forward/backward size must be positive".into());
         }
 
@@ -473,7 +472,7 @@ impl DictionaryBuilder {
                 Err(_) => return Err("Failed to read line of matrix.def file".into()),
             };
 
-            let splits = line.split(" ").collect::<Vec<_>>();
+            let splits = line.split(' ').collect::<Vec<_>>();
 
             let forward_id = match splits[0].parse::<u32>() {
                 Ok(id) => id,
@@ -509,8 +508,8 @@ impl DictionaryBuilder {
         info!("Saving connection cost matrix ...");
         let connection_cost = ConnectionCost {
             costs: connection_cost_matrix,
-            forward_size: forward_size,
-            backward_size: backward_size,
+            forward_size,
+            backward_size,
             additional: additional_metadata,
         };
         let bin_connection_cost: Vec<u8> = match to_stdvec(&connection_cost) {
@@ -525,7 +524,7 @@ impl DictionaryBuilder {
 
         match file.write_all(bin_connection_cost.as_slice()) {
             Ok(_) => Ok(()),
-            Err(_) => return Err("Failed to write connection cost".into()),
+            Err(_) => Err("Failed to write connection cost".into()),
         }
     }
 
@@ -549,7 +548,7 @@ impl DictionaryBuilder {
             let line = line.unwrap();
 
             if line.contains("NNG,*,*,*,*,*,*,*") {
-                let splits = line.split(" ").collect::<Vec<_>>();
+                let splits = line.split(' ').collect::<Vec<_>>();
                 left_id_nng = match splits[0].parse::<u16>() {
                     Ok(id) => id,
                     Err(_) => return Err(format!("malformed left id: `{}`", splits[0]).into()),
@@ -571,19 +570,19 @@ impl DictionaryBuilder {
             let line = line.unwrap();
 
             if line.contains("NNG,*,*,*,*,*,*,*") {
-                let splits = line.split(" ").collect::<Vec<_>>();
+                let splits = line.split(' ').collect::<Vec<_>>();
                 right_id_nng = match splits[0].parse::<u16>() {
                     Ok(id) => id,
                     Err(_) => return Err(format!("malformed right id: `{}`", splits[0]).into()),
                 };
             } else if line.contains("NNG,*,T,*,*,*,*,*") {
-                let splits = line.split(" ").collect::<Vec<_>>();
+                let splits = line.split(' ').collect::<Vec<_>>();
                 right_id_nng_w_coda = match splits[0].parse::<u16>() {
                     Ok(id) => id,
                     Err(_) => return Err(format!("malformed right id: `{}`", splits[0]).into()),
                 };
             } else if line.contains("NNG,*,F,*,*,*,*,*") {
-                let splits = line.split(" ").collect::<Vec<_>>();
+                let splits = line.split(' ').collect::<Vec<_>>();
                 right_id_nng_wo_coda = match splits[0].parse::<u16>() {
                     Ok(id) => id,
                     Err(_) => return Err(format!("malformed right id: `{}`", splits[0]).into()),
@@ -597,10 +596,10 @@ impl DictionaryBuilder {
         );
 
         Ok(AdditionalMetadata {
-            left_id_nng: left_id_nng,
-            right_id_nng: right_id_nng,
-            right_id_nng_w_coda: right_id_nng_w_coda,
-            right_id_nng_wo_coda: right_id_nng_wo_coda,
+            left_id_nng,
+            right_id_nng,
+            right_id_nng_w_coda,
+            right_id_nng_wo_coda,
         })
     }
 }

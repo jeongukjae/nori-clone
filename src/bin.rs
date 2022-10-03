@@ -56,7 +56,7 @@ fn main() {
             info!(" - Output path: {}", output_path);
             info!(" - Normalize: {}", opts.normalize.unwrap_or(false));
 
-            match DictionaryBuilder::new(opts.normalize).build(&input_path, &output_path) {
+            match DictionaryBuilder::new(opts.normalize).build(input_path, output_path) {
                 Ok(_) => info!("Dictionary built successfully."),
                 Err(e) => {
                     error!("Failed to build dictionary: {}", e.description());

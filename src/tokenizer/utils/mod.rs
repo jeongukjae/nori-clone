@@ -20,19 +20,19 @@ pub mod uchar {
             Err(e) => return Err(format!("Failed to convert to utf8: {:?}", e).into()),
         };
 
-        Ok(chstr.chars().nth(0).unwrap())
+        Ok(chstr.chars().next().unwrap())
     }
 
     // returns (is_hangul, has_coda)
     pub fn check_coda(c: &str) -> (bool, bool) {
         let chars: Vec<char> = c.chars().collect();
-        if chars.len() == 0 {
+        if chars.is_empty() {
             return (false, false);
         }
 
         let last_ch = chars.last().unwrap();
         let last_ch_code = *last_ch as u32;
-        if last_ch_code < 0xAC00 || last_ch_code > 0xD7A3 {
+        if !(0xAC00..=0xD7A3).contains(&last_ch_code) {
             return (false, false);
         }
 

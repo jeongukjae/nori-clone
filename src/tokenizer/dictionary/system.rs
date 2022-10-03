@@ -45,10 +45,10 @@ impl SystemDictionary {
         };
 
         Ok(SystemDictionary {
-            fst: fst,
+            fst,
             token_dictionary: token_dict,
             unk_dictionary: unk_dict,
-            connection_cost: connection_cost,
+            connection_cost,
 
             bos_eos_morpheme: Morpheme {
                 left_id: 0,
