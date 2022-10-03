@@ -28,7 +28,11 @@ pub struct UnknownTokenDictionary {
 }
 
 impl UnknownTokenDictionary {
-    pub fn get_character_class(
+    pub fn get_ch_cls(&self, ch: char) -> CharacterClass {
+        self.code_to_class_map[&(ch as u32)]
+    }
+
+    pub fn get_ch_cls_with_vec(
         &self,
         bytes: &[u8],
         offset: usize,
@@ -42,7 +46,7 @@ impl UnknownTokenDictionary {
     }
 
     pub fn get_char_def(&self, bytes: &[u8], offset: usize) -> Result<CategoryDefinition, Error> {
-        let ch = match self.get_character_class(bytes, offset) {
+        let ch = match self.get_ch_cls_with_vec(bytes, offset) {
             Ok(ch) => ch,
             Err(e) => return Err(e),
         };
