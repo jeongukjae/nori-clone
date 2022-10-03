@@ -289,15 +289,14 @@ impl NoriTokenizer {
         let mut min_cost = candidates[0].cost + min_connection_cost;
 
         for i in 1..candidates.len() {
-            let current_connection_cost = candidates[i].cost
-                + self
+            let current_connection_cost = self
                     .system_dictionary
                     .connection_cost
                     .get_cost(candidates[i].morpheme.right_id, morpheme.left_id)
                     as i32;
             let current_cost = candidates[i].cost + current_connection_cost;
             if current_cost < min_cost {
-                min_cost = candidates[i].cost + current_connection_cost;
+                min_cost = current_cost;
                 min_connection_cost = current_connection_cost;
                 result_index = i;
             }
