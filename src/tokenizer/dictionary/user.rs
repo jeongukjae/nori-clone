@@ -1,6 +1,7 @@
 use std::{
     borrow::Borrow,
-    io::{BufRead, Read}, rc::Rc,
+    io::{BufRead, Read},
+    rc::Rc,
 };
 
 use daachorse::CharwiseDoubleArrayAhoCorasick;

@@ -9,7 +9,8 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     io::{BufRead, BufReader, Write},
-    path::{Path, PathBuf}, rc::Rc,
+    path::{Path, PathBuf},
+    rc::Rc,
 };
 use unicode_normalization::UnicodeNormalization;
 

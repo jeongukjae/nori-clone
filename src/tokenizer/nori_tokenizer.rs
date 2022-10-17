@@ -201,7 +201,8 @@ impl NoriTokenizer {
             let (unk_length, ch_cls) =
                 self.group_unknown_chars(&input_text[start..], char_def.group == 1);
             let end = start + unk_length;
-            let morpheme = self.system_dictionary.unk_dictionary.class_morpheme_map[&ch_cls].clone();
+            let morpheme =
+                self.system_dictionary.unk_dictionary.class_morpheme_map[&ch_cls].clone();
 
             let num_spaces = Self::count_space_before_word(input_text, start);
             let space_cost = match num_spaces > 0 {
