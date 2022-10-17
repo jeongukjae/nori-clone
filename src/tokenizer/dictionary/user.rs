@@ -1,9 +1,9 @@
 use std::{
     borrow::Borrow,
-    io::{BufRead, Read},
+    io::{BufRead, Read}, rc::Rc,
 };
 
-use fst::{Map, MapBuilder};
+use daachorse::CharwiseDoubleArrayAhoCorasick;
 use regex::Regex;
 
 use crate::{error::Error, utils};
@@ -11,8 +11,8 @@ use crate::{error::Error, utils};
 use super::{AdditionalMetadata, Morpheme, MorphemeExpression, POSTag, POSType};
 
 pub struct UserDictionary {
-    pub fst: Map<Vec<u8>>,
-    pub morphemes: Vec<Morpheme>,
+    pub ahocorasick: Option<CharwiseDoubleArrayAhoCorasick<usize>>,
+    pub morphemes: Vec<Rc<Morpheme>>,
 }
 
 impl UserDictionary {
@@ -23,13 +23,10 @@ impl UserDictionary {
         let mut terms = terms;
         terms.sort_by_key(|k| k.0.clone());
 
-        let mut builder = MapBuilder::memory();
+        let mut ac_keywords = Vec::new();
         let mut morphemes = Vec::new();
-        for (index, terms) in terms.into_iter().enumerate() {
-            match builder.insert(terms.0.as_bytes(), index as u64) {
-                Ok(_) => (),
-                Err(e) => return Err(format!("failed to insert key: {}", e).into()),
-            };
+        for (_, terms) in terms.into_iter().enumerate() {
+            ac_keywords.push(terms.0.clone());
 
             let expression = (1..terms.1.len())
                 .map(|i| MorphemeExpression {
@@ -58,27 +55,29 @@ impl UserDictionary {
             };
 
             // NOTE: we treat all words in the user dictionary as NNG.
-            morphemes.push(Morpheme {
+            morphemes.push(Rc::new(Morpheme {
                 word_cost: -100000,
                 left_id: additional_metadata.left_id_nng,
                 right_id,
                 pos_type,
                 pos_tags,
                 expressions: expression,
-            })
+            }))
         }
 
-        let data = match builder.into_inner() {
-            Ok(fst) => fst,
-            Err(e) => return Err(format!("failed to build user dictionary: {:?}", e).into()),
+        let ahocorasick: Option<CharwiseDoubleArrayAhoCorasick<usize>> = if ac_keywords.is_empty() {
+            None
+        } else {
+            Some(
+                CharwiseDoubleArrayAhoCorasick::new(ac_keywords)
+                    .expect("Failed to build Aho-Corasick dictionary"),
+            )
         };
 
-        let fst = match Map::new(data) {
-            Ok(map) => map,
-            Err(e) => return Err(format!("failed to build user dictionary: {:?}", e).into()),
-        };
-
-        Ok(UserDictionary { fst, morphemes })
+        Ok(UserDictionary {
+            ahocorasick,
+            morphemes,
+        })
     }
 
     pub fn load_from_bytes(

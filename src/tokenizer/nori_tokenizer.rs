@@ -1,11 +1,13 @@
+use std::collections::HashSet;
+use std::rc::Rc;
+
 use crate::dictionary::{CharacterClass, Morpheme, POSTag};
 use crate::{error::Error, SystemDictionary, UserDictionary};
-use crate::{utils, CommonPrefix};
-use fst::IntoStreamer;
-use fst::Streamer;
 use log::error;
 use unicode_general_category::{get_general_category, GeneralCategory};
 use unicode_script::{Script, UnicodeScript};
+
+const DEFAULT_TOTAL_COST: i32 = 1000000000;
 
 pub struct NoriTokenizer {
     system_dictionary: SystemDictionary,
@@ -22,106 +24,77 @@ impl NoriTokenizer {
 
     pub fn tokenize(&self, input_text: &str) -> Result<Lattice, Error> {
         let input_bytes = input_text.as_bytes();
-        let end = input_bytes.len();
-        let mut offset = 0;
-        let mut last_num_spaces = 0;
+        let input_bytes_length = input_bytes.len();
 
-        let mut nodes_by_position: Vec<Vec<FSTNode>> =
-            (0..(end + 1)).into_iter().map(|_| Vec::new()).collect();
+        let mut nodes_by_position: Vec<Vec<ACNode>> = (0..(input_bytes_length + 1))
+            .into_iter()
+            .map(|_| Vec::new())
+            .collect();
+        let mut founds_position: HashSet<usize> = HashSet::new();
 
         // Add bos node.
-        nodes_by_position[0].push(FSTNode {
-            cost: 0,
-            last_position_index: 0,
-            word_length: 0,
-            num_space_before_node: 0,
+        nodes_by_position[0].push(ACNode {
+            space_cost: 0,
+            total_cost: 0,
+            start_with_space: 0,
+            start: 0,
+            end: 0,
             morpheme: self.system_dictionary.bos_eos_morpheme.clone(),
             parent_node_index: 0,
         });
 
-        // Search over input text.
-        while offset < end {
-            let mut current: usize = offset;
-            let mut num_spaces: i32 = 0;
+        self.find_user_dictionary(input_text, &mut nodes_by_position, &mut founds_position);
+        self.find_system_dictionary(input_text, &mut nodes_by_position, &mut founds_position);
+        self.find_unknown_words(input_text, &mut nodes_by_position, &founds_position);
 
-            if nodes_by_position[current].is_empty() {
-                offset += utils::uchar::get_next_length(input_bytes[current]);
+        for i in 1..input_bytes_length + 1 {
+            if nodes_by_position[i].is_empty() {
                 continue;
             }
 
-            while current < end && Self::is_whitespace(input_bytes, current) {
-                let char_length = utils::uchar::get_next_length(input_bytes[current]);
+            for j in 0..nodes_by_position[i].len() {
+                let node = &nodes_by_position[i][j];
 
-                current += char_length;
-                num_spaces += char_length as i32;
+                let (parent_index, connection_cost) = self
+                    .select_parent_node(&nodes_by_position[node.start_with_space], &node.morpheme);
+                if let Some(parent) = nodes_by_position[node.start_with_space].get(parent_index) {
+                    let parent_cost = parent.total_cost;
+                    let total_cost =
+                        parent_cost + node.space_cost + connection_cost + node.morpheme.word_cost;
+
+                    nodes_by_position[i][j].total_cost = total_cost;
+                    nodes_by_position[i][j].parent_node_index = parent_index;
+                }
             }
-
-            if current == end {
-                last_num_spaces = num_spaces;
-                break;
-            }
-
-            let query = CommonPrefix::new(input_text, current);
-
-            // Find user dictionary first.
-            self.find_user_dictionary(&query, offset, num_spaces, &mut nodes_by_position);
-
-            let current_ch_cls = match self
-                .system_dictionary
-                .unk_dictionary
-                .get_ch_cls_with_vec(input_bytes, current)
-            {
-                Ok(ch_cls) => ch_cls,
-                Err(e) => return Err(format!("Unknown character cls: {}", e.description()).into()),
-            };
-
-            let current_ch_def = self.system_dictionary.unk_dictionary.invoke_map[&current_ch_cls];
-
-            let is_found =
-                self.find_system_dictionary(&query, offset, num_spaces, &mut nodes_by_position);
-            if !is_found || current_ch_def.invoke == 1 {
-                match self.find_unk_dictionary(
-                    input_text,
-                    offset,
-                    num_spaces,
-                    &mut nodes_by_position,
-                ) {
-                    Ok(_) => {}
-                    Err(e) => return Err(format!("Failed to find unk dictionary: {:?}", e).into()),
-                };
-            }
-
-            offset += num_spaces as usize;
-            offset += utils::uchar::get_next_length(input_bytes[current]);
         }
 
         // Building output lattice with search result;
-        let end = end - last_num_spaces as usize;
-        let eos_morpeheme = self.system_dictionary.bos_eos_morpheme.clone();
-        let (eos_parent_index, _) =
-            self.select_parent_node(&nodes_by_position[end], &eos_morpeheme);
+        let last_num_spaces = Self::count_space_before_word(input_text, input_bytes.len());
+        let end = input_bytes_length - last_num_spaces as usize;
+        let (eos_parent_index, _) = self.select_parent_node(
+            &nodes_by_position[end],
+            &self.system_dictionary.bos_eos_morpheme,
+        );
 
-        let mut nodes: Vec<Node> = Vec::with_capacity(10);
+        let mut nodes: Vec<Node> = Vec::new();
         nodes.push(Node {
             surface: "EOS".to_string(),
-            morpheme: eos_morpeheme,
+            morpheme: self.system_dictionary.bos_eos_morpheme.clone(),
             offset: end,
             length: 0,
         });
 
         let mut current_node = &nodes_by_position[end][eos_parent_index];
-        while current_node.last_position_index != 0 {
-            let start = (current_node.last_position_index - current_node.word_length) as usize;
-            let end = current_node.last_position_index as usize;
+        while current_node.end != 0 {
             let node = Node {
-                surface: input_text[start..end].to_string(),
+                surface: input_text[current_node.start..current_node.end].to_string(),
                 morpheme: current_node.morpheme.clone(),
-                offset: start,
-                length: end - start,
+                offset: current_node.start,
+                length: current_node.end - current_node.start,
             };
             nodes.push(node);
-            let parent_node_inex = start - current_node.num_space_before_node as usize;
-            current_node = &nodes_by_position[parent_node_inex][current_node.parent_node_index];
+            current_node =
+                &nodes_by_position[current_node.start_with_space][current_node.parent_node_index];
         }
 
         nodes.push(Node {
@@ -135,132 +108,133 @@ impl NoriTokenizer {
         Ok(Lattice { nodes })
     }
 
-    fn find_user_dictionary(
-        &self,
-        query: &CommonPrefix,
-        offset: usize,
-        num_spaces: i32,
-        nodes_by_position: &mut [Vec<FSTNode>],
-    ) {
-        let mut stream = self.user_dictionary.fst.search(query).into_stream();
-        let mut results = Vec::new();
-
-        while let Some((k, v)) = stream.next() {
-            results.push((k.to_owned(), v));
-        }
-
-        let longest = match results.iter().max_by_key(|(k, _)| k.len()) {
-            Some((k, v)) => (k, v.to_owned()),
-            None => return,
-        };
-
-        let morpheme = &self.user_dictionary.morphemes[longest.1 as usize];
-        let (parent_index, connection_cost) =
-            self.select_parent_node(&nodes_by_position[offset], morpheme);
-        let parent = &nodes_by_position[offset][parent_index];
-
-        let space_cost = Self::get_space_penalty(morpheme, num_spaces);
-        let word_cost = morpheme.word_cost as i32;
-        let cost = parent.cost + word_cost + connection_cost + space_cost;
-        let word_length = longest.0.len() as i32;
-
-        let last_position_index = parent.last_position_index + num_spaces + word_length;
-
-        nodes_by_position[last_position_index as usize].push(FSTNode {
-            cost,
-            num_space_before_node: num_spaces,
-            last_position_index,
-            word_length,
-            morpheme: morpheme.clone(),
-            parent_node_index: parent_index,
-        });
-    }
-
     fn find_system_dictionary(
         &self,
-        query: &CommonPrefix,
-        offset: usize,
-        num_spaces: i32,
-        nodes_by_position: &mut [Vec<FSTNode>],
-    ) -> bool {
-        let mut system_stream = self.system_dictionary.fst.search(query).into_stream();
-        let mut is_found = false;
+        input_text: &str,
+        nodes_by_position: &mut [Vec<ACNode>],
+        founds_position: &mut HashSet<usize>,
+    ) {
+        let it = self
+            .system_dictionary
+            .ahocorasick
+            .find_overlapping_iter(input_text);
 
-        while let Some((k, v)) = system_stream.next() {
-            is_found = true;
-            for morpheme in &self.system_dictionary.token_dictionary.morphemes[v as usize] {
-                let (parent_index, connection_cost) =
-                    self.select_parent_node(&nodes_by_position[offset], morpheme);
-                let parent = &nodes_by_position[offset][parent_index];
+        for m in it {
+            let num_spaces = Self::count_space_before_word(input_text, m.start());
+            founds_position.insert(m.start());
 
-                let space_cost = Self::get_space_penalty(morpheme, num_spaces);
-                let word_cost = morpheme.word_cost as i32;
-                let cost = parent.cost + word_cost + connection_cost + space_cost;
-                let word_length = k.len() as i32;
+            for morpheme in &self.system_dictionary.token_dictionary.morphemes[m.value()] {
+                let space_cost = match num_spaces > 0 {
+                    true => Self::get_space_cost(morpheme),
+                    false => 0,
+                };
 
-                let last_position_index = parent.last_position_index + num_spaces + word_length;
-
-                nodes_by_position[last_position_index as usize].push(FSTNode {
-                    cost,
-                    num_space_before_node: num_spaces,
-                    last_position_index,
-                    word_length,
+                nodes_by_position[m.end()].push(ACNode {
+                    space_cost,
+                    total_cost: DEFAULT_TOTAL_COST,
+                    start_with_space: m.start() - num_spaces,
+                    start: m.start(),
+                    end: m.end(),
                     morpheme: morpheme.clone(),
-                    parent_node_index: parent_index,
+                    parent_node_index: 0,
                 });
             }
         }
-
-        is_found
     }
 
-    fn find_unk_dictionary(
+    fn find_user_dictionary(
         &self,
         input_text: &str,
-        offset: usize,
-        num_spaces: i32,
-        nodes_by_position: &mut [Vec<FSTNode>],
-    ) -> Result<(), Error> {
-        let current = offset + num_spaces as usize;
-        let char_def = match self
-            .system_dictionary
-            .unk_dictionary
-            .get_char_def(input_text.as_bytes(), current)
-        {
-            Ok(char_def) => char_def,
-            Err(e) => return Err(format!("Unknown character def: {}", e.description()).into()),
-        };
+        nodes_by_position: &mut [Vec<ACNode>],
+        founds_position: &mut HashSet<usize>,
+    ) {
+        if let Some(user_dict_ahocorasick) = &self.user_dictionary.ahocorasick {
+            let it = user_dict_ahocorasick.find_overlapping_iter(input_text);
 
-        let (unk_length, ch_cls) =
-            self.group_unknown_chars(&input_text[current..], char_def.group == 1);
-        let morpheme = &self.system_dictionary.unk_dictionary.class_morpheme_map[&ch_cls];
-        let (parent_index, connection_cost) =
-            self.select_parent_node(&nodes_by_position[offset], morpheme);
-        let parent = &nodes_by_position[offset][parent_index];
+            // remove completely overlapped case?
+            for m in it {
+                founds_position.insert(m.start());
+                let morpheme = &self.user_dictionary.morphemes[m.value()];
 
-        let word_cost = morpheme.word_cost as i32;
-        let space_cost = Self::get_space_penalty(morpheme, num_spaces);
-        let last_position_index = parent.last_position_index + num_spaces + unk_length;
+                let num_spaces = Self::count_space_before_word(input_text, m.start());
+                let space_cost = match num_spaces > 0 {
+                    true => Self::get_space_cost(morpheme),
+                    false => 0,
+                };
 
-        let cost = parent.cost + word_cost + connection_cost + space_cost;
-
-        nodes_by_position[last_position_index as usize].push(FSTNode {
-            cost,
-            num_space_before_node: num_spaces,
-            last_position_index,
-            word_length: unk_length,
-            morpheme: morpheme.clone(),
-            parent_node_index: parent_index,
-        });
-
-        Ok(())
+                nodes_by_position[m.end()].push(ACNode {
+                    space_cost,
+                    total_cost: DEFAULT_TOTAL_COST,
+                    start_with_space: m.start() - num_spaces,
+                    start: m.start(),
+                    end: m.end(),
+                    morpheme: self.user_dictionary.morphemes[m.value()].clone(),
+                    parent_node_index: 0,
+                });
+            }
+        }
     }
 
-    fn get_space_penalty(morpheme: &Morpheme, num_spaces: i32) -> i32 {
-        if num_spaces == 0 {
-            return 0;
-        }
+    fn find_unknown_words(
+        &self,
+        input_text: &str,
+        nodes_by_position: &mut [Vec<ACNode>],
+        founds_position: &HashSet<usize>,
+    ) {
+        let mut last_pushed_index = 0;
 
+        for (start, ch) in input_text.char_indices() {
+            if last_pushed_index > start {
+                continue;
+            }
+
+            if founds_position.contains(&start) {
+                continue;
+            }
+
+            if Self::is_whitespace(ch) {
+                continue;
+            }
+
+            let char_def = self.system_dictionary.unk_dictionary.get_char_def(ch);
+
+            let (unk_length, ch_cls) =
+                self.group_unknown_chars(&input_text[start..], char_def.group == 1);
+            let end = start + unk_length;
+            let morpheme = self.system_dictionary.unk_dictionary.class_morpheme_map[&ch_cls].clone();
+
+            let num_spaces = Self::count_space_before_word(input_text, start);
+            let space_cost = match num_spaces > 0 {
+                true => Self::get_space_cost(&morpheme),
+                false => 0,
+            };
+
+            nodes_by_position[end].push(ACNode {
+                space_cost,
+                total_cost: DEFAULT_TOTAL_COST,
+                start_with_space: start - num_spaces,
+                start,
+                end,
+                morpheme,
+                parent_node_index: 0,
+            });
+
+            last_pushed_index = end;
+        }
+    }
+
+    fn count_space_before_word(input_text: &str, offset_before: usize) -> usize {
+        let mut num_space = 0;
+        for c in input_text[..offset_before].chars().rev() {
+            if !Self::is_whitespace(c) {
+                break;
+            }
+            num_space += c.len_utf8();
+        }
+        num_space
+    }
+
+    fn get_space_cost(morpheme: &Morpheme) -> i32 {
         if morpheme.pos_tags.is_empty() {
             error!("Morpheme has no pos tags");
             return 0;
@@ -272,7 +246,7 @@ impl NoriTokenizer {
         }
     }
 
-    fn select_parent_node(&self, candidates: &Vec<FSTNode>, morpheme: &Morpheme) -> (usize, i32) {
+    fn select_parent_node(&self, candidates: &[ACNode], morpheme: &Morpheme) -> (usize, i32) {
         if candidates.is_empty() {
             return (0, 0);
         }
@@ -286,14 +260,14 @@ impl NoriTokenizer {
         }
 
         let mut result_index = 0;
-        let mut min_cost = candidates[0].cost + min_connection_cost;
+        let mut min_cost = candidates[0].total_cost + min_connection_cost;
 
         for (i, candidate) in candidates.iter().enumerate().skip(1) {
             let current_connection_cost =
                 self.system_dictionary
                     .connection_cost
                     .get_cost(candidate.morpheme.right_id, morpheme.left_id) as i32;
-            let current_cost = candidate.cost + current_connection_cost;
+            let current_cost = candidate.total_cost + current_connection_cost;
             if current_cost < min_cost {
                 min_cost = current_cost;
                 min_connection_cost = current_connection_cost;
@@ -304,38 +278,42 @@ impl NoriTokenizer {
         (result_index, min_connection_cost)
     }
 
-    fn group_unknown_chars(&self, x: &str, do_group: bool) -> (i32, CharacterClass) {
-        let chars = x.chars().collect::<Vec<char>>();
-        let char_len = chars.len();
+    fn group_unknown_chars(&self, x: &str, do_group: bool) -> (usize, CharacterClass) {
+        let char_indice_it = x.char_indices();
+        let char_len = x.chars().count();
         if char_len == 0 {
             return (0, CharacterClass::DEFAULT);
         }
 
-        let mut result_class = self.system_dictionary.unk_dictionary.get_ch_cls(chars[0]);
-        let mut result_offset = chars[0].len_utf8() as i32;
-        let mut char_offset = 1;
+        let (_, first_ch) = match char_indice_it.clone().next() {
+            Some((start, ch)) => (start, ch),
+            None => return (0, CharacterClass::DEFAULT),
+        };
+
+        let mut result_class = self.system_dictionary.unk_dictionary.get_ch_cls(first_ch);
+        let mut result_offset = first_ch.len_utf8();
 
         if !do_group {
             return (result_offset, result_class);
         }
 
-        let mut first_script = chars[0].script();
+        let mut first_script = first_ch.script();
         let is_first_common_or_inherited =
             first_script == Script::Common || first_script == Script::Inherited;
-        let is_first_punctuation = Self::is_punctuation(chars[0]);
-        let is_first_digit = chars[0].is_ascii_digit();
+        let is_first_punctuation = Self::is_punctuation(first_ch);
+        let is_first_digit = first_ch.is_ascii_digit();
 
-        while char_offset < char_len {
-            let current_script = chars[char_offset].script();
+        for (_, ch) in char_indice_it.skip(1) {
+            let current_script = ch.script();
 
             let is_common_or_inherited =
                 current_script == Script::Common || current_script == Script::Inherited;
             let is_same_script = ((current_script == first_script)
                 || is_first_common_or_inherited
                 || is_common_or_inherited)
-                && !chars[char_offset].is_whitespace();
-            let is_punctuation = Self::is_punctuation(chars[char_offset]);
-            let is_digit = chars[0].is_ascii_digit();
+                && !Self::is_whitespace(ch);
+            let is_punctuation = Self::is_punctuation(ch);
+            let is_digit = ch.is_ascii_digit();
 
             if !is_same_script
                 || (is_first_punctuation != is_punctuation)
@@ -346,14 +324,10 @@ impl NoriTokenizer {
 
             if is_first_common_or_inherited && !is_punctuation {
                 first_script = current_script;
-                result_class = self
-                    .system_dictionary
-                    .unk_dictionary
-                    .get_ch_cls(chars[char_offset]);
+                result_class = self.system_dictionary.unk_dictionary.get_ch_cls(ch);
             }
 
-            result_offset += chars[char_offset].len_utf8() as i32;
-            char_offset += 1;
+            result_offset += ch.len_utf8();
         }
 
         (result_offset, result_class)
@@ -388,11 +362,8 @@ impl NoriTokenizer {
     }
 
     #[inline]
-    fn is_whitespace(buf: &[u8], offset: usize) -> bool {
-        match utils::uchar::get_next_char(buf, offset) {
-            Ok(c) => c.is_whitespace(),
-            Err(_) => false,
-        }
+    fn is_whitespace(c: char) -> bool {
+        c.is_whitespace()
     }
 }
 
@@ -404,21 +375,21 @@ pub struct Lattice {
 #[derive(Debug)]
 pub struct Node {
     pub surface: String,
-    pub morpheme: Morpheme,
+    pub morpheme: Rc<Morpheme>,
     pub offset: usize,
     pub length: usize, // byte length
 }
 
-#[derive(Debug, Clone)]
-pub struct FSTNode {
-    cost: i32,
+#[derive(Debug)]
+pub struct ACNode {
+    space_cost: i32,
+    total_cost: i32,
 
-    num_space_before_node: i32,
-    word_length: i32,
-    last_position_index: i32,
+    start_with_space: usize,
+    start: usize,
+    end: usize,
 
-    morpheme: Morpheme,
-
+    morpheme: Rc<Morpheme>,
     parent_node_index: usize,
 }
 

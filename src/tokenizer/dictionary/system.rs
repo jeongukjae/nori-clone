@@ -1,37 +1,37 @@
 use std::io::Read;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::{fs::File, io::BufReader, path::Path};
 
 use crate::error::Error;
 
 use super::*;
-use fst::Map;
+use daachorse::CharwiseDoubleArrayAhoCorasick;
 use postcard::from_bytes;
 
 pub struct SystemDictionary {
-    pub fst: Map<Vec<u8>>,
+    pub ahocorasick: CharwiseDoubleArrayAhoCorasick<usize>,
     pub token_dictionary: TokenDictionary,
     pub unk_dictionary: UnknownTokenDictionary,
     pub connection_cost: ConnectionCost,
 
-    pub bos_eos_morpheme: Morpheme,
+    pub bos_eos_morpheme: Rc<Morpheme>,
 }
 
 impl SystemDictionary {
     pub fn load_from_bytes(
-        fst_buffer: Vec<u8>,
+        ahocorasick_buffer: Vec<u8>,
         token_dict_buffer: Vec<u8>,
         unk_dict_buffer: Vec<u8>,
         conn_cost_buffer: Vec<u8>,
     ) -> Result<Self, Error> {
-        let fst = match Map::new(fst_buffer) {
-            Ok(fst) => fst,
-            Err(e) => return Err(format!("Failed to load fst: ({:?})", e).into()),
-        };
-
         let token_dict = match from_bytes(&token_dict_buffer) {
             Ok(dict) => dict,
             Err(e) => return Err(format!("Failed to load token dictionary ({:?})", e).into()),
+        };
+
+        let (ahocorasick, _) = unsafe {
+            CharwiseDoubleArrayAhoCorasick::<usize>::deserialize_unchecked(&ahocorasick_buffer)
         };
 
         let unk_dict = match from_bytes(&unk_dict_buffer) {
@@ -45,27 +45,28 @@ impl SystemDictionary {
         };
 
         Ok(SystemDictionary {
-            fst,
             token_dictionary: token_dict,
             unk_dictionary: unk_dict,
             connection_cost,
+            ahocorasick,
 
-            bos_eos_morpheme: Morpheme {
+            bos_eos_morpheme: Rc::new(Morpheme {
                 left_id: 0,
                 right_id: 0,
                 word_cost: 0,
                 pos_type: POSType::MORPHEME,
                 pos_tags: vec![POSTag::UNKNOWN],
                 expressions: vec![],
-            },
+            }),
         })
     }
 
     pub fn load_from_input_directory(input_path: &str) -> Result<Self, Error> {
-        let fst_buffer = match Self::read_file(Path::new(input_path).join(FST_FILENAME)) {
-            Ok(buffer) => buffer,
-            Err(e) => return Err(format!("Failed to load fst: ({:?})", e).into()),
-        };
+        let ahocorasick_buffer =
+            match Self::read_file(Path::new(input_path).join(AHOCORASICK_FILENAME)) {
+                Ok(buffer) => buffer,
+                Err(e) => return Err(format!("Failed to load ahocorasick: ({:?})", e).into()),
+            };
 
         let token_dict_buffer = match Self::read_file(Path::new(input_path).join(TOKEN_FILENAME)) {
             Ok(buffer) => buffer,
@@ -84,7 +85,7 @@ impl SystemDictionary {
         };
 
         Self::load_from_bytes(
-            fst_buffer,
+            ahocorasick_buffer,
             token_dict_buffer,
             unk_dict_buffer,
             conn_cost_buffer,

@@ -1,6 +1,10 @@
 use clap::Parser;
-use std::{io::{BufReader, BufRead}, fs::File, time::Instant};
 use nori_clone::{NoriTokenizer, SystemDictionary, UserDictionary};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    time::Instant,
+};
 
 /// Run nori-clone benchmark
 #[derive(Parser, Debug)]
@@ -22,14 +26,22 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let system_dictionary = SystemDictionary::load_from_input_directory(args.dict.as_str()).unwrap();
-    let user_dictionary = UserDictionary::load_from_input_directory(args.dict.as_str(), &system_dictionary.connection_cost.additional).unwrap();
+    let system_dictionary =
+        SystemDictionary::load_from_input_directory(args.dict.as_str()).unwrap();
+    let user_dictionary = UserDictionary::load_from_input_directory(
+        args.dict.as_str(),
+        &system_dictionary.connection_cost.additional,
+    )
+    .unwrap();
 
     let tokenizer = NoriTokenizer::new(system_dictionary, user_dictionary);
 
     // read all contents from args.data path.
     let file = File::open(args.data).unwrap();
-    let lines: Vec<String> = BufReader::new(file).lines().map(|line| line.unwrap()).collect();
+    let lines: Vec<String> = BufReader::new(file)
+        .lines()
+        .map(|line| line.unwrap())
+        .collect();
     let lines = lines[..args.n_lines].to_vec();
 
     println!("{} lines", lines.len());

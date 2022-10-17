@@ -1,5 +1,5 @@
-use crate::{error::Error, utils};
-use std::collections::HashMap;
+use crate::error::Error;
+use std::{collections::HashMap, rc::Rc};
 
 use serde::{Deserialize, Serialize};
 use serde_repr::*;
@@ -10,24 +10,25 @@ pub const MECAB_CON_COST_FILENAME: &str = "matrix.def";
 pub const MECAB_LEFT_ID_FILENAME: &str = "left-id.def";
 pub const MECAB_RIGHT_ID_FILENAME: &str = "right-id.def";
 
-pub const FST_FILENAME: &str = "fst.bin";
+pub const AHOCORASICK_FILENAME: &str = "ahocorasick.bin";
 pub const TOKEN_FILENAME: &str = "token.bin";
 pub const UNK_FILENAME: &str = "unk.bin";
 pub const CON_COST_FILENAME: &str = "matrix.bin";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenDictionary {
-    pub morphemes: Vec<Vec<Morpheme>>, // the morphemes those have the same surfaces are grouped.
+    pub morphemes: Vec<Vec<Rc<Morpheme>>>, // the morphemes those have the same surfaces are grouped.
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UnknownTokenDictionary {
     pub code_to_class_map: HashMap<u32, CharacterClass>,
-    pub class_morpheme_map: HashMap<CharacterClass, Morpheme>,
+    pub class_morpheme_map: HashMap<CharacterClass, Rc<Morpheme>>,
     pub invoke_map: HashMap<CharacterClass, CategoryDefinition>,
 }
 
 impl UnknownTokenDictionary {
+    #[inline]
     pub fn get_ch_cls(&self, ch: char) -> CharacterClass {
         match self.code_to_class_map.get(&(ch as u32)) {
             Some(ch_cls) => *ch_cls,
@@ -35,26 +36,10 @@ impl UnknownTokenDictionary {
         }
     }
 
-    pub fn get_ch_cls_with_vec(
-        &self,
-        bytes: &[u8],
-        offset: usize,
-    ) -> Result<CharacterClass, Error> {
-        let ch = match utils::uchar::get_next_char(bytes, offset) {
-            Ok(ch) => ch,
-            Err(e) => return Err(e),
-        };
-
-        Ok(self.get_ch_cls(ch))
-    }
-
-    pub fn get_char_def(&self, bytes: &[u8], offset: usize) -> Result<CategoryDefinition, Error> {
-        let ch_cls = match self.get_ch_cls_with_vec(bytes, offset) {
-            Ok(ch_cls) => ch_cls,
-            Err(e) => return Err(e),
-        };
-
-        Ok(self.invoke_map[&ch_cls])
+    #[inline]
+    pub fn get_char_def(&self, ch: char) -> CategoryDefinition {
+        let ch_cls = self.get_ch_cls(ch);
+        self.invoke_map[&ch_cls]
     }
 }
 
@@ -70,6 +55,7 @@ pub struct ConnectionCost {
 }
 
 impl ConnectionCost {
+    #[inline]
     pub fn get_cost(&self, right_id: u16, left_id: u16) -> i16 {
         self.costs[(self.backward_size * (right_id as u32) + (left_id as u32)) as usize]
     }

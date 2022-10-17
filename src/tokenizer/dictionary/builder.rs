@@ -8,12 +8,12 @@ use std::{
     borrow::Borrow,
     collections::HashMap,
     fs::{self, File},
-    io::{BufRead, BufReader, BufWriter, Write},
-    path::{Path, PathBuf},
+    io::{BufRead, BufReader, Write},
+    path::{Path, PathBuf}, rc::Rc,
 };
 use unicode_normalization::UnicodeNormalization;
 
-use fst::MapBuilder;
+use daachorse::CharwiseDoubleArrayAhoCorasick;
 use model::*;
 
 use super::TokenDictionary;
@@ -54,7 +54,7 @@ impl DictionaryBuilder {
         Ok(())
     }
 
-    // This method builds token informations from the input file and save FST and token dictionary.
+    // This method builds token informations from the input file and save Aho-Corasick and token dictionary.
     fn build_token_infos(&self, input_path: &str, output_path: &str) -> Result<(), Error> {
         // 1. List all csv files.
         let files = match fs::read_dir(input_path) {
@@ -79,17 +79,6 @@ impl DictionaryBuilder {
         info!("Found {} csv files", files.len());
 
         // 2. Read all csvs.
-        let out_fst_file_path = Path::new(output_path).join(FST_FILENAME);
-        let out_fst_file = match File::create(out_fst_file_path) {
-            Ok(f) => f,
-            Err(_) => return Err("Failed to create output fst file".into()),
-        };
-        let fst_writer = BufWriter::new(out_fst_file);
-        let mut fst_builder = match MapBuilder::new(fst_writer) {
-            Ok(b) => b,
-            Err(_) => return Err("Failed to create fst builder".into()),
-        };
-
         let mut records: Vec<MeCabTokenCSVRecord> = Vec::new();
 
         for file in files {
@@ -115,24 +104,22 @@ impl DictionaryBuilder {
 
         info!("Read {} records", records.len());
 
-        // 3. Build FST from read rows.
+        // 3. Build Aho-Corasick dictionary from read rows.
         //
-        // We build FST for search and TokenDictionary struct for metadata.
-        info!("Building FST ...");
+        // We build dictionary for search and TokenDictionary struct for metadata.
+        info!("Building Aho-Corasick dictionary ...");
 
-        let mut morphemes_by_surface: Vec<Vec<Morpheme>> = Vec::new();
+        let mut ac_keywords: Vec<String> = Vec::new();
+        let mut morphemes_by_surface = Vec::new();
         records.sort_by(|a, b| a.surface.cmp(&b.surface));
 
-        let mut fst_index: usize = 0;
+        let mut ac_index: usize = 0;
         for (index, record) in records.iter().enumerate() {
             if index == 0 || record.surface != records[index - 1].surface {
-                match fst_builder.insert(record.surface.clone(), fst_index.try_into().unwrap()) {
-                    Ok(_) => (),
-                    Err(_) => return Err("Failed to insert into fst".into()),
-                };
+                ac_keywords.push(record.surface.clone());
 
                 morphemes_by_surface.push(Vec::new());
-                fst_index += 1;
+                ac_index += 1;
             }
 
             let morpheme = match Morpheme::from_csv_record(record) {
@@ -147,16 +134,15 @@ impl DictionaryBuilder {
                 }
             };
 
-            morphemes_by_surface[fst_index - 1].push(morpheme)
+            morphemes_by_surface[ac_index - 1].push(Rc::new(morpheme));
         }
+
+        let ac: CharwiseDoubleArrayAhoCorasick<usize> =
+            CharwiseDoubleArrayAhoCorasick::new(ac_keywords)
+                .expect("Failed to build Aho-Corasick dictionary");
 
         // 4. Finishing the process.
         info!("Saving Token Dictionary ...");
-        match fst_builder.finish() {
-            Ok(_) => (),
-            Err(_) => return Err("Failed to build FST".into()),
-        };
-
         let token_dictionary = TokenDictionary {
             morphemes: morphemes_by_surface,
         };
@@ -165,14 +151,25 @@ impl DictionaryBuilder {
             Err(_) => return Err("Failed to serialize token dictionary".into()),
         };
 
-        let mut file = match File::create(Path::new(output_path).join(TOKEN_FILENAME)) {
+        let mut token_file = match File::create(Path::new(output_path).join(TOKEN_FILENAME)) {
             Ok(f) => f,
             Err(_) => return Err("Failed to create output file".into()),
         };
 
-        match file.write_all(bin_token_dictionary.as_slice()) {
+        match token_file.write_all(bin_token_dictionary.as_slice()) {
+            Ok(_) => (),
+            Err(_) => return Err("Failed to write token dictionary".into()),
+        };
+
+        let mut ac_file = match File::create(Path::new(output_path).join(AHOCORASICK_FILENAME)) {
+            Ok(f) => f,
+            Err(_) => return Err("Failed to create output file".into()),
+        };
+
+        let ac_data = ac.serialize();
+        match ac_file.write_all(&ac_data) {
             Ok(_) => Ok(()),
-            Err(_) => Err("Failed to write token dictionary".into()),
+            Err(_) => Err("Failed to write Aho-Corasick dictionary".into()),
         }
     }
 
@@ -189,17 +186,17 @@ impl DictionaryBuilder {
         let mut unk_csv_reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(unk_reader);
-        let mut unk_class_morpheme_map: HashMap<CharacterClass, Morpheme> = HashMap::new();
+        let mut unk_class_morpheme_map = HashMap::new();
         unk_class_morpheme_map.insert(
             CharacterClass::NGRAM,
-            Morpheme {
+            Rc::new(Morpheme {
                 left_id: 1798,
                 right_id: 3559,
                 word_cost: 3677,
                 expressions: Vec::new(),
                 pos_tags: vec![POSTag::SY],
                 pos_type: POSType::MORPHEME,
-            },
+            }),
         );
 
         for record in unk_csv_reader.deserialize::<MeCabUnkCSVRecord>() {
@@ -231,14 +228,14 @@ impl DictionaryBuilder {
             };
             unk_class_morpheme_map.insert(
                 category,
-                Morpheme {
+                Rc::new(Morpheme {
                     left_id: record.left_id,
                     right_id: record.right_id,
                     word_cost: record.word_cost,
                     expressions: Vec::new(),
                     pos_tags: vec![pos_tag],
                     pos_type: POSType::MORPHEME,
-                },
+                }),
             );
         }
 
@@ -619,8 +616,8 @@ mod tests {
 
         assert!(result.is_ok(), "{:#?}", result.err().unwrap());
         assert!(
-            tmpdir.path().join(FST_FILENAME).is_file(),
-            "Cannot find output: FST file"
+            tmpdir.path().join(AHOCORASICK_FILENAME).is_file(),
+            "Cannot find output: AhoCorasick file"
         );
         assert!(
             tmpdir.path().join(TOKEN_FILENAME).is_file(),
