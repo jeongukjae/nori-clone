@@ -19,5 +19,6 @@ bazel-*
 .vscode/c_cpp_properties.json
 dist/*.whl
 nori.dot
+nori.png
 outfile.png
 !go.mod

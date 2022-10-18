@@ -1,5 +1,6 @@
-use std::{fs::File, time::Instant, io::BufReader};
 use std::io::BufRead;
+use std::io::Write;
+use std::{fs::File, io::BufReader, time::Instant};
 
 use clap::{Args, Parser, Subcommand};
 use env_logger::Env;
@@ -45,6 +46,9 @@ struct TokenizeOptions {
     /// text to tokenize
     #[arg(short, long)]
     text: String,
+    /// Graphviz output, optional, filepath
+    #[arg(short, long)]
+    graph_out: Option<String>,
 }
 
 #[derive(Args)]
@@ -107,9 +111,21 @@ fn main() {
             info!("Constructing tokenizer...");
             let tokenizer = NoriTokenizer::new(system_dictionary, user_dictionary);
 
-            match tokenizer.tokenize(opts.text.as_str()) {
+            info!("Tokenizing...");
+            let mut graphviz = opts.graph_out.as_ref().map(|_| GraphViz::new());
+
+            match tokenizer.tokenize_and_visualize(opts.text.as_str(), &mut graphviz) {
                 Ok(tokens) => {
                     info!("Results: {:#?}", tokens);
+
+                    if let Some(graph_out) = &opts.graph_out {
+                        info!("Writing graphviz to {}...", graph_out);
+                        let mut file = File::create(graph_out).unwrap();
+
+                        let content = graphviz.unwrap().to_dot();
+                        file.write_all(content.as_bytes())
+                            .expect("Failed to write graphviz");
+                    }
                 }
                 Err(e) => {
                     error!("Failed to tokenize text: {}", e.description());
@@ -148,7 +164,10 @@ fn main() {
                 .collect();
             let lines = lines[..opts.n_lines].to_vec();
 
-            info!("Tokenize {} lines in files and check the elapsed time", lines.len());
+            info!(
+                "Tokenize {} lines in files and check the elapsed time",
+                lines.len()
+            );
             let start = Instant::now();
             for line in lines {
                 let _ = tokenizer.tokenize(line.as_str());

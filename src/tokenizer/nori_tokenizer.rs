@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use crate::dictionary::{CharacterClass, Morpheme, POSTag};
+use crate::graphviz::{GraphViz, NodeEdgeInfo, NodePoint};
 use crate::{error::Error, SystemDictionary, UserDictionary};
 use log::error;
 use unicode_general_category::{get_general_category, GeneralCategory};
@@ -23,6 +24,14 @@ impl NoriTokenizer {
     }
 
     pub fn tokenize(&self, input_text: &str) -> Result<Lattice, Error> {
+        self.tokenize_and_visualize(input_text, &mut None)
+    }
+
+    pub fn tokenize_and_visualize(
+        &self,
+        input_text: &str,
+        viz_context: &mut Option<GraphViz>,
+    ) -> Result<Lattice, Error> {
         let input_bytes = input_text.as_bytes();
         let input_bytes_length = input_bytes.len();
 
@@ -41,11 +50,28 @@ impl NoriTokenizer {
             end: 0,
             morpheme: self.system_dictionary.bos_eos_morpheme.clone(),
             parent_node_index: 0,
+            unique_node_id: 0,
         });
+        let mut unique_node_id = 1;
 
-        self.find_user_dictionary(input_text, &mut nodes_by_position, &mut founds_position);
-        self.find_system_dictionary(input_text, &mut nodes_by_position, &mut founds_position);
-        self.find_unknown_words(input_text, &mut nodes_by_position, &founds_position);
+        self.find_user_dictionary(
+            input_text,
+            &mut nodes_by_position,
+            &mut founds_position,
+            &mut unique_node_id,
+        );
+        self.find_system_dictionary(
+            input_text,
+            &mut nodes_by_position,
+            &mut founds_position,
+            &mut unique_node_id,
+        );
+        self.find_unknown_words(
+            input_text,
+            &mut nodes_by_position,
+            &founds_position,
+            &mut unique_node_id,
+        );
 
         for i in 1..input_bytes_length + 1 {
             if nodes_by_position[i].is_empty() {
@@ -64,6 +90,31 @@ impl NoriTokenizer {
 
                     nodes_by_position[i][j].total_cost = total_cost;
                     nodes_by_position[i][j].parent_node_index = parent_index;
+
+                    if let Some(viz_context) = viz_context {
+                        let node = &nodes_by_position[i][j];
+                        let parent = &nodes_by_position[node.start_with_space][parent_index];
+
+                        viz_context.add_node(
+                            &NodePoint {
+                                text_index: node.start_with_space,
+                                node_id: parent.unique_node_id,
+                            },
+                            &NodePoint {
+                                text_index: i,
+                                node_id: node.unique_node_id,
+                            },
+                            &NodeEdgeInfo {
+                                to_left_id: node.morpheme.left_id,
+                                to_right_id: node.morpheme.right_id,
+                                to_word_cost: node.morpheme.word_cost,
+                                pos_tags: node.morpheme.pos_tags.clone(),
+                                surface: input_text[node.start..node.end].to_string(),
+                                connection_cost,
+                                total_cost,
+                            },
+                        );
+                    }
                 }
             }
         }
@@ -75,6 +126,14 @@ impl NoriTokenizer {
             &nodes_by_position[end],
             &self.system_dictionary.bos_eos_morpheme,
         );
+
+        if let Some(viz_context) = viz_context {
+            viz_context.add_eos(&NodePoint {
+                text_index: end,
+                node_id: nodes_by_position[end][eos_parent_index].unique_node_id,
+            });
+            viz_context.finalize();
+        }
 
         let mut nodes: Vec<Node> = Vec::new();
         nodes.push(Node {
@@ -113,6 +172,7 @@ impl NoriTokenizer {
         input_text: &str,
         nodes_by_position: &mut [Vec<ACNode>],
         founds_position: &mut HashSet<usize>,
+        unique_node_id: &mut u32,
     ) {
         let it = self
             .system_dictionary
@@ -137,7 +197,9 @@ impl NoriTokenizer {
                     end: m.end(),
                     morpheme: morpheme.clone(),
                     parent_node_index: 0,
+                    unique_node_id: *unique_node_id,
                 });
+                *unique_node_id += 1;
             }
         }
     }
@@ -147,6 +209,7 @@ impl NoriTokenizer {
         input_text: &str,
         nodes_by_position: &mut [Vec<ACNode>],
         founds_position: &mut HashSet<usize>,
+        unique_node_id: &mut u32,
     ) {
         if let Some(user_dict_ahocorasick) = &self.user_dictionary.ahocorasick {
             let it = user_dict_ahocorasick.find_overlapping_iter(input_text);
@@ -170,7 +233,9 @@ impl NoriTokenizer {
                     end: m.end(),
                     morpheme: self.user_dictionary.morphemes[m.value()].clone(),
                     parent_node_index: 0,
+                    unique_node_id: *unique_node_id,
                 });
+                *unique_node_id += 1;
             }
         }
     }
@@ -180,6 +245,7 @@ impl NoriTokenizer {
         input_text: &str,
         nodes_by_position: &mut [Vec<ACNode>],
         founds_position: &HashSet<usize>,
+        unique_node_id: &mut u32,
     ) {
         let mut last_pushed_index = 0;
 
@@ -188,15 +254,15 @@ impl NoriTokenizer {
                 continue;
             }
 
-            if founds_position.contains(&start) {
-                continue;
-            }
-
             if Self::is_whitespace(ch) {
                 continue;
             }
 
             let char_def = self.system_dictionary.unk_dictionary.get_char_def(ch);
+
+            if founds_position.contains(&start) && char_def.invoke != 1 {
+                continue;
+            }
 
             let (unk_length, ch_cls) =
                 self.group_unknown_chars(&input_text[start..], char_def.group == 1);
@@ -218,7 +284,9 @@ impl NoriTokenizer {
                 end,
                 morpheme,
                 parent_node_index: 0,
+                unique_node_id: *unique_node_id,
             });
+            *unique_node_id += 1;
 
             last_pushed_index = end;
         }
@@ -392,6 +460,7 @@ pub struct ACNode {
 
     morpheme: Rc<Morpheme>,
     parent_node_index: usize,
+    unique_node_id: u32,
 }
 
 #[cfg(test)]
@@ -471,17 +540,17 @@ mod test {
             ),
             // TODO: this test fails because of the bug in the cost estimation.
             //
-            // (
-            //     "10.1 인치 모니터",
-            //     vec!["10", ".", "1", "인치", "모니터"],
-            //     vec![
-            //         vec![POSTag::SN],
-            //         vec![POSTag::SY],
-            //         vec![POSTag::SN],
-            //         vec![POSTag::NNBC],
-            //         vec![POSTag::NNG],
-            //     ],
-            // ),
+            (
+                "10.1 인치 모니터",
+                vec!["10", ".", "1", "인치", "모니터"],
+                vec![
+                    vec![POSTag::SN],
+                    vec![POSTag::SY],
+                    vec![POSTag::SN],
+                    vec![POSTag::NNBC],
+                    vec![POSTag::NNG],
+                ],
+            ),
             ("εἰμί", vec!["εἰμί"], vec![vec![POSTag::SL]]),
             ("", vec![], vec![]),
             (
