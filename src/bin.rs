@@ -1,3 +1,6 @@
+use std::{fs::File, time::Instant, io::BufReader};
+use std::io::BufRead;
+
 use clap::{Args, Parser, Subcommand};
 use env_logger::Env;
 use log::{error, info};
@@ -17,6 +20,8 @@ enum Commands {
     Build(BuildOptions),
     /// Tokenize text with dictionary.
     Tokenize(TokenizeOptions),
+    // Tokenize text in file with dictionary.
+    TokenizeFile(TokenizeFileOptions),
 }
 
 #[derive(Args)]
@@ -40,6 +45,21 @@ struct TokenizeOptions {
     /// text to tokenize
     #[arg(short, long)]
     text: String,
+}
+
+#[derive(Args)]
+struct TokenizeFileOptions {
+    /// Dict path
+    #[arg(short, long)]
+    dictionary_path: String,
+
+    /// data path
+    #[arg(long)]
+    data: String,
+
+    /// n lines
+    #[arg(short, long, default_value_t = 1000)]
+    n_lines: usize,
 }
 
 fn main() {
@@ -96,6 +116,45 @@ fn main() {
                     panic!();
                 }
             };
+        }
+        Commands::TokenizeFile(opts) => {
+            info!("Reading dictionary...");
+            let system_dictionary =
+                match SystemDictionary::load_from_input_directory(opts.dictionary_path.as_str()) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        error!("Failed to load dictionary: {}", e.description());
+                        panic!();
+                    }
+                };
+
+            let user_dictionary =
+                match UserDictionary::load(vec![], &system_dictionary.connection_cost.additional) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        error!("Failed to load dictionary: {}", e.description());
+                        panic!();
+                    }
+                };
+
+            info!("Constructing tokenizer...");
+            let tokenizer = NoriTokenizer::new(system_dictionary, user_dictionary);
+
+            // read all contents from args.data path.
+            let file = File::open(opts.data.as_str()).unwrap();
+            let lines: Vec<String> = BufReader::new(file)
+                .lines()
+                .map(|line| line.unwrap())
+                .collect();
+            let lines = lines[..opts.n_lines].to_vec();
+
+            info!("Tokenize {} lines in files and check the elapsed time", lines.len());
+            let start = Instant::now();
+            for line in lines {
+                let _ = tokenizer.tokenize(line.as_str());
+            }
+            let duration = start.elapsed();
+            info!("Time elapsed in nori tokenizer is: {:?}", duration);
         }
     }
 }
