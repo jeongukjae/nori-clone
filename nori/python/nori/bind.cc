@@ -66,6 +66,51 @@ std::vector<std::string> getPostags(
   return results;
 }
 
+class PyNoriTokenizer {
+ public:
+  PyNoriTokenizer() : tokenizer_(&dictionary_) {}
+
+  void load_prebuilt_dictionary(const std::string &path) {
+    auto status = dictionary_.loadPrebuilt(path);
+    if (!status.ok()) {
+      throw std::runtime_error("cannot load dictionary");
+    }
+  }
+
+  void load_user_dictionary(const std::string &path) {
+    auto status = dictionary_.loadUser(path);
+    if (!status.ok()) {
+      throw std::runtime_error("cannot load dictionary");
+    }
+  }
+
+  PyLattice tokenize(const std::string sentence) {
+    if (!dictionary_.isInitialized()) {
+      throw std::runtime_error("dictionary is not initialized");
+    }
+
+    nori::Lattice lattice;
+    auto status = lattice.setSentence(sentence, dictionary_.getNormalizer());
+
+    if (!status.ok()) {
+      throw std::runtime_error(
+          absl::StrCat("Cannot normalize string ", sentence));
+    }
+
+    status = tokenizer_.tokenize(lattice);
+    if (!status.ok()) {
+      throw std::runtime_error(
+          absl::StrCat("Cannot tokenize string ", sentence));
+    }
+
+    return PyLattice(lattice);
+  }
+
+ private:
+  nori::NoriTokenizer tokenizer_;
+  nori::dictionary::Dictionary dictionary_;
+};
+
 PYBIND11_MODULE(bind, m) {
   m.attr("__name__") = "nori.bind";
 
@@ -116,43 +161,10 @@ PYBIND11_MODULE(bind, m) {
       .def_readonly("tokens", &PyLattice::tokens)
       .def_readonly("sentence", &PyLattice::sentence);
 
-  py::class_<nori::dictionary::Dictionary>(m, "Dictionary")
-      .def(py::init<>())
-      .def(
-          "load_prebuilt_dictionary",
-          [](nori::dictionary::Dictionary &dictionary, const std::string path) {
-            auto status = dictionary.loadPrebuilt(path);
-            if (!status.ok()) {
-              throw std::runtime_error("cannot load dictionary");
-            }
-          })
-      .def("load_user_dictionary", [](nori::dictionary::Dictionary &dictionary,
-                                      const std::string filename) {
-        auto status = dictionary.loadUser(filename);
-        if (!status.ok()) {
-          throw std::runtime_error("cannot load dictionary:");
-        }
-      });
-
-  py::class_<nori::NoriTokenizer>(m, "NoriTokenizer")
-      .def(py::init<const nori::dictionary::Dictionary *>())
-      .def("tokenize", [](const nori::NoriTokenizer &tokenizer,
-                          const std::string sentence) {
-        nori::Lattice lattice;
-        auto status = lattice.setSentence(
-            sentence, tokenizer.getDictionary()->getNormalizer());
-
-        if (!status.ok()) {
-          throw std::runtime_error(
-              absl::StrCat("Cannot normalize string ", sentence));
-        }
-
-        status = tokenizer.tokenize(lattice);
-        if (!status.ok()) {
-          throw std::runtime_error(
-              absl::StrCat("Cannot tokenize string ", sentence));
-        }
-
-        return PyLattice(lattice);
-      });
+  py::class_<PyNoriTokenizer>(m, "NoriTokenizer")
+      .def(py::init())
+      .def("load_prebuilt_dictionary",
+           &PyNoriTokenizer::load_prebuilt_dictionary)
+      .def("load_user_dictionary", &PyNoriTokenizer::load_user_dictionary)
+      .def("tokenize", &PyNoriTokenizer::tokenize);
 }

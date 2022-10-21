@@ -1,1 +1,1 @@
-from nori.bind import NoriTokenizer, Dictionary
+from nori.bind import NoriTokenizer, Token, Lattice

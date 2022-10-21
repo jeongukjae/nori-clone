@@ -1,12 +1,11 @@
 import unittest
 
-from nori.bind import NoriTokenizer, Dictionary
+from nori.bind import NoriTokenizer
 
 class TestNoriTokenizer(unittest.TestCase):
     def test_get_dictionary_info(self):
-        dictionary = Dictionary()
-        dictionary.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
-        tokenizer = NoriTokenizer(dictionary)
+        tokenizer = NoriTokenizer()
+        tokenizer.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
 
         result = tokenizer.tokenize("화학 이외의 것")
 
@@ -16,9 +15,8 @@ class TestNoriTokenizer(unittest.TestCase):
         self.assertEqual([token.postype for token in result.tokens[1:-1]], ['MORPHEME', 'MORPHEME', 'MORPHEME', 'MORPHEME'])
 
     def test_get_expressions(self):
-        dictionary = Dictionary()
-        dictionary.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
-        tokenizer = NoriTokenizer(dictionary)
+        tokenizer = NoriTokenizer()
+        tokenizer.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
 
         result = tokenizer.tokenize("붕어빵")
         self.assertEqual(len(result.tokens), 3)
