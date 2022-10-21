@@ -40,10 +40,9 @@ You can find your own wheel file in `./dist`.
 ```python
 import nori
 
-dictionary = nori.Dictionary()
-dictionary.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
-dictionary.load_user_dictionary("./dictionary/latest-userdict.txt")
-tokenizer = nori.NoriTokenizer(dictionary)
+tokenizer = nori.NoriTokenizer()
+tokenizer.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
+tokenizer.load_user_dictionary("./dictionary/latest-userdict.txt")
 
 result = tokenizer.tokenize("이 프로젝트는 nori를 재작성하는 프로젝트입니다.")
 
