@@ -43,6 +43,7 @@ cc_test(
     ],
     deps = [
         ":tokenizer",
+        "@com_google_absl//absl/log:check",
         "@com_google_googletest//:gtest",
     ],
 )
@@ -73,7 +74,8 @@ cc_library(
     deps = [
         "//nori/lib/protos:dictionary_cc_proto",
         "//third_party/icu/data:icu_normalization_data",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@icu//:common",

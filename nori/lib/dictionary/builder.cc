@@ -1,12 +1,11 @@
 #include "nori/lib/dictionary/builder.h"
 
-#include <glog/logging.h>
-
 #include <algorithm>
 #include <fstream>
 #include <regex>
 #include <sstream>
 
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "nori/lib/protos/dictionary.pb.h"

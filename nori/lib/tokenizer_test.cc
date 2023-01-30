@@ -1,9 +1,10 @@
 #include "nori/lib/tokenizer.h"
 
-#include <glog/logging.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "nori/lib/dictionary/dictionary.h"
 
 nori::dictionary::Dictionary legacyDictionary, dictionary;

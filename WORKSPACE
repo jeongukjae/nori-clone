@@ -28,14 +28,6 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
 
-# TODO: replace glog with absl logging.
-http_archive(
-    name = "com_github_google_glog",
-    sha256 = "21bc744fb7f2fa701ee8db339ded7dce4f975d0d55837a97be7d46e8382dea5a",
-    strip_prefix = "glog-0.5.0",
-    url = "https://github.com/google/glog/archive/v0.5.0.zip",
-)
-
 http_archive(
     name = "com_github_google_re2",
     sha256 = "3a20f05c57f907f78b817a53f2fb6e48077d2b1d0b17b39caf875c20f262230b",

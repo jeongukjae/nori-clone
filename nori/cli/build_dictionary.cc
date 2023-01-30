@@ -1,8 +1,9 @@
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "nori/lib/dictionary/builder.h"
 #include "nori/lib/protos/dictionary.pb.h"
@@ -18,8 +19,6 @@ DEFINE_string(normalization_form, "NFKC",
 DEFINE_bool(normalize, true, "whether to normalize dictionary of MeCab");
 
 int main(int argc, char** argv) {
-  FLAGS_alsologtostderr = 1;
-  google::InitGoogleLogging(argv[0]);
   gflags::SetUsageMessage("Build Nori dictionary from MeCab's dictionary.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 

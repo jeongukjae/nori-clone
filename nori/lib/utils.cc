@@ -1,10 +1,11 @@
 #include "nori/lib/utils.h"
 
 #include <dirent.h>
-#include <glog/logging.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"

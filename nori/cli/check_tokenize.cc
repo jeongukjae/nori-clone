@@ -1,11 +1,12 @@
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <chrono>
 #include <fstream>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "nori/lib/dictionary/dictionary.h"
@@ -26,8 +27,6 @@ DEFINE_int32(n_repeat, 1000, "num repeats");
 DEFINE_bool(print_output, false, "print output");
 
 int main(int argc, char** argv) {
-  FLAGS_alsologtostderr = 1;
-  google::InitGoogleLogging(argv[0]);
   gflags::SetUsageMessage("Check nori dictionary files");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 

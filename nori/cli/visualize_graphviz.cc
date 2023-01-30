@@ -1,10 +1,11 @@
 #include <gflags/gflags.h>
-#include <glog/logging.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <fstream>
 
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "nori/lib/dictionary/dictionary.h"
@@ -23,8 +24,6 @@ DEFINE_string(input,
 DEFINE_string(output, "nori.dot", "Output path for dotfile");
 
 int main(int argc, char** argv) {
-  FLAGS_alsologtostderr = 1;
-  google::InitGoogleLogging(argv[0]);
   gflags::SetUsageMessage("Check nori dictionary files");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 

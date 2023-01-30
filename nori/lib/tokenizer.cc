@@ -1,7 +1,6 @@
 #include "nori/lib/tokenizer.h"
 
 #include <darts.h>
-#include <glog/logging.h>
 #include <google/protobuf/repeated_field.h>
 
 #include <map>
@@ -9,6 +8,7 @@
 #include <queue>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "icu4c/source/common/unicode/uchar.h"
 #include "icu4c/source/common/unicode/uscript.h"
 #include "icu4c/source/common/unicode/utf.h"

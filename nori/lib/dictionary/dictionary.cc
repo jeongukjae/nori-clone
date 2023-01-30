@@ -1,11 +1,11 @@
 #include "nori/lib/dictionary/dictionary.h"
 
 #include <darts.h>
-#include <glog/logging.h>
 
 #include <fstream>
 #include <sstream>
 
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
