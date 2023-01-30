@@ -1,7 +1,9 @@
-#include <gflags/gflags.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
@@ -9,31 +11,35 @@
 #include "nori/lib/protos/dictionary.pb.h"
 #include "nori/lib/utils.h"
 
-DEFINE_string(mecab_dic, "",
-              "Path to mecab dictionary. This cli program reads "
-              "{matrix,char,unk}.def and all CSV files");
-DEFINE_string(output, "./dictionary.nori",
-              "output filename for nori dictionary");
-DEFINE_string(normalization_form, "NFKC",
-              "Unicode normalization form for dictionary of MeCab");
-DEFINE_bool(normalize, true, "whether to normalize dictionary of MeCab");
+ABSL_FLAG(std::string, mecab_dic, "",
+          "Path to mecab dictionary. This cli program reads "
+          "{matrix,char,unk}.def and all CSV files");
+ABSL_FLAG(std::string, output, "./dictionary.nori",
+          "output filename for nori dictionary");
+ABSL_FLAG(std::string, normalization_form, "NFKC",
+          "Unicode normalization form for dictionary of MeCab");
+ABSL_FLAG(bool, normalize, true, "whether to normalize dictionary of MeCab");
 
 int main(int argc, char** argv) {
-  gflags::SetUsageMessage("Build Nori dictionary from MeCab's dictionary.");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::SetProgramUsageMessage(
+      "Build Nori dictionary from MeCab's dictionary.");
+  absl::ParseCommandLine(argc, argv);
 
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  CHECK(nori::utils::isDirectory(FLAGS_mecab_dic))
-      << "Cannot find directory " << FLAGS_mecab_dic;
-  LOG(INFO) << "MeCab dictionary path: " << FLAGS_mecab_dic;
-  LOG(INFO) << "Output path: " << FLAGS_output;
+  auto mecabDicFlag = absl::GetFlag(FLAGS_mecab_dic);
+  auto outputFlag = absl::GetFlag(FLAGS_output);
+
+  CHECK(nori::utils::isDirectory(mecabDicFlag))
+      << "Cannot find directory " << mecabDicFlag;
+  LOG(INFO) << "MeCab dictionary path: " << mecabDicFlag;
+  LOG(INFO) << "Output path: " << outputFlag;
 
   nori::dictionary::builder::DictionaryBuilder builder(
-      FLAGS_normalize, FLAGS_normalization_form);
-  auto status = builder.build(FLAGS_mecab_dic);
+      absl::GetFlag(FLAGS_normalize), absl::GetFlag(FLAGS_normalization_form));
+  auto status = builder.build(mecabDicFlag);
   CHECK(status.ok()) << status.message();
-  status = builder.save(FLAGS_output);
+  status = builder.save(outputFlag);
   CHECK(status.ok()) << status.message();
 
   google::protobuf::ShutdownProtobufLibrary();

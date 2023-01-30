@@ -1,10 +1,12 @@
-#include <gflags/gflags.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <chrono>
 #include <fstream>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
@@ -15,45 +17,48 @@
 #include "nori/lib/tokenizer.h"
 #include "nori/lib/utils.h"
 
-DEFINE_string(dictionary, "./dictionary/latest-dictionary.nori",
-              "Path to nori dictionary");
-DEFINE_string(user_dictionary, "./dictionary/latest-userdict.txt",
-              "Path to nori user dictionary");
-DEFINE_string(input,
-              "Nori-clone은 c++로 Nori를 재작성하기 위한 프로젝트입니다.",
-              "Text to analyze");
-DEFINE_string(output, "nori.dot", "Output path for dotfile");
-DEFINE_int32(n_repeat, 1000, "num repeats");
-DEFINE_bool(print_output, false, "print output");
+ABSL_FLAG(std::string, dictionary, "./dictionary/latest-dictionary.nori",
+          "Path to nori dictionary");
+ABSL_FLAG(std::string, user_dictionary, "./dictionary/latest-userdict.txt",
+          "Path to nori user dictionary");
+ABSL_FLAG(std::string, input,
+          "Nori-clone은 c++로 Nori를 재작성하기 위한 프로젝트입니다.",
+          "Text to analyze");
+ABSL_FLAG(int, n_repeat, 1000, "num repeats");
+ABSL_FLAG(bool, print_output, false, "print output");
 
 int main(int argc, char** argv) {
-  gflags::SetUsageMessage("Check nori dictionary files");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::SetProgramUsageMessage("Check nori dictionary files");
+  absl::ParseCommandLine(argc, argv);
 
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+  auto inputFlag = absl::GetFlag(FLAGS_input);
+  auto dictionaryFlag = absl::GetFlag(FLAGS_dictionary);
+  auto userDictionaryFlag = absl::GetFlag(FLAGS_user_dictionary);
+
   nori::dictionary::Dictionary dictionary;
-  auto status = dictionary.loadPrebuilt(FLAGS_dictionary);
+  auto status = dictionary.loadPrebuilt(dictionaryFlag);
   CHECK(status.ok()) << status.message();
-  if (FLAGS_user_dictionary != "") {
-    LOG(INFO) << "Read user dictionary: " << FLAGS_user_dictionary;
-    status = dictionary.loadUser(FLAGS_user_dictionary);
+  if (userDictionaryFlag != "") {
+    LOG(INFO) << "Read user dictionary: " << userDictionaryFlag;
+    status = dictionary.loadUser(userDictionaryFlag);
     CHECK(status.ok()) << status.message();
   }
 
   nori::NoriTokenizer tokenizer(&dictionary);
   auto normalizer = dictionary.getNormalizer();
-  LOG(INFO) << "Input message: " << FLAGS_input;
+  LOG(INFO) << "Input message: " << inputFlag;
   nori::Lattice lattice;
-  status = lattice.setSentence(FLAGS_input, normalizer);
+  status = lattice.setSentence(inputFlag, normalizer);
   CHECK(status.ok()) << status.message();
 
   std::chrono::system_clock::time_point start =
       std::chrono::system_clock::now();
 
-  for (int i = 0; i < FLAGS_n_repeat; i++) {
+  for (int i = 0; i < absl::GetFlag(FLAGS_n_repeat); i++) {
     lattice.clear();
-    lattice.setSentence(FLAGS_input, normalizer).IgnoreError();
+    lattice.setSentence(inputFlag, normalizer).IgnoreError();
     tokenizer.tokenize(lattice).IgnoreError();
   }
 
@@ -63,7 +68,7 @@ int main(int argc, char** argv) {
 
   LOG(INFO) << "Elapsed: " << elapsedMs.count() << " micro seconds. ";
 
-  if (FLAGS_print_output) {
+  if (absl::GetFlag(FLAGS_print_output)) {
     LOG(INFO) << "Tokenization Results.";
     for (const auto& token : *lattice.getTokens()) {
       std::vector<std::string> posTagStr;

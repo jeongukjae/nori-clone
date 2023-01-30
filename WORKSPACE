@@ -11,13 +11,6 @@ http_archive(
 )
 
 http_archive(
-    name = "com_github_gflags_gflags",
-    sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",
-    strip_prefix = "gflags-2.2.2",
-    url = "https://github.com/gflags/gflags/archive/v2.2.2.tar.gz",
-)
-
-http_archive(
     name = "com_google_protobuf",
     sha256 = "22fdaf641b31655d4b2297f9981fa5203b2866f8332d3c6333f6b0107bb320de",
     strip_prefix = "protobuf-21.12",
