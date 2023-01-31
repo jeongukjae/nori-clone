@@ -3,10 +3,9 @@ from sys import argv, stdin
 
 import nori
 
-dictionary = nori.Dictionary()
-dictionary.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
-dictionary.load_user_dictionary("./dictionary/latest-userdict.txt")
-tokenizer = nori.NoriTokenizer(dictionary)
+tokenizer = nori.NoriTokenizer()
+tokenizer.load_prebuilt_dictionary("./dictionary/latest-dictionary.nori")
+tokenizer.load_user_dictionary("./dictionary/latest-userdict.txt")
 
 def run_with_iterator(f):
     for line in f:

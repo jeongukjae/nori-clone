@@ -8,6 +8,7 @@
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/log/check.h"
+#include "absl/log/initialize.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -28,6 +29,8 @@ ABSL_FLAG(int, n, 1000, "n lines");
 int main(int argc, char** argv) {
   absl::SetProgramUsageMessage("Benchmark nori tokenizer");
   absl::ParseCommandLine(argc, argv);
+
+  absl::InitializeLog();
 
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
