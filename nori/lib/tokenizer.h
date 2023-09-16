@@ -74,7 +74,7 @@ struct Lattice {
 class NoriTokenizer {
  public:
   NoriTokenizer(const nori::dictionary::Dictionary* dictionary,
-                size_t maxTrieResults = 1024)
+                size_t maxTrieResults = 4096)
       : dictionary(dictionary), maxTrieResults(maxTrieResults) {}
 
   // Tokenize input text and save tokenized information to lattice
@@ -88,6 +88,10 @@ class NoriTokenizer {
  private:
   const nori::dictionary::Dictionary* dictionary;
   const size_t maxTrieResults;
+
+  absl::Status findPreBuiltTokens(Lattice& lattice, std::vector<std::vector<internal::TrieNode>> &nodesByPos, int& nodeId) const;
+  absl::Status findUserDictionaryTokens(Lattice& lattice, std::vector<std::vector<internal::TrieNode>> &nodesByPos) const;
+  absl::Status findUnknownTokens(Lattice& lattice, std::vector<std::vector<internal::TrieNode>> &nodesByPos) const;
 };
 
 }  // namespace nori

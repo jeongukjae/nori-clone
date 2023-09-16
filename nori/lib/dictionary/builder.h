@@ -1,8 +1,6 @@
 #ifndef __NORI_DICTIONARY_BUILDER_H__
 #define __NORI_DICTIONARY_BUILDER_H__
 
-#include <darts.h>
-
 #include <functional>
 #include <memory>
 #include <vector>

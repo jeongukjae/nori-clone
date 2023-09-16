@@ -1,6 +1,5 @@
 #include "nori/lib/tokenizer.h"
 
-#include <darts.h>
 #include <google/protobuf/repeated_field.h>
 
 #include <map>
@@ -9,6 +8,7 @@
 #include <vector>
 
 #include "absl/log/log.h"
+#include "darts_ac/darts_ac.h"
 #include "icu4c/source/common/unicode/uchar.h"
 #include "icu4c/source/common/unicode/uscript.h"
 #include "icu4c/source/common/unicode/utf.h"
@@ -171,7 +171,7 @@ TrieNode* selectParent(std::vector<internal::TrieNode>& candidates,
 }  // namespace internal
 
 // NoriTokenizer class
-typedef Darts::DoubleArray::result_pair_type DartsResults;
+typedef darts_ac::DoubleArrayAhoCorasick::result_pair_type DartsResults;
 
 absl::Status NoriTokenizer::tokenize(Lattice& lattice,
                                      GraphvizVisualizer* visualizer) const {
@@ -215,10 +215,9 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
 
     // find user dictionary
     if (dictionary->isUserInitialized()) {
-      const int numNodes =
-          dictionary->getUserDict()->getTrie()->commonPrefixSearch(
-              current, trieResults.data(), maxTrieResults,
-              static_cast<int>(end - current));
+      const int numNodes = dictionary->getUserDict()->getTrieAC()->find(
+          current, trieResults.data(), maxTrieResults,
+          static_cast<int>(end - current));
 
       if (numNodes != 0) {
         int index = 0;
@@ -264,7 +263,7 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
     }
 
     // pre-built dictionary
-    const int numNodes = dictionary->getTrie()->commonPrefixSearch(
+    const int numNodes = dictionary->getTrieAC()->find(
         current, trieResults.data(), maxTrieResults,
         static_cast<int>(end - current));
     if (numNodes > maxTrieResults)
@@ -396,6 +395,39 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
   }
 
   return absl::OkStatus();
+}
+
+absl::Status NoriTokenizer::findPreBuiltTokens(
+    Lattice& lattice, std::vector<std::vector<internal::TrieNode>>& nodesByPos,
+    int& nodeId) const {
+  std::vector<DartsResults> trieResults(maxTrieResults + 1);
+  const int numNodes = dictionary->getTrieAC()->find(
+      lattice.getSentence().data(), trieResults.data(), maxTrieResults,
+      lattice.getSentence().length());
+
+  if (numNodes > maxTrieResults) return absl::InternalError("Cannot search trie");
+
+  for (int k = 0; k < numNodes; ++k) {
+    auto trieResult = trieResults[k];
+    auto morphemeList = &this->dictionary->getTokens()->morphemes_list(trieResult.value);
+    auto morphemeSize = morphemeList->morphemes_size();
+
+    for (int j = 0; j < morphemeSize; j++) {
+      const auto* morpheme = &morphemeList->morphemes(j);
+
+      int wordCost = morpheme->word_cost();
+      int spaceCost = 0;
+      int connectionCost = 0;
+      internal::TrieNode* parent = internal::selectParent(
+          nodesByPos[0], morpheme, this->dictionary, connectionCost);
+
+      int lastPositionIndex = trieResult.length;
+      int cost = parent->cost + wordCost + connectionCost + spaceCost;
+      nodesByPos[lastPositionIndex].emplace_back(
+          nodeId++, cost, lastPositionIndex, trieResult.length, morpheme,
+          parent);
+    }
+  }
 }
 
 }  // namespace nori

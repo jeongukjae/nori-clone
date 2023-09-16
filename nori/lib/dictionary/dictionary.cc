@@ -1,7 +1,5 @@
 #include "nori/lib/dictionary/dictionary.h"
 
-#include <darts.h>
-
 #include <fstream>
 #include <sstream>
 
@@ -11,6 +9,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
+#include "darts_ac/darts_ac.h"
 #include "icu4c/source/common/unicode/unistr.h"
 #include "nori/lib/utils.h"
 #include "re2/re2.h"
@@ -59,8 +58,10 @@ absl::Status Dictionary::loadPrebuilt(std::string input) {
   auto status = internal::deserializeProtobuf(input, dictionary);
   if (!status.ok()) return status;
 
-  trie.set_array(dictionary.darts_array().data(),
-                 dictionary.darts_array().size());
+  trieAC.set_array(dictionary.darts_array().data(),
+                   dictionary.darts_array().size());
+  trieAC.set_failure(dictionary.darts_ac_failure().data());
+  trieAC.set_depth(dictionary.darts_ac_depth().data());
 
   // backwardSize
   backwardSize = dictionary.connection_cost().backward_size();
@@ -108,7 +109,7 @@ const nori::protos::CharacterClass Dictionary::getCharClass(
 
 absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
                                   int rightId_T, int rightId_F) {
-  trie.clear();
+  trieAC.clear();
   morphemes.clear();
 
   std::ifstream ifs(filename);
@@ -155,8 +156,10 @@ absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
       });
 
   std::vector<const char*> keys;
+  std::vector<size_t> lengths;
   for (const auto& term : terms) {
     keys.push_back(term[0].data());
+    lengths.push_back(term[0].size());
 
     nori::protos::Morpheme morpheme;
 
@@ -185,12 +188,12 @@ absl::Status UserDictionary::load(std::string filename, int leftId, int rightId,
     morphemes.push_back(morpheme);
   }
 
-  if (trie.build(keys.size(), const_cast<char**>(&keys[0])) != 0)
+  if (trieAC.buildAhoCorasick(keys.size(), keys.data(), lengths.data()) != 0)
     return absl::InternalError("Cannot build trie.");
 
   // search second item to check Trie is built properly
   int searchResult;
-  trie.exactMatchSearch(keys[1], searchResult);
+  trieAC.exactMatchSearch(keys[1], searchResult);
   if (searchResult != 1)
     return absl::InternalError("Trie isn't built properly.");
 

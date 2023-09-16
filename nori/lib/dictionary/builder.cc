@@ -5,6 +5,7 @@
 #include <regex>
 #include <sstream>
 
+#include "darts_ac/darts_ac.h"
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
@@ -158,17 +159,17 @@ absl::Status DictionaryBuilder::buildTokenInfos(absl::string_view input) {
       });
 
   std::vector<const char*> keys;
+  std::vector<size_t> lengths;
   keys.reserve(entries.size());
 
   std::string lastValue = "";
-  int entryValue = -1;
   nori::protos::MorphemeList* lastMorphemeList;
 
   for (int i = 0; i < entries.size(); i++) {
     if (entries[i][0] != lastValue) {
       keys.push_back(entries[i][0].c_str());
+      lengths.push_back(entries[i][0].length());
       lastValue = entries[i][0];
-      entryValue++;
       lastMorphemeList = noriDictionary.mutable_tokens()->add_morphemes_list();
     }
 
@@ -179,20 +180,21 @@ absl::Status DictionaryBuilder::buildTokenInfos(absl::string_view input) {
 
   // 4. Build tries
   LOG(INFO) << "Build trie. keys[0]: " << keys[0] << ", keys[10]: " << keys[10];
-  std::unique_ptr<Darts::DoubleArray> trie =
-      std::unique_ptr<Darts::DoubleArray>(new Darts::DoubleArray);
-  if (trie->build(keys.size(), const_cast<char**>(&keys[0])) != 0)
+  std::unique_ptr<darts_ac::DoubleArrayAhoCorasick> trieAC =
+      std::unique_ptr<darts_ac::DoubleArrayAhoCorasick>(new darts_ac::DoubleArrayAhoCorasick);
+  if (trieAC->buildAhoCorasick(keys.size(), keys.data(), lengths.data()) != 0)
     return absl::InternalError("Cannot build trie.");
 
   noriDictionary.mutable_darts_array()->assign(
-      static_cast<const char*>(trie->array()), trie->total_size());
-
-  trie->set_array(noriDictionary.darts_array().data(),
-                  noriDictionary.darts_array().size());
+      static_cast<const char*>(trieAC->array()), trieAC->total_size());
+  noriDictionary.mutable_darts_ac_failure()->assign(
+      static_cast<const char*>(trieAC->failure()), trieAC->failure_size());
+  noriDictionary.mutable_darts_ac_depth()->assign(
+      static_cast<const char*>(trieAC->depth()), trieAC->depth_size());
 
   int searchResult;
   for (int i = 0; i < keys.size(); i++) {
-    trie->exactMatchSearch(keys[i], searchResult);
+    trieAC->exactMatchSearch(keys[i], searchResult);
     if (searchResult != i)
       return absl::InternalError("Trie isn't built properly.");
   }

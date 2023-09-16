@@ -29,7 +29,6 @@ cc_library(
         "//nori/lib/dictionary",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
-        "@darts_clone",
         "@icu//:common",
     ],
 )

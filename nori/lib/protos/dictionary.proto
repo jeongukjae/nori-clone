@@ -175,6 +175,8 @@ message ConnectionCost {
 // Final message to contain all dictionary information
 message Dictionary {
   bytes darts_array = 1;
+  bytes darts_ac_failure = 5;
+  bytes darts_ac_depth = 6;
   Tokens tokens = 2;
   UnknownTokens unknown_tokens = 3;
   ConnectionCost connection_cost = 4;

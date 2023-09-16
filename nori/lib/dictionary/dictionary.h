@@ -1,7 +1,7 @@
 #ifndef __NORI_DICTIONARY_H__
 #define __NORI_DICTIONARY_H__
 
-#include <darts.h>
+#include "darts_ac/darts_ac.h"
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
@@ -27,7 +27,7 @@ class UserDictionary {
                     int rightId_T, int rightId_F);
 
   // return trie dictionary.
-  const Darts::DoubleArray* getTrie() const { return &trie; }
+  const darts_ac::DoubleArrayAhoCorasick* getTrieAC() const { return &trieAC; }
 
   // get all morphemes for the trie.
   const std::vector<nori::protos::Morpheme>* getMorphemes() const {
@@ -35,7 +35,7 @@ class UserDictionary {
   }
 
  private:
-  Darts::DoubleArray trie;
+  darts_ac::DoubleArrayAhoCorasick trieAC;
   std::vector<nori::protos::Morpheme> morphemes;
 };
 
@@ -76,7 +76,7 @@ class Dictionary {
   bool isUserInitialized() const { return userInitialized; }
 
   // return trie dictionary
-  const Darts::DoubleArray* getTrie() const { return &trie; }
+  const darts_ac::DoubleArrayAhoCorasick* getTrieAC() const { return &trieAC; }
 
   // return user dictionary
   const UserDictionary* getUserDict() const { return &userDictionary; }
@@ -122,7 +122,7 @@ class Dictionary {
   bool initialized = false;
   bool userInitialized = false;
 
-  Darts::DoubleArray trie;
+  darts_ac::DoubleArrayAhoCorasick trieAC;
   nori::protos::Dictionary dictionary;
   Normalizer normalizer;
   UserDictionary userDictionary;

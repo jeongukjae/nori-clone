@@ -20,7 +20,7 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
-        "@darts_clone",
+        "@darts_ac//darts_ac",
         "@icu//:common",
     ],
 )
@@ -51,7 +51,7 @@ cc_library(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
-        "@darts_clone",
+        "@darts_ac//darts_ac",
     ],
 )
 
