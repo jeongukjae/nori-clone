@@ -8,6 +8,7 @@ filegroup(
     srcs = [
         "latest-dictionary.nori",
         "latest-userdict.txt",
+        ":legacy_dictionary",
     ],
 )
 

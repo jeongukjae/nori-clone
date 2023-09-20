@@ -50,7 +50,6 @@ absl::Status deserializeProtobuf(const std::string& path, T& message) {
 // Dictionary
 
 absl::Status Dictionary::loadPrebuilt(std::string input) {
-  this->bosEosSurface = "BOS/EOS";
   this->bosEosMorpheme.set_left_id(0);
   this->bosEosMorpheme.set_right_id(0);
   this->bosEosMorpheme.set_word_cost(0);

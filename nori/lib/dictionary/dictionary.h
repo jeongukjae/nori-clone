@@ -1,10 +1,9 @@
 #ifndef __NORI_DICTIONARY_H__
 #define __NORI_DICTIONARY_H__
 
-#include "darts_ac/darts_ac.h"
-
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
+#include "darts_ac/darts_ac.h"
 #include "nori/lib/protos/dictionary.pb.h"
 #include "nori/lib/utils.h"
 
@@ -94,8 +93,8 @@ class Dictionary {
                                                   const char* end) const;
 
   const nori::protos::UnknownTokens::CategoryDefinition* getCharDef(
-      const char* begin, const char* end) const {
-    auto cls = this->getCharClass(begin, end);
+      const char* current, const char* end) const {
+    auto cls = this->getCharClass(current, end);
     return &dictionary.unknown_tokens().invoke_map().at(cls);
   }
 
@@ -114,7 +113,7 @@ class Dictionary {
     return &this->bosEosMorpheme;
   }
 
-  absl::string_view getBosEosSurface() const { return this->bosEosSurface; }
+  absl::string_view getBosEosSurface() const { return "BOS/EOS"; }
 
   const Normalizer* getNormalizer() const { return &normalizer; }
 
@@ -129,7 +128,6 @@ class Dictionary {
 
   // for tokenizer
   nori::protos::Morpheme bosEosMorpheme;
-  std::string bosEosSurface;
 
   // from connectionCost
   int backwardSize, forwardSize;

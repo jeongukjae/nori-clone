@@ -30,8 +30,8 @@ struct PyLattice {
 
   PyLattice(const nori::Lattice &lattice) {
     this->sentence = lattice.getSentence();
-    this->tokens.reserve(lattice.getTokens()->size());
-    for (const auto &token : *lattice.getTokens()) {
+    this->tokens.reserve(lattice.getTokens().size());
+    for (const auto &token : lattice.getTokens()) {
       this->tokens.emplace_back(
           std::string(token.surface.data(), token.surface.length()),
           token.morpheme, token.offset, token.length);

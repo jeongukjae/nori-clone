@@ -19,25 +19,6 @@ namespace nori {
 
 namespace internal {
 
-struct TrieNode {
-  int uniqueNodeId;
-  int cost;
-  int lastPositionIndex;
-  int length;
-
-  const nori::protos::Morpheme* morpheme;
-  TrieNode* parent;
-
-  TrieNode(int uniqueNodeId, int cost, int lastPositionIndex, int length,
-           const nori::protos::Morpheme* morpheme, TrieNode* parent = nullptr)
-      : uniqueNodeId(uniqueNodeId),
-        cost(cost),
-        lastPositionIndex(lastPositionIndex),
-        length(length),
-        morpheme(morpheme),
-        parent(parent) {}
-};
-
 int getSpacePenalty(const nori::protos::Morpheme* morpheme, int numSpaces) {
   if (numSpaces == 0) return 0;
   if (morpheme->pos_tags_size() == 0) {
@@ -146,26 +127,28 @@ TrieNode* selectParent(std::vector<internal::TrieNode>& candidates,
                        const nori::protos::Morpheme* morpheme,
                        const nori::dictionary::Dictionary* dictionary,
                        int& connectionCost) {
-  auto candidatesSize = candidates.size();
-  if (candidatesSize == 0) return nullptr;
-  connectionCost = dictionary->getConnectionCost(
-      candidates[0].morpheme->right_id(), morpheme->left_id());
-  if (candidatesSize == 1) return &candidates[0];
+  if (candidates.empty()) return nullptr;
 
-  int result = 0;
-  int minCost = candidates[0].cost + connectionCost;
+  connectionCost = 1e+6;
+  internal::TrieNode* result = nullptr;
+  int minCost = connectionCost;
 
-  for (int i = 1; i < candidatesSize; i++) {
+  for (auto& candidate : candidates) {
+    if (!(candidate.position == 0 && candidate.length == 0) &&
+        candidate.parent == nullptr)
+      continue;
+
     auto currentConnectionCost = dictionary->getConnectionCost(
-        candidates[i].morpheme->right_id(), morpheme->left_id());
-    auto cost = candidates[i].cost + currentConnectionCost;
+        candidate.morpheme->right_id(), morpheme->left_id());
+    auto cost = candidate.cost + currentConnectionCost;
     if (cost < minCost) {
       minCost = cost;
       connectionCost = currentConnectionCost;
-      result = i;
+      result = &candidate;
     }
   }
-  return &candidates[result];
+
+  return result;
 }
 
 }  // namespace internal
@@ -175,190 +158,95 @@ typedef darts_ac::DoubleArrayAhoCorasick::result_pair_type DartsResults;
 
 absl::Status NoriTokenizer::tokenize(Lattice& lattice,
                                      GraphvizVisualizer* visualizer) const {
-  if (visualizer != nullptr) {
-    visualizer->reset();
-  }
-
-  const nori::protos::Morpheme* bosEosMorpheme =
-      this->dictionary->getBosEosMorpheme();
+  const auto bosEosMorpheme = this->dictionary->getBosEosMorpheme();
   absl::string_view inputText = lattice.getSentence();
-
-  const char* begin = inputText.begin();
-  const char* current = begin;
-  const char* end = inputText.end();
   std::vector<DartsResults> trieResults(maxTrieResults + 1);
 
   int nodeId = 0;
-  std::vector<std::vector<internal::TrieNode>> nodesByPos(inputText.length() +
-                                                          1);
+  std::vector<std::vector<internal::TrieNode>> nodesByEndPos(
+      inputText.length() + 1);
 
-  // bos node;
-  nodesByPos[0].emplace_back(nodeId++, 0, 0, 0, bosEosMorpheme);
+  // Mark spaces first.
+  std::vector<bool> isSpace(inputText.length() + 1, false);
 
-  int offset = 0, numSpaces = 0;
-  while ((current = begin + offset) < end) {
-    if (nodesByPos[offset].size() == 0) {
+  {
+    int offset = 0;
+    const char* begin = inputText.begin();
+
+    while ((begin + offset) < inputText.end()) {
       U8_FWD_1_UNSAFE(begin, offset);
+      if (std::isspace(inputText[offset])) {
+        isSpace[offset] = true;
+      }
+
+      nodesByEndPos[offset].reserve(64);
+    }
+  }
+
+  // Node found vector for unknown tokens.
+  std::vector<bool> nodeFound(inputText.length() + 1, false);
+
+  // Push BOS node.
+  internal::TrieNode bosNode(nodeId++, 0, 0, 0, 0, bosEosMorpheme);
+  nodesByEndPos[0].push_back(bosNode);
+  nodeFound[0] = true;
+
+  // Search all dictionaries.
+  absl::Status status;
+
+  status = this->findUserDictionaryTokens(lattice, nodesByEndPos, isSpace,
+                                          nodeFound, nodeId);
+  if (!status.ok()) {
+    return status;
+  }
+
+  status = this->findPreBuiltTokens(lattice, nodesByEndPos, isSpace, nodeFound,
+                                    nodeId);
+  if (!status.ok()) {
+    return status;
+  }
+
+  status = this->findUnknownTokens(lattice, nodesByEndPos, isSpace, nodeFound,
+                                   nodeId);
+  if (!status.ok()) {
+    return status;
+  }
+
+  // Connecting all nodes.
+  for (int i = 1; i <= inputText.length(); i++) {
+    if (nodesByEndPos[i].empty()) {
       continue;
     }
 
-    // skip whitespaces
-    numSpaces = 0;
-    while (std::isspace(*current)) {
-      current++;
-      numSpaces++;
-    }
-
-    if (current == end) {
-      break;
-    }
-
-    // find user dictionary
-    if (dictionary->isUserInitialized()) {
-      const int numNodes = dictionary->getUserDict()->getTrieAC()->find(
-          current, trieResults.data(), maxTrieResults,
-          static_cast<int>(end - current));
-
-      if (numNodes != 0) {
-        int index = 0;
-
-        if (numNodes > 0) {
-          // add longest user input
-          int length = trieResults[0].length;
-          for (int i = 1; i < numNodes; i++) {
-            if (length < trieResults[i].length) {
-              length = trieResults[i].length;
-              index = i;
-            }
-          }
-        }
-
-        const auto morpheme = &dictionary->getUserDict()->getMorphemes()->at(
-            trieResults[index].value);
-
-        int wordCost = morpheme->word_cost();
-        int spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
-        int connectionCost;
-        internal::TrieNode* parent = internal::selectParent(
-            nodesByPos[offset], morpheme, this->dictionary, connectionCost);
-
-        int lastPositionIndex =
-            parent->lastPositionIndex + numSpaces + trieResults[index].length;
-        int lastNodeId = nodeId;
-        int cost = parent->cost + wordCost + connectionCost + spaceCost;
-        nodesByPos[lastPositionIndex].emplace_back(
-            nodeId++, cost, lastPositionIndex, trieResults[index].length,
-            morpheme, parent);
-
-        if (visualizer != nullptr) {
-          visualizer->addNode(
-              parent->lastPositionIndex - parent->length, parent->uniqueNodeId,
-              parent->morpheme, parent->lastPositionIndex + numSpaces,
-              lastNodeId, morpheme,
-              std::string(begin + (parent->lastPositionIndex + numSpaces),
-                          begin + lastPositionIndex),
-              wordCost, connectionCost, cost);
-        }
-      }
-    }
-
-    // pre-built dictionary
-    const int numNodes = dictionary->getTrieAC()->find(
-        current, trieResults.data(), maxTrieResults,
-        static_cast<int>(end - current));
-    if (numNodes > maxTrieResults)
-      return absl::InternalError("Cannot search trie");
-
-    // handling unknown characters
-    auto charDef = dictionary->getCharDef(current, end);
-    if ((numNodes == 0) || charDef->invoke() == 1) {
-      auto category = dictionary->getCharClass(current, end);
-      int length = internal::groupingUnknownCharacters(
-          current, end, category, dictionary, charDef->group() == 1);
-
-      const nori::protos::Morpheme* morpheme =
-          &dictionary->getUnkTokens()->morpheme_map().at(category);
-      const int wordCost = morpheme->word_cost();
-      auto spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
+    for (auto& node : nodesByEndPos[i]) {
       int connectionCost;
-      auto parent = internal::selectParent(nodesByPos[offset], morpheme,
-                                           this->dictionary, connectionCost);
+      const auto parent = internal::selectParent(
+          nodesByEndPos[node.position - node.spaceBeforeToken], node.morpheme,
+          this->dictionary, connectionCost);
 
-      auto lastPositionIndex = parent->lastPositionIndex + numSpaces + length;
-      auto lastNodeId = nodeId;
-      auto cost = parent->cost + wordCost + connectionCost + spaceCost;
-
-      nodesByPos[lastPositionIndex].emplace_back(
-          nodeId++, cost, lastPositionIndex, length, morpheme, parent);
-
-      if (visualizer != nullptr) {
-        visualizer->addNode(
-            parent->lastPositionIndex - parent->length, parent->uniqueNodeId,
-            parent->morpheme, parent->lastPositionIndex + numSpaces, lastNodeId,
-            morpheme,
-            std::string(begin + (parent->lastPositionIndex + numSpaces),
-                        begin + lastPositionIndex),
-            wordCost, connectionCost, cost);
-      }
-
-      if (numNodes == 0) {
-        offset += numSpaces;
-        U8_FWD_1_UNSAFE(begin, offset);
+      if (parent == nullptr) {
+        // no parent node. skipping.
         continue;
       }
+
+      node.parent = parent;
+      node.cost = parent->cost + node.cost + connectionCost;
     }
-
-    for (int k = 0; k < numNodes; ++k) {
-      auto trieResult = trieResults[k];
-      auto morphemeList =
-          &this->dictionary->getTokens()->morphemes_list(trieResult.value);
-      auto morphemeSize = morphemeList->morphemes_size();
-
-      for (int j = 0; j < morphemeSize; j++) {
-        const auto* morpheme = &morphemeList->morphemes(j);
-
-        int wordCost = morpheme->word_cost();
-        int spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
-        int connectionCost;
-        internal::TrieNode* parent = internal::selectParent(
-            nodesByPos[offset], morpheme, this->dictionary, connectionCost);
-
-        int lastPositionIndex =
-            parent->lastPositionIndex + numSpaces + trieResult.length;
-        int lastNodeId = nodeId;
-        int cost = parent->cost + wordCost + connectionCost + spaceCost;
-        nodesByPos[lastPositionIndex].emplace_back(
-            nodeId++, cost, lastPositionIndex, trieResult.length, morpheme,
-            parent);
-
-        if (visualizer != nullptr) {
-          visualizer->addNode(
-              parent->lastPositionIndex - parent->length, parent->uniqueNodeId,
-              parent->morpheme, parent->lastPositionIndex + numSpaces,
-              lastNodeId, morpheme,
-              std::string(begin + (parent->lastPositionIndex + numSpaces),
-                          begin + lastPositionIndex),
-              wordCost, connectionCost, cost);
-        }
-      }
-    }
-
-    offset += numSpaces;
-    U8_FWD_1_UNSAFE(begin, offset);
   }
 
   // Handling EOS node
   // end of parsing of this path
-  int eosConnectionCost;
-  internal::TrieNode* bestPath =
-      internal::selectParent(nodesByPos.at(offset), bosEosMorpheme,
-                             this->dictionary, eosConnectionCost);
-  if (visualizer != nullptr) {
-    visualizer->addEos(bestPath->lastPositionIndex - bestPath->length,
-                       bestPath->uniqueNodeId, bestPath->morpheme);
+  int lastSpaces = 0;
+  for (int i = inputText.length() - 1; i > 0 && isSpace[i]; i--) {
+    lastSpaces++;
   }
-  internal::TrieNode eosNode(0, 0, inputText.length(), 0, bosEosMorpheme,
-                             bestPath);
+  int eosConnectionCost;
+  internal::TrieNode* bestPath = internal::selectParent(
+      nodesByEndPos[inputText.length() - lastSpaces], bosEosMorpheme,
+      this->dictionary, eosConnectionCost);
+  internal::TrieNode eosNode(nodeId++, 0, inputText.length(), 0, lastSpaces,
+                             bosEosMorpheme);
+  eosNode.parent = bestPath;
 
   // count node from eos to bos
   int numNode = 0;
@@ -377,57 +265,144 @@ absl::Status NoriTokenizer::tokenize(Lattice& lattice,
   currentNode = &eosNode;
 
   for (const auto& node : nodes) {
-    size_t start = node->lastPositionIndex - node->length;
-
-    // BOS or EOS
-    if (node->length == 0 && (node->lastPositionIndex == 0 ||
-                              node->lastPositionIndex == inputText.size())) {
+    // BOS or EOS. just check pointer address.
+    if (node->morpheme == bosEosMorpheme) {
       outputTokens->emplace_back(this->dictionary->getBosEosSurface(),
-                                 node->morpheme, start, node->length);
+                                node->morpheme, node->position, node->length);
     } else {
-      outputTokens->emplace_back(inputText.substr(start, node->length),
-                                 node->morpheme, start, node->length);
+      outputTokens->emplace_back(inputText.substr(node->position, node->length),
+                                node->morpheme, node->position, node->length);
     }
-  }
-
-  if (visualizer != nullptr) {
-    visualizer->finish();
   }
 
   return absl::OkStatus();
 }
 
 absl::Status NoriTokenizer::findPreBuiltTokens(
-    Lattice& lattice, std::vector<std::vector<internal::TrieNode>>& nodesByPos,
+    Lattice& lattice,
+    std::vector<std::vector<internal::TrieNode>>& nodesByEndPos,
+    std::vector<bool>& isSpaces, std::vector<bool>& nodeFound,
     int& nodeId) const {
   std::vector<DartsResults> trieResults(maxTrieResults + 1);
   const int numNodes = dictionary->getTrieAC()->find(
       lattice.getSentence().data(), trieResults.data(), maxTrieResults,
       lattice.getSentence().length());
 
-  if (numNodes > maxTrieResults) return absl::InternalError("Cannot search trie");
+  if (numNodes > maxTrieResults)
+    return absl::InternalError("Cannot search aho-corasick");
 
   for (int k = 0; k < numNodes; ++k) {
     auto trieResult = trieResults[k];
-    auto morphemeList = &this->dictionary->getTokens()->morphemes_list(trieResult.value);
+    auto morphemeList =
+        &this->dictionary->getTokens()->morphemes_list(trieResult.value);
     auto morphemeSize = morphemeList->morphemes_size();
 
     for (int j = 0; j < morphemeSize; j++) {
       const auto* morpheme = &morphemeList->morphemes(j);
 
-      int wordCost = morpheme->word_cost();
-      int spaceCost = 0;
-      int connectionCost = 0;
-      internal::TrieNode* parent = internal::selectParent(
-          nodesByPos[0], morpheme, this->dictionary, connectionCost);
+      int numSpaces = 0;
+      for (int i = trieResult.position - 1; i > 0 && isSpaces[i]; i--) {
+        numSpaces++;
+      }
 
-      int lastPositionIndex = trieResult.length;
-      int cost = parent->cost + wordCost + connectionCost + spaceCost;
-      nodesByPos[lastPositionIndex].emplace_back(
-          nodeId++, cost, lastPositionIndex, trieResult.length, morpheme,
-          parent);
+      int spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
+
+      int endPosition = trieResult.position + trieResult.length;
+      int cost = spaceCost + morpheme->word_cost();
+      nodesByEndPos[endPosition].emplace_back(
+          nodeId++, cost, trieResult.position, trieResult.length, numSpaces,
+          morpheme);
+      nodeFound[trieResult.position] = true;
     }
   }
+
+  return absl::OkStatus();
+}
+
+absl::Status NoriTokenizer::findUserDictionaryTokens(
+    Lattice& lattice,
+    std::vector<std::vector<internal::TrieNode>>& nodesByEndPos,
+    std::vector<bool>& isSpaces, std::vector<bool>& nodeFound,
+    int& nodeId) const {
+  // Skip if user dictionary is not initialized.
+  if (!dictionary->isUserInitialized()) {
+    return absl::OkStatus();
+  }
+
+  std::vector<DartsResults> trieResults(maxTrieResults + 1);
+  const int numNodes = dictionary->getUserDict()->getTrieAC()->find(
+      lattice.getSentence().data(), trieResults.data(), maxTrieResults,
+      lattice.getSentence().length());
+
+  if (numNodes > maxTrieResults)
+    return absl::InternalError("Cannot search aho-corasick");
+
+  for (int k = 0; k < numNodes; ++k) {
+    auto trieResult = trieResults[k];
+    const auto morpheme =
+        &dictionary->getUserDict()->getMorphemes()->at(trieResults[k].value);
+
+    int numSpaces = 0;
+    for (int i = trieResult.position - 1; i > 0 && isSpaces[i]; i--) {
+      numSpaces++;
+    }
+
+    int spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
+    int endPosition = trieResult.position + trieResult.length;
+
+    int cost = spaceCost + morpheme->word_cost();
+    nodesByEndPos[endPosition].emplace_back(nodeId++, cost, trieResult.position,
+                                            trieResult.length, numSpaces,
+                                            morpheme);
+    nodeFound[trieResult.position] = true;
+  }
+
+  return absl::OkStatus();
+}
+
+absl::Status NoriTokenizer::findUnknownTokens(
+    Lattice& lattice,
+    std::vector<std::vector<internal::TrieNode>>& nodesByEndPos,
+    std::vector<bool>& isSpaces, std::vector<bool>& nodeFound,
+    int& nodeId) const {
+  const char* begin = lattice.getSentence().begin();
+  const char* end = lattice.getSentence().end();
+  const char* current;
+
+  int offset = 0;
+
+  while ((current = begin + offset) < end) {
+    if (isSpaces[offset]) {
+      offset++;
+      continue;
+    }
+
+    auto charDef = dictionary->getCharDef(current, end);
+    if ((!nodeFound[offset]) || (charDef->invoke() == 1)) {
+      auto category = dictionary->getCharClass(current, end);
+      int length = internal::groupingUnknownCharacters(
+          current, end, category, dictionary, charDef->group() == 1);
+
+      int numSpaces = 0;
+      for (int i = offset - 1; i > 0 && isSpaces[i]; i--) {
+        numSpaces++;
+      }
+
+      const nori::protos::Morpheme* morpheme =
+          &dictionary->getUnkTokens()->morpheme_map().at(category);
+      const int wordCost = morpheme->word_cost();
+      auto spaceCost = internal::getSpacePenalty(morpheme, numSpaces);
+      auto cost = wordCost + spaceCost;
+
+      nodesByEndPos[offset + length].emplace_back(nodeId++, cost, offset,
+                                                  length, numSpaces, morpheme);
+      nodeFound[offset] = true;
+    }
+
+    U8_FWD_1_UNSAFE(begin, offset);
+  }
+
+  return absl::OkStatus();
 }
 
 }  // namespace nori

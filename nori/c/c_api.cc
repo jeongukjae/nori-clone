@@ -56,13 +56,13 @@ int tokenize(const Tokenizer* rawTokenizer, const char* str,
   };
   std::memcpy((*latticeOut)->sentence, lattice.getSentence().data(),
               lattice.getSentence().size());
-  int tokenSize = lattice.getTokens()->size();
+  int tokenSize = lattice.getTokens().size();
   (*latticeOut)->tokenLength = tokenSize;
   (*latticeOut)->tokens = new Token[tokenSize];
 
   for (int i = 1; i < tokenSize - 1; i++) {
     auto* token = ((*latticeOut)->tokens + i);
-    auto& ccToken = lattice.getTokens()->at(i);
+    auto& ccToken = lattice.getTokens().at(i);
     token->offset = ccToken.offset;
     token->length = ccToken.length;
     token->morpheme.leftId = ccToken.morpheme->left_id();

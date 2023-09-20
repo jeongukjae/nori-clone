@@ -58,19 +58,21 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i < absl::GetFlag(FLAGS_n_repeat); i++) {
     lattice.clear();
-    lattice.setSentence(inputFlag, normalizer).IgnoreError();
-    tokenizer.tokenize(lattice).IgnoreError();
+    absl::Status status = lattice.setSentence(inputFlag, normalizer);
+    CHECK(status.ok()) << status.message();
+    status = tokenizer.tokenize(lattice);
+    CHECK(status.ok()) << status.message();
   }
 
   std::chrono::microseconds elapsedMs =
       std::chrono::duration_cast<std::chrono::microseconds>(
           std::chrono::system_clock::now() - start);
 
-  LOG(INFO) << "Elapsed: " << elapsedMs.count() << " micro seconds. ";
+  LOG(INFO) << "Elapsed: " << elapsedMs.count() << " micro seconds.";
 
   if (absl::GetFlag(FLAGS_print_output)) {
-    LOG(INFO) << "Tokenization Results.";
-    for (const auto& token : *lattice.getTokens()) {
+    LOG(INFO) << "Tokenization Results: " << lattice.getTokens().size() << " tokens.";
+    for (const auto& token : lattice.getTokens()) {
       std::vector<std::string> posTagStr;
       for (const auto& postag : token.morpheme->pos_tags()) {
         posTagStr.push_back(nori::protos::POSTag_Name(postag));

@@ -49,9 +49,6 @@ int main(int argc, char** argv) {
 
   nori::NoriTokenizer tokenizer(&dictionary);
   auto normalizer = dictionary.getNormalizer();
-  nori::Lattice lattice;
-  status = lattice.setSentence(inputFlag, normalizer);
-  CHECK(status.ok()) << status.message();
 
   std::vector<std::string> lines;
   {
@@ -61,7 +58,7 @@ int main(int argc, char** argv) {
     int c = 0;
     while (std::getline(ifs, line)) {
       lines.push_back(line);
-      if (c++ == nFlag) {
+      if (++c >= nFlag) {
         break;
       }
     }

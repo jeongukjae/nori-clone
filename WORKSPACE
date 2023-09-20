@@ -55,6 +55,13 @@ http_archive(
     url = "https://github.com/s-yata/darts-clone/archive/e40ce4627526985a7767444b6ed6893ab6ff8983.zip",
 )
 
+http_archive(
+    name = "darts_ac",
+    sha256 = "1030327f5e6c5df4184913b25e7546140385b5b7bd3199c7db592ff90018f1cc",
+    strip_prefix = "darts-ac-8849f807d78d9f9c99b2d5f9acaad51452c6bea4",
+    url = "https://github.com/jeongukjae/darts-ac/archive/8849f807d78d9f9c99b2d5f9acaad51452c6bea4.zip",
+)
+
 # Test Deps
 http_archive(
     name = "com_google_googletest",

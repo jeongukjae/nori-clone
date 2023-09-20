@@ -5,10 +5,10 @@
 #include <regex>
 #include <sstream>
 
-#include "darts_ac/darts_ac.h"
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "darts_ac/darts_ac.h"
 #include "nori/lib/protos/dictionary.pb.h"
 #include "nori/lib/utils.h"
 #include "snappy.h"
@@ -181,7 +181,8 @@ absl::Status DictionaryBuilder::buildTokenInfos(absl::string_view input) {
   // 4. Build tries
   LOG(INFO) << "Build trie. keys[0]: " << keys[0] << ", keys[10]: " << keys[10];
   std::unique_ptr<darts_ac::DoubleArrayAhoCorasick> trieAC =
-      std::unique_ptr<darts_ac::DoubleArrayAhoCorasick>(new darts_ac::DoubleArrayAhoCorasick);
+      std::unique_ptr<darts_ac::DoubleArrayAhoCorasick>(
+          new darts_ac::DoubleArrayAhoCorasick);
   if (trieAC->buildAhoCorasick(keys.size(), keys.data(), lengths.data()) != 0)
     return absl::InternalError("Cannot build trie.");
 

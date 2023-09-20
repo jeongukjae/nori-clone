@@ -3,10 +3,9 @@ from sys import argv, stdin
 
 import nori
 
-dictionary = nori.Dictionary()
-dictionary.load_prebuilt_dictionary("./dictionary/legacy-dictionary.nori")
-dictionary.load_user_dictionary("./dictionary/legacy-userdict.txt")
-tokenizer = nori.NoriTokenizer(dictionary)
+tokenizer = nori.NoriTokenizer()
+tokenizer.load_prebuilt_dictionary("./dictionary/legacy-dictionary.nori")
+tokenizer.load_user_dictionary("./dictionary/legacy-userdict.txt")
 
 def run_with_iterator(f):
     for line in f:
