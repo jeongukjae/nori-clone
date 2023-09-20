@@ -461,7 +461,6 @@ impl DictionaryBuilder {
 
         // 2. Read all lines and build connection cost matrix.
         let mut connection_cost_matrix: Vec<i16> = (0..forward_size * backward_size)
-            .into_iter()
             .map(|_| 0)
             .collect::<Vec<i16>>();
         for line in connection_cost_file_reader.lines() {

@@ -7,7 +7,7 @@ use std::{
 use daachorse::CharwiseDoubleArrayAhoCorasick;
 use regex::Regex;
 
-use crate::{error::Error, utils};
+use crate::error::Error;
 
 use super::{AdditionalMetadata, Morpheme, MorphemeExpression, POSTag, POSType};
 
@@ -46,7 +46,7 @@ impl UserDictionary {
                 POSType::COMPOUND
             };
 
-            let (is_hangul, has_coda) = utils::uchar::check_coda(&terms.0);
+            let (is_hangul, has_coda) = Self::check_coda(&terms.0);
             let right_id = if !is_hangul {
                 additional_metadata.right_id_nng
             } else if !has_coda {
@@ -155,6 +155,25 @@ impl UserDictionary {
         }
 
         Self::load_from_bytes(all_buffers, additional_metadata)
+    }
+
+    fn check_coda(c: &str) -> (bool, bool) {
+        let chars: Vec<char> = c.chars().collect();
+        if chars.is_empty() {
+            return (false, false);
+        }
+
+        let last_ch = chars.last().unwrap();
+        let last_ch_code = *last_ch as u32;
+        if !(0xAC00..=0xD7A3).contains(&last_ch_code) {
+            return (false, false);
+        }
+
+        if ((last_ch_code - 0xAC00) % 28) == 0 {
+            (true, false)
+        } else {
+            (true, true)
+        }
     }
 }
 

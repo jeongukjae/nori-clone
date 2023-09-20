@@ -19,9 +19,11 @@ struct Cli {
 enum Commands {
     /// Build dictionary from MeCab dictionary.
     Build(BuildOptions),
+
     /// Tokenize text with dictionary.
     Tokenize(TokenizeOptions),
-    // Tokenize text in file with dictionary.
+
+    /// Tokenize text in file with dictionary.
     TokenizeFile(TokenizeFileOptions),
 }
 
@@ -30,9 +32,11 @@ struct BuildOptions {
     /// input directory path
     #[arg(short, long)]
     input_path: String,
+
     /// output directory path
     #[arg(short, long)]
     output_path: String,
+
     /// whether to normalize input token files
     #[arg(short, long)]
     normalize: Option<bool>,
@@ -43,10 +47,12 @@ struct TokenizeOptions {
     /// input directory path
     #[arg(short, long)]
     dictionary_path: String,
+
     /// text to tokenize
     #[arg(short, long)]
     text: String,
-    /// Graphviz output, optional, filepath
+
+    /// Graphviz output filepath, optional
     #[arg(short, long)]
     graph_out: Option<String>,
 }
@@ -90,6 +96,8 @@ fn main() {
         }
         Commands::Tokenize(opts) => {
             info!("Reading dictionary...");
+
+            let load_start = Instant::now();
             let system_dictionary =
                 match SystemDictionary::load_from_input_directory(opts.dictionary_path.as_str()) {
                     Ok(d) => d,
@@ -110,6 +118,7 @@ fn main() {
 
             info!("Constructing tokenizer...");
             let tokenizer = NoriTokenizer::new(system_dictionary, user_dictionary);
+            info!("Time elapsed in nori tokenizer is: {:?}", load_start.elapsed());
 
             info!("Tokenizing...");
             let mut graphviz = opts.graph_out.as_ref().map(|_| GraphViz::new());
@@ -135,6 +144,8 @@ fn main() {
         }
         Commands::TokenizeFile(opts) => {
             info!("Reading dictionary...");
+
+            let load_start = Instant::now();
             let system_dictionary =
                 match SystemDictionary::load_from_input_directory(opts.dictionary_path.as_str()) {
                     Ok(d) => d,
@@ -155,6 +166,7 @@ fn main() {
 
             info!("Constructing tokenizer...");
             let tokenizer = NoriTokenizer::new(system_dictionary, user_dictionary);
+            info!("Time elapsed in nori tokenizer is: {:?}", load_start.elapsed());
 
             // read all contents from args.data path.
             let file = File::open(opts.data.as_str()).unwrap();

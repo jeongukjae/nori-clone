@@ -1,7 +1,6 @@
 pub mod dictionary;
 pub mod graphviz;
 pub mod nori_tokenizer;
-pub mod utils;
 
 pub use dictionary::DictionaryBuilder;
 pub use dictionary::SystemDictionary;

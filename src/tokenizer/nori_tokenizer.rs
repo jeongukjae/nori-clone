@@ -10,12 +10,23 @@ use unicode_script::{Script, UnicodeScript};
 
 const DEFAULT_TOTAL_COST: i32 = 1000000000;
 
+/// NoriTokenizer is the main class that performs tokenization and POS tagging.
+///
+/// Load dictionaries first and create a tokenizer instance with them.
 pub struct NoriTokenizer {
     system_dictionary: SystemDictionary,
     user_dictionary: UserDictionary,
 }
 
+struct TokenizerState {
+    input_text: String,
+    nodes_by_position: Vec<Vec<ACNode>>,
+    founds_position: HashSet<usize>,
+    unique_node_id: u32,
+}
+
 impl NoriTokenizer {
+    /// Constructs a new tokenizer instance.
     pub fn new(system_dictionary: SystemDictionary, user_dictionary: UserDictionary) -> Self {
         NoriTokenizer {
             system_dictionary,
@@ -23,26 +34,27 @@ impl NoriTokenizer {
         }
     }
 
+    /// tokenize performs tokenization and POS tagging.
     pub fn tokenize(&self, input_text: &str) -> Result<Lattice, Error> {
         self.tokenize_and_visualize(input_text, &mut None)
     }
 
+    /// if you need to visualize the tokenization process, use this method.
     pub fn tokenize_and_visualize(
         &self,
         input_text: &str,
         viz_context: &mut Option<GraphViz>,
     ) -> Result<Lattice, Error> {
-        let input_bytes = input_text.as_bytes();
-        let input_bytes_length = input_bytes.len();
-
-        let mut nodes_by_position: Vec<Vec<ACNode>> = (0..(input_bytes_length + 1))
-            .into_iter()
-            .map(|_| Vec::new())
-            .collect();
-        let mut founds_position: HashSet<usize> = HashSet::new();
+        // Prepare state for tokenization.
+        let mut state = TokenizerState {
+            input_text: input_text.to_string(),
+            nodes_by_position: (0..(input_text.len() + 1)).map(|_| Vec::new()).collect(),
+            founds_position: HashSet::new(),
+            unique_node_id: 1,
+        };
 
         // Add bos node.
-        nodes_by_position[0].push(ACNode {
+        state.nodes_by_position[0].push(ACNode {
             space_cost: 0,
             total_cost: 0,
             start_with_space: 0,
@@ -52,66 +64,48 @@ impl NoriTokenizer {
             parent_node_index: 0,
             unique_node_id: 0,
         });
-        let mut unique_node_id = 1;
 
-        self.find_user_dictionary(
-            input_text,
-            &mut nodes_by_position,
-            &mut founds_position,
-            &mut unique_node_id,
-        );
-        self.find_system_dictionary(
-            input_text,
-            &mut nodes_by_position,
-            &mut founds_position,
-            &mut unique_node_id,
-        );
-        self.find_unknown_words(
-            input_text,
-            &mut nodes_by_position,
-            &founds_position,
-            &mut unique_node_id,
-        );
+        // Search all dictionaries.
+        self.find_user_dictionary(&mut state);
+        self.find_system_dictionary(&mut state);
+        self.find_unknown_words(&mut state);
 
-        for i in 1..input_bytes_length + 1 {
-            if nodes_by_position[i].is_empty() {
+        // Calculate all cost.
+        for i in 1..state.input_text.len() + 1 {
+            if state.nodes_by_position[i].is_empty() {
                 continue;
             }
 
-            for j in 0..nodes_by_position[i].len() {
-                let node = &nodes_by_position[i][j];
+            for j in 0..state.nodes_by_position[i].len() {
+                let node = &state.nodes_by_position[i][j];
 
-                let (parent_index, connection_cost) = self
-                    .select_parent_node(&nodes_by_position[node.start_with_space], &node.morpheme);
-                if let Some(parent) = nodes_by_position[node.start_with_space].get(parent_index) {
+                let (parent_index, connection_cost) = self.select_parent_node(
+                    &state.nodes_by_position[node.start_with_space],
+                    &node.morpheme,
+                );
+                if let Some(parent) =
+                    state.nodes_by_position[node.start_with_space].get(parent_index)
+                {
                     let parent_cost = parent.total_cost;
                     let total_cost =
                         parent_cost + node.space_cost + connection_cost + node.morpheme.word_cost;
 
-                    nodes_by_position[i][j].total_cost = total_cost;
-                    nodes_by_position[i][j].parent_node_index = parent_index;
+                    state.nodes_by_position[i][j].total_cost = total_cost;
+                    state.nodes_by_position[i][j].parent_node_index = parent_index;
 
                     if let Some(viz_context) = viz_context {
-                        let node = &nodes_by_position[i][j];
-                        let parent = &nodes_by_position[node.start_with_space][parent_index];
+                        let node = &state.nodes_by_position[i][j];
+                        let parent = &state.nodes_by_position[node.start_with_space][parent_index];
 
                         viz_context.add_node(
-                            &NodePoint {
-                                text_index: node.start_with_space,
-                                node_id: parent.unique_node_id,
-                            },
-                            &NodePoint {
-                                text_index: i,
-                                node_id: node.unique_node_id,
-                            },
+                            &NodePoint::new(node.start_with_space, parent.unique_node_id, parent.total_cost),
+                            &NodePoint::new(i, node.unique_node_id, total_cost),
                             &NodeEdgeInfo {
                                 to_left_id: node.morpheme.left_id,
                                 to_right_id: node.morpheme.right_id,
                                 to_word_cost: node.morpheme.word_cost,
                                 pos_tags: node.morpheme.pos_tags.clone(),
                                 surface: input_text[node.start..node.end].to_string(),
-                                connection_cost,
-                                total_cost,
                             },
                         );
                     }
@@ -120,19 +114,30 @@ impl NoriTokenizer {
         }
 
         // Building output lattice with search result;
-        let last_num_spaces = Self::count_space_before_word(input_text, input_bytes.len());
-        let end = input_bytes_length - last_num_spaces as usize;
+        let last_num_spaces = Self::count_space_before_word(&state, state.input_text.len());
+        let end = state.input_text.len() - last_num_spaces;
         let (eos_parent_index, _) = self.select_parent_node(
-            &nodes_by_position[end],
+            &state.nodes_by_position[end],
             &self.system_dictionary.bos_eos_morpheme,
         );
 
         if let Some(viz_context) = viz_context {
-            viz_context.add_eos(&NodePoint {
-                text_index: end,
-                node_id: nodes_by_position[end][eos_parent_index].unique_node_id,
-            });
-            viz_context.finalize();
+            viz_context.add_node(
+                &NodePoint::new(
+                    end,
+                    state.nodes_by_position[end][eos_parent_index].unique_node_id,
+                    state.nodes_by_position[end][eos_parent_index].total_cost,
+                ),
+                &NodePoint::new_invisible(end, state.unique_node_id, 0),
+                &NodeEdgeInfo {
+                    to_right_id: 0,
+                    to_left_id: 0,
+                    to_word_cost: 0,
+                    pos_tags: vec![],
+                    surface: "EOS".to_string(),
+                },
+            );
+            viz_context.set_optimal(state.unique_node_id);
         }
 
         let mut nodes: Vec<Node> = Vec::new();
@@ -143,8 +148,12 @@ impl NoriTokenizer {
             length: 0,
         });
 
-        let mut current_node = &nodes_by_position[end][eos_parent_index];
+        let mut current_node = &state.nodes_by_position[end][eos_parent_index];
         while current_node.end != 0 {
+            if let Some(viz_context) = viz_context {
+                viz_context.set_optimal(current_node.unique_node_id)
+            }
+
             let node = Node {
                 surface: input_text[current_node.start..current_node.end].to_string(),
                 morpheme: current_node.morpheme.clone(),
@@ -152,8 +161,7 @@ impl NoriTokenizer {
                 length: current_node.end - current_node.start,
             };
             nodes.push(node);
-            current_node =
-                &nodes_by_position[current_node.start_with_space][current_node.parent_node_index];
+            current_node = &state.nodes_by_position[current_node.start_with_space][current_node.parent_node_index];
         }
 
         nodes.push(Node {
@@ -164,24 +172,23 @@ impl NoriTokenizer {
         });
         nodes.reverse();
 
+        if let Some(viz_context) = viz_context {
+            viz_context.set_optimal(0); // bos.
+            viz_context.finalize();
+        }
+
         Ok(Lattice { nodes })
     }
 
-    fn find_system_dictionary(
-        &self,
-        input_text: &str,
-        nodes_by_position: &mut [Vec<ACNode>],
-        founds_position: &mut HashSet<usize>,
-        unique_node_id: &mut u32,
-    ) {
+    fn find_system_dictionary(&self, state: &mut TokenizerState) {
         let it = self
             .system_dictionary
             .ahocorasick
-            .find_overlapping_iter(input_text);
+            .find_overlapping_iter(state.input_text.as_str());
 
         for m in it {
-            let num_spaces = Self::count_space_before_word(input_text, m.start());
-            founds_position.insert(m.start());
+            let num_spaces = Self::count_space_before_word(state, m.start());
+            state.founds_position.insert(m.start());
 
             for morpheme in &self.system_dictionary.token_dictionary.morphemes[m.value()] {
                 let space_cost = match num_spaces > 0 {
@@ -189,7 +196,7 @@ impl NoriTokenizer {
                     false => 0,
                 };
 
-                nodes_by_position[m.end()].push(ACNode {
+                state.nodes_by_position[m.end()].push(ACNode {
                     space_cost,
                     total_cost: DEFAULT_TOTAL_COST,
                     start_with_space: m.start() - num_spaces,
@@ -197,35 +204,29 @@ impl NoriTokenizer {
                     end: m.end(),
                     morpheme: morpheme.clone(),
                     parent_node_index: 0,
-                    unique_node_id: *unique_node_id,
+                    unique_node_id: state.unique_node_id,
                 });
-                *unique_node_id += 1;
+                state.unique_node_id += 1;
             }
         }
     }
 
-    fn find_user_dictionary(
-        &self,
-        input_text: &str,
-        nodes_by_position: &mut [Vec<ACNode>],
-        founds_position: &mut HashSet<usize>,
-        unique_node_id: &mut u32,
-    ) {
+    fn find_user_dictionary(&self, state: &mut TokenizerState) {
         if let Some(user_dict_ahocorasick) = &self.user_dictionary.ahocorasick {
-            let it = user_dict_ahocorasick.find_overlapping_iter(input_text);
+            let it = user_dict_ahocorasick.find_overlapping_iter(state.input_text.as_str());
 
             // remove completely overlapped case?
             for m in it {
-                founds_position.insert(m.start());
+                state.founds_position.insert(m.start());
                 let morpheme = &self.user_dictionary.morphemes[m.value()];
 
-                let num_spaces = Self::count_space_before_word(input_text, m.start());
+                let num_spaces = Self::count_space_before_word(state, m.start());
                 let space_cost = match num_spaces > 0 {
                     true => Self::get_space_cost(morpheme),
                     false => 0,
                 };
 
-                nodes_by_position[m.end()].push(ACNode {
+                state.nodes_by_position[m.end()].push(ACNode {
                     space_cost,
                     total_cost: DEFAULT_TOTAL_COST,
                     start_with_space: m.start() - num_spaces,
@@ -233,50 +234,44 @@ impl NoriTokenizer {
                     end: m.end(),
                     morpheme: self.user_dictionary.morphemes[m.value()].clone(),
                     parent_node_index: 0,
-                    unique_node_id: *unique_node_id,
+                    unique_node_id: state.unique_node_id,
                 });
-                *unique_node_id += 1;
+                state.unique_node_id += 1;
             }
         }
     }
 
-    fn find_unknown_words(
-        &self,
-        input_text: &str,
-        nodes_by_position: &mut [Vec<ACNode>],
-        founds_position: &HashSet<usize>,
-        unique_node_id: &mut u32,
-    ) {
+    fn find_unknown_words(&self, state: &mut TokenizerState) {
         let mut last_pushed_index = 0;
 
-        for (start, ch) in input_text.char_indices() {
+        for (start, ch) in state.input_text.char_indices() {
             if last_pushed_index > start {
                 continue;
             }
 
-            if Self::is_whitespace(ch) {
+            if Self::is_whitespace(&ch) {
                 continue;
             }
 
             let char_def = self.system_dictionary.unk_dictionary.get_char_def(ch);
 
-            if founds_position.contains(&start) && char_def.invoke != 1 {
+            if state.founds_position.contains(&start) && char_def.invoke != 1 {
                 continue;
             }
 
             let (unk_length, ch_cls) =
-                self.group_unknown_chars(&input_text[start..], char_def.group == 1);
+                self.group_unknown_chars(&state.input_text[start..], char_def.group == 1);
             let end = start + unk_length;
             let morpheme =
                 self.system_dictionary.unk_dictionary.class_morpheme_map[&ch_cls].clone();
 
-            let num_spaces = Self::count_space_before_word(input_text, start);
+            let num_spaces = Self::count_space_before_word(state, start);
             let space_cost = match num_spaces > 0 {
                 true => Self::get_space_cost(&morpheme),
                 false => 0,
             };
 
-            nodes_by_position[end].push(ACNode {
+            state.nodes_by_position[end].push(ACNode {
                 space_cost,
                 total_cost: DEFAULT_TOTAL_COST,
                 start_with_space: start - num_spaces,
@@ -284,18 +279,19 @@ impl NoriTokenizer {
                 end,
                 morpheme,
                 parent_node_index: 0,
-                unique_node_id: *unique_node_id,
+                unique_node_id: state.unique_node_id,
             });
-            *unique_node_id += 1;
+            state.unique_node_id += 1;
 
             last_pushed_index = end;
         }
     }
 
-    fn count_space_before_word(input_text: &str, offset_before: usize) -> usize {
+    fn count_space_before_word(state: &TokenizerState, offset_before: usize) -> usize {
         let mut num_space = 0;
-        for c in input_text[..offset_before].chars().rev() {
-            if !Self::is_whitespace(c) {
+
+        for c in state.input_text[..offset_before].chars().rev() {
+            if !Self::is_whitespace(&c) {
                 break;
             }
             num_space += c.len_utf8();
@@ -380,7 +376,7 @@ impl NoriTokenizer {
             let is_same_script = ((current_script == first_script)
                 || is_first_common_or_inherited
                 || is_common_or_inherited)
-                && !Self::is_whitespace(ch);
+                && !Self::is_whitespace(&ch);
             let is_punctuation = Self::is_punctuation(ch);
             let is_digit = ch.is_ascii_digit();
 
@@ -431,7 +427,7 @@ impl NoriTokenizer {
     }
 
     #[inline]
-    fn is_whitespace(c: char) -> bool {
+    fn is_whitespace(c: &char) -> bool {
         c.is_whitespace()
     }
 }
